@@ -1,0 +1,21 @@
+{
+  "name": "@brokely/api",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Brokely sync API (Phase 4). Fastify + PostgreSQL.",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@brokely/contracts": "workspace:*",
+    "@brokely/domain": "workspace:*",
+    "fastify": "^5.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "tsx": "^4.20.0"
+  }
+}
