@@ -19,10 +19,12 @@ Then in `app.json`:
 - set `"name": "Brokely"` and `"slug": "brokely"`
 - set `android.package` to `"com.brokely.app"`
 
-Add the shared packages:
+Add the shared packages. Run this **from the repo root** (running a plain `pnpm add` in the root
+fails with `ERR_PNPM_ADDING_TO_ROOT`, which is correct: never add app dependencies to the root).
+In PowerShell keep the quotes, because `@` and `*` are special characters there:
 
 ```bash
-pnpm add @brokely/domain@workspace:* @brokely/contracts@workspace:*
+pnpm --filter ./apps/mobile add "@brokely/domain@workspace:*" "@brokely/contracts@workspace:*"
 ```
 
 ## Running on a phone
