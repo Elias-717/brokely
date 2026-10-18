@@ -1,0 +1,24 @@
+{
+  "name": "@brokely/local-db",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Phone database schema (Drizzle + SQLite), from docs/design/erd.md. Driver-free so it is tested in Node and used with expo-sqlite on the phone.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.44.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22.15.0",
+    "better-sqlite3": "^12.2.0",
+    "drizzle-kit": "^0.31.4"
+  }
+}

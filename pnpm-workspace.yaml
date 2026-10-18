@@ -4,3 +4,7 @@ packages:
 
 ignoredBuiltDependencies:
   - esbuild
+
+# better-sqlite3 downloads a prebuilt native binary in its install script (used only in tests).
+onlyBuiltDependencies:
+  - better-sqlite3
