@@ -1,6 +1,6 @@
 # Brokely — Student Discovery Interview Guide
 
-Purpose: confirm the problem before 0.1 is locked (PRD v1.1 section 12) and gather evidence for the open research questions (PRD section 14).
+Purpose: confirm the problem before 0.1 is locked (PRD v1.2 section 12) and gather evidence for the open research questions (PRD section 14).
 Format: 5 students, 20–30 minutes each, one-to-one, in person or a call.
 Interview notes contain personal data: keep them outside this public repo.
 

@@ -1,6 +1,6 @@
 # Brokely — Decision Log
 
-Decisions D-01 to D-09 and R-01 to R-08 were taken on 19 Oct 2026 while reviewing PRD v1.0 and SRS v1.0, and are applied in v1.1. Decisions from D-10 and R-09 onward come after v1.1 and must be added to the next revision (v1.2). Evidence references (F-xx) point to the private research log, which is not in this public repo.
+Decisions D-01 to D-09 and R-01 to R-08 were taken on 19 Oct 2026 while reviewing PRD v1.0 and SRS v1.0, and are applied in v1.1. Decisions D-10 to D-21 and R-09 to R-10 are applied in SRS/PRD v1.2 (see SRS section 15, change record). Later decisions go into the next revision. Evidence references (F-xx) point to the private research log, which is not in this public repo.
 
 ## Product decisions
 
@@ -25,6 +25,8 @@ Decisions D-01 to D-09 and R-01 to R-08 were taken on 19 Oct 2026 while reviewin
 | D-17 | Bill repeat options | Add **"every N weeks"** and every N days. | Fix FR-CAT-03; replace the AC-02 laundry example with a realistic pattern (e.g. every 2 weeks at RM16). |
 | D-18 | Cycle end | When an active cycle's end date passes it becomes **completed automatically**; the app shows the summary and offers "Start next cycle" (a draft copied from the current revision). | Lifecycle draft → active → completed → archived; only drafts can be deleted. Completed cycles still own their dates (no overlap with active ones). |
 | D-19 | Editing completed cycles | **Everything stays editable** in a completed cycle: transactions and the plan. | Plan edits still create a new revision (original kept, D-03); the end-of-cycle summary recomputes with final = latest revision. XP is never re-earned by edits (BR-25). |
+| D-20 | Draft revisions | **At most one unapproved draft revision per cycle**; discarded if not approved. | FR-PLN-16, AC-47 (SRS v1.2). |
+| D-21 | Category deletion | A category with any allocation or transaction can **only be archived**, never deleted. | FR-CAT-08, BR-28, AC-27 (SRS v1.2). |
 
 ## Calculation rules
 
