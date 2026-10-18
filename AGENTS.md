@@ -54,11 +54,14 @@ SRS/PRD v1.2 include every decision up to D-21 and R-10. SRS section 15 is the c
   - Sync API design v0.1: `docs/design/sync-api.md` (push/pull, aggregates, versions, deterministic IDs, error codes)
   - Contracts: `packages/contracts` has Zod schemas for every synced entity and the push/pull envelopes, with 25 tests and shared fixtures
   - Expo app generated in `apps/mobile` and pushed (SDK 58, blank-typescript, dev client, EAS linked; package `com.elias717.brokely`); not yet run on a phone
+  - Phone database schema: `packages/local-db` (Drizzle sqlite-core, driver-free) with constraint tests on in-memory better-sqlite3 (branch `feat/phone-db`, waiting for lockfile)
+- **Waiting on the user:**
+  - On branch `feat/phone-db`: run `pnpm install`, commit `pnpm-lock.yaml`, push (new deps: drizzle-orm, drizzle-kit, better-sqlite3)
 - **Deferred (user decision, 2026-10-19):**
   - Student interviews: skipped for now because of time. Decisions that waited on them (full default category list, D-12 split, D-16 wallet check) stay provisional; ask the user when one becomes blocking.
   - TNG samples (QR payment, top-up, refund, notification extras): delayed until the author has testing access. 0.2 import design stays provisional.
 - **Next agent tasks:**
-  1. Phone database schema (Drizzle + expo-sqlite) from `erd.md` and the contracts
+  1. Merge `feat/phone-db` once CI is green (wire expo-sqlite into the app in Phase 3)
   2. Phase 2: business rules in `packages/domain` (cycles, spending, progress, forecast, debts) test-first from the SRS
   3. Server database schema (Drizzle + PostgreSQL)
   4. Phase 1 remainder: low-detail wireframes (the author may sketch first), mascot art brief
@@ -183,7 +186,8 @@ CLAUDE.md            ← points here
 apps/api/src         app.ts (buildApp), server.ts, *.test.ts
 apps/mobile          Expo app (template App.tsx for now); README with run steps and planned structure
 packages/domain/src  money.ts (+ tests); future: cycle.ts, spending.ts, forecast.ts, debts.ts, xp.ts
-packages/contracts   Zod schemas
+packages/contracts   Zod schemas (entities, sync envelopes, fixtures)
+packages/local-db    phone database schema (Drizzle sqlite-core); tested in Node, used with expo-sqlite
 docs/requirements    PRD, SRS v1.2 (.docx)
 docs/design          erd.md, sync-api.md
 docs/project         decision log, glossary, interview guide
@@ -217,6 +221,8 @@ pnpm --filter @brokely/api dev   # run the API locally
 ## 12. Things that went wrong before (avoid repeating)
 
 - This cloud workspace may not reach the npm registry. Local copies exist: Prettier at `/opt/node-tools/node_modules/.bin/prettier`, zod 3.25.76 at `/opt/npm-tools/node_modules/zod`, global `tsc` and `tsx`. To test without installing: symlink `node_modules/zod`, add a tiny `node_modules/vitest` shim over `node:test`, then run `tsx --test src/*.test.ts`. typescript-eslint is not available locally, so lint is verified by CI.
+- This workspace cannot update `pnpm-lock.yaml` (no registry). When a change adds dependencies, push it on a branch and ask the user to run `pnpm install` there and push the lockfile; CI uses `--frozen-lockfile`.
+- pnpm 10 skips dependency build scripts unless listed in `onlyBuiltDependencies` (`pnpm-workspace.yaml`); better-sqlite3 needs it.
 - On the author's Windows machine, `corepack enable` fails (no admin rights for Program Files). pnpm is installed with `npm install -g pnpm@<version from package.json>` instead.
 - The first Vitest run on Windows can time out (antivirus scanning fresh `node_modules`); re-run before debugging.
 - Markdown is excluded from Prettier (`.prettierignore`) because table formatting differences broke format checks.
