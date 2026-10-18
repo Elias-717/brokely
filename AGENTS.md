@@ -45,15 +45,15 @@ To read a .docx: `pandoc -t markdown <file>`.
   - Interview guide written; research on the author's spending data done (kept private, not in repo)
   - TNG notification samples: transfer out and transfer in captured (format in section 8)
   - Monorepo scaffold pushed; CI green; `packages/domain/src/money.ts` with 12 tests
+  - First local install on the author's Windows machine; `pnpm-lock.yaml` committed; CI uses `--frozen-lockfile` + `cache: pnpm`
+  - `.gitattributes` forces LF (Windows `core.autocrlf=true` broke Prettier checks)
 - **In progress / waiting on the user:**
   - 5 student interviews
   - TNG samples still needed: QR merchant payment, top-up, refund, and hidden notification extras (is there a transaction ID?)
-  - First local `pnpm install` and commit of `pnpm-lock.yaml`
   - Generate the Expo app in `apps/mobile` (commands in `apps/mobile/README.md`)
 - **Next agent tasks:**
-  1. After the lockfile is committed: switch CI to `pnpm install --frozen-lockfile` and add `cache: pnpm`
-  2. After interviews: update PRD/SRS to v1.2 with D-10…D-17, R-09 and interview findings
-  3. Phase 1: logical ERD from SRS section 7
+  1. After interviews: update PRD/SRS to v1.2 with D-10…D-17, R-09 and interview findings
+  2. Phase 1: logical ERD from SRS section 7
 - **Open questions:** see section 11
 
 ---
@@ -208,5 +208,7 @@ pnpm --filter @brokely/api dev   # run the API locally
 ## 12. Things that went wrong before (avoid repeating)
 
 - This cloud workspace may not reach the npm registry. If installs fail, write code without installing, verify pure logic with Node's built-in test runner (`node --test`, TypeScript type stripping), and let CI or the user's machine do the full install.
+- On the author's Windows machine, `corepack enable` fails (no admin rights for Program Files). pnpm is installed with `npm install -g pnpm@<version from package.json>` instead.
+- The first Vitest run on Windows can time out (antivirus scanning fresh `node_modules`); re-run before debugging.
 - Markdown is excluded from Prettier (`.prettierignore`) because table formatting differences broke format checks.
 - A first 2-week data sample overstated treats (35%); 6 months showed ~10%. Don't generalise from small samples; label evidence size.
