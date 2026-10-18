@@ -40,7 +40,7 @@ SRS/PRD v1.2 include every decision up to D-21 and R-10. SRS section 15 is the c
 ## 3. Current state (update every session)
 
 - **Date of last update:** 2026-10-19
-- **Phase:** 0 — Prepare (finishing) and 1 — Design (ERD v0.2 and sync API v0.1 drafted)
+- **Phase:** 1 — Design (finishing: wireframes and mascot brief left); next is 2 — Domain core
 - **Done:**
   - PRD and SRS v1.1 written, then v1.2; decision log D-01…D-21, R-01…R-10
   - Interview guide written; research on the author's spending data done (kept private, not in repo)
@@ -54,16 +54,14 @@ SRS/PRD v1.2 include every decision up to D-21 and R-10. SRS section 15 is the c
   - Sync API design v0.1: `docs/design/sync-api.md` (push/pull, aggregates, versions, deterministic IDs, error codes)
   - Contracts: `packages/contracts` has Zod schemas for every synced entity and the push/pull envelopes, with 25 tests and shared fixtures
   - Expo app generated in `apps/mobile` and pushed (SDK 58, blank-typescript, dev client, EAS linked; package `com.elias717.brokely`); not yet run on a phone
-  - Phone database schema: `packages/local-db` (Drizzle sqlite-core, driver-free) with constraint tests on in-memory better-sqlite3 (branch `feat/phone-db`, waiting for lockfile)
-- **Waiting on the user:**
-  - On branch `feat/phone-db`: run `pnpm install`, commit `pnpm-lock.yaml`, push (new deps: drizzle-orm, drizzle-kit, better-sqlite3)
+  - Phone database schema: `packages/local-db` (Drizzle sqlite-core, driver-free) with 11 constraint tests on in-memory better-sqlite3 (merged via PR #2; drizzle-orm 0.44.7, drizzle-kit 0.31.11, better-sqlite3 12.11.1)
 - **Deferred (user decision, 2026-10-19):**
   - Student interviews: skipped for now because of time. Decisions that waited on them (full default category list, D-12 split, D-16 wallet check) stay provisional; ask the user when one becomes blocking.
   - TNG samples (QR payment, top-up, refund, notification extras): delayed until the author has testing access. 0.2 import design stays provisional.
 - **Next agent tasks:**
-  1. Merge `feat/phone-db` once CI is green (wire expo-sqlite into the app in Phase 3)
-  2. Phase 2: business rules in `packages/domain` (cycles, spending, progress, forecast, debts) test-first from the SRS
-  3. Server database schema (Drizzle + PostgreSQL)
+  1. Phase 2: business rules in `packages/domain` (cycles, spending, progress, forecast, debts) test-first from the SRS
+  2. Server database schema (Drizzle + PostgreSQL)
+  3. Phase 3 setup: wire expo-sqlite + `@brokely/local-db` into the app; generate migrations with `pnpm --filter @brokely/local-db db:generate`
   4. Phase 1 remainder: low-detail wireframes (the author may sketch first), mascot art brief
   5. When interviews happen: SRS/PRD v1.3 with findings
 - **Open questions:** see section 11
