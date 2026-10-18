@@ -1,4 +1,4 @@
-# Brokely Glossary (v1.1)
+# Brokely Glossary (v1.2)
 
 Plain meanings only. The exact formulas live in the SRS business rules (section 5).
 
@@ -31,6 +31,7 @@ Plain meanings only. The exact formulas live in the SRS business rules (section 
 ## The app
 - **Brokely mascot**: a broccoli that grows money instead of leaves. Its picture changes with how you're doing, and it grows as you earn XP. It doesn't talk.
 - **XP**: points you earn for planning, logging and checking in.
+- **Estimate**: an amount you fill in for days you forgot to log. Clearly marked; it never counts as a logged day.
 - **Offline mode**: the app works without internet and without an account. It syncs later.
 - **Pending import**: a TNG payment the app caught, waiting for you to confirm it.
 

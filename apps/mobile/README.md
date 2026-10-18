@@ -9,6 +9,13 @@ Generated from the `blank-typescript` template (Expo SDK 58) with `expo-dev-clie
 `app.json`: name `Brokely`, slug `brokely`, Android package `com.elias717.brokely`, linked to an EAS project.
 `@brokely/domain` and `@brokely/contracts` are added as workspace dependencies.
 
+To add more workspace packages later, run from the repo root (a plain `pnpm add` in the root fails
+with `ERR_PNPM_ADDING_TO_ROOT`, which is correct). In PowerShell keep the quotes:
+
+```bash
+pnpm --filter ./apps/mobile add "@brokely/<package>@workspace:*"
+```
+
 ## Running on a phone
 
 ```bash

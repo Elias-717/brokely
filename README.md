@@ -7,7 +7,7 @@ laundry first, log what they actually spend (offline, with or without an account
 and from friends, and see honest insights. It is a gamified experience: the Brokely mascot grows from
 good money habits, and notifications are written to be fun.
 
-> Status: **Phase 0 (prepare)**. Agents and new contributors: start with [AGENTS.md](AGENTS.md). Requirements v1.1 are drafted; the domain package has its first money
+> Status: **Phase 0 (prepare)**. Agents and new contributors: start with [AGENTS.md](AGENTS.md). Requirements v1.2, the ERD and the sync API design are drafted; the domain package has its first money
 > rules and tests. See the development plan below.
 
 ## Repository layout
@@ -20,7 +20,8 @@ packages/
   domain/        Pure business rules from SRS section 5 (money, coverage, forecast, debts, XP)
   contracts/     Zod schemas shared by the app and the API
 docs/
-  requirements/  PRD and SRS v1.1
+  requirements/  PRD and SRS v1.2
+  design/        ERD and sync API design
   project/       Decision log, glossary, interview guide
 ```
 

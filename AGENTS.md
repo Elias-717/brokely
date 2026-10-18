@@ -25,35 +25,44 @@ and reviewable, and prefer clarity over cleverness. Ask the user before making p
 
 | What | Where |
 |---|---|
-| Behaviour, formulas (BR-xx), data model, quality targets (NFR-xx), acceptance tests (AC-xx) | `docs/requirements/Brokely_Software_Requirements_Specification_v1.1.docx` |
-| Why, users, scope per release, success measures | `docs/requirements/Brokely_Product_Requirements_Document_v1.1.docx` |
+| Behaviour, formulas (BR-xx), data model, quality targets (NFR-xx), acceptance tests (AC-xx) | `docs/requirements/Brokely_Software_Requirements_Specification_v1.2.docx` |
+| Why, users, scope per release, success measures | `docs/requirements/Brokely_Product_Requirements_Document_v1.2.docx` |
 | Every decision with its consequences (D-xx, R-xx) | `docs/project/decision-log.md` |
+| Data model and sync API | `docs/design/erd.md`, `docs/design/sync-api.md` |
 | Words allowed in UI and docs | `docs/project/glossary.md` |
 | Student interview script | `docs/project/interview-guide.md` |
 
 To read a .docx: `pandoc -t markdown <file>`.
-**Pending:** decisions D-10 to D-17 and R-09 are newer than SRS/PRD v1.1. Until v1.2 exists, the decision log overrides v1.1 where they differ.
+SRS/PRD v1.2 include every decision up to D-21 and R-10. SRS section 15 is the change record: **whenever a requirement changes, add a row there** (ID, type, what changed, decision) so traceability is never lost. Requirement IDs are never reused.
 
 ---
 
 ## 3. Current state (update every session)
 
 - **Date of last update:** 2026-10-19
-- **Phase:** 0 — Prepare
+- **Phase:** 0 — Prepare (finishing) and 1 — Design (ERD v0.2 and sync API v0.1 drafted)
 - **Done:**
-  - PRD and SRS v1.1 written; decision log D-01…D-17, R-01…R-09
+  - PRD and SRS v1.1 written, then v1.2; decision log D-01…D-21, R-01…R-10
   - Interview guide written; research on the author's spending data done (kept private, not in repo)
   - TNG notification samples: transfer out and transfer in captured (format in section 8)
   - Monorepo scaffold pushed; CI green; `packages/domain/src/money.ts` with 12 tests
   - First local install on the author's Windows machine; `pnpm-lock.yaml` committed; CI uses `--frozen-lockfile` + `cache: pnpm`
   - `.gitattributes` forces LF (Windows `core.autocrlf=true` broke Prettier checks)
-  - Expo app generated in `apps/mobile` (SDK 58, blank-typescript, dev client, EAS linked; package `com.elias717.brokely`); not yet run on a phone
-- **In progress / waiting on the user:**
-  - 5 student interviews
-  - TNG samples still needed: QR merchant payment, top-up, refund, and hidden notification extras (is there a transaction ID?)
+  - Decisions D-18, D-19 (cycle lifecycle, completed cycles editable) and R-10 (forecast range)
+  - ERD v0.2: `docs/design/erd.md`; decisions D-20 (one draft revision) and D-21 (used categories archive-only)
+  - SRS and PRD v1.2 with full traceability (SRS: 92 FRs ↔ 51 ACs; PRD: 19 requirements cover every FR; change record in SRS section 15)
+  - Sync API design v0.1: `docs/design/sync-api.md` (push/pull, aggregates, versions, deterministic IDs, error codes)
+  - Contracts: `packages/contracts` has Zod schemas for every synced entity and the push/pull envelopes, with 25 tests and shared fixtures
+  - Expo app generated in `apps/mobile` and pushed (SDK 58, blank-typescript, dev client, EAS linked; package `com.elias717.brokely`); not yet run on a phone
+- **Deferred (user decision, 2026-10-19):**
+  - Student interviews: skipped for now because of time. Decisions that waited on them (full default category list, D-12 split, D-16 wallet check) stay provisional; ask the user when one becomes blocking.
+  - TNG samples (QR payment, top-up, refund, notification extras): delayed until the author has testing access. 0.2 import design stays provisional.
 - **Next agent tasks:**
-  1. After interviews: update PRD/SRS to v1.2 with D-10…D-17, R-09 and interview findings
-  2. Phase 1: logical ERD from SRS section 7
+  1. Phone database schema (Drizzle + expo-sqlite) from `erd.md` and the contracts
+  2. Phase 2: business rules in `packages/domain` (cycles, spending, progress, forecast, debts) test-first from the SRS
+  3. Server database schema (Drizzle + PostgreSQL)
+  4. Phase 1 remainder: low-detail wireframes (the author may sketch first), mascot art brief
+  5. When interviews happen: SRS/PRD v1.3 with findings
 - **Open questions:** see section 11
 
 ---
@@ -140,7 +149,7 @@ Category remaining = Cᵢ − Nᵢ (may be negative). Left in plan = B − N.
 **Bills.** Repeat daily, on weekdays, every N days/weeks, monthly, or once (D-17). "Mark paid" creates one linked transaction with an editable amount; the item leaves "still to come". Never counted twice.
 
 **Progress.** Covered day = a spending entry or a "No spending today" check-in. Elapsed days = days before today + today if covered. Coverage = covered ÷ elapsed. Daily average = N ÷ elapsed. Everyday rate = (N − bill-linked spending) ÷ elapsed.
-**Forecast** = N + still to come + everyday rate × days left, shown **only from day 14 with coverage ≥ 70%**, as a **range** (R-09). Pace = over pace if forecast (middle) > P. Estimated "gap fill" entries (0.2) count as spending but not as covered days and not in the everyday rate.
+**Forecast** = N + still to come + everyday rate × days left, shown **only from day 14 with coverage ≥ 70%**, as a **range** (R-09): everyday part ×0.85 / ×1.15, low rounded down and high rounded up to RM10 (R-10). Pace = over pace if forecast (middle) > P. Estimated "gap fill" entries (0.2) count as spending but not as covered days and not in the everyday rate.
 
 **Debts.** Outstanding = principal − repayments − write-offs ± audited adjustments; never negative without an adjustment. Writing off money owed to you becomes spending in a chosen category (R-07).
 
@@ -175,7 +184,8 @@ apps/api/src         app.ts (buildApp), server.ts, *.test.ts
 apps/mobile          Expo app (template App.tsx for now); README with run steps and planned structure
 packages/domain/src  money.ts (+ tests); future: cycle.ts, spending.ts, forecast.ts, debts.ts, xp.ts
 packages/contracts   Zod schemas
-docs/requirements    PRD, SRS (.docx)
+docs/requirements    PRD, SRS v1.2 (.docx)
+docs/design          erd.md, sync-api.md
 docs/project         decision log, glossary, interview guide
 .github/workflows    ci.yml
 ```
@@ -194,11 +204,10 @@ pnpm --filter @brokely/api dev   # run the API locally
 
 | When | Question |
 |---|---|
-| Before ERD | Full TNG notification formats (QR payment, top-up, refund) and whether a transaction ID exists in notification extras |
-| Before ERD | Plan status transitions (draft → active → completed → archived) and what happens when an active cycle's end date passes |
-| Before ERD | Forecast range method (proposal: everyday-rate part ±15%, rounded to RM10) |
-| After interviews | Wallet check (D-16): add an optional manual balance check or keep "no balances" strict? |
-| After interviews | Keep Meals / Snacks & treats split (D-12)? |
+| Before 0.2 import work | Full TNG notification formats (QR payment, top-up, refund) and whether a transaction ID exists in notification extras (delayed until testing access) |
+| Sync review | Open points in `docs/design/sync-api.md` section 12 |
+| Interviews deferred | Wallet check (D-16): add an optional manual balance check or keep "no balances" strict? Ask when it blocks. |
+| Interviews deferred | Keep Meals / Snacks & treats split (D-12)? Full default category list? Ask before the plan wizard is built. |
 | Phase 4 start | Sign-in provider (library inside our API, e.g. Better Auth, vs managed, e.g. Firebase Auth); hosting provider |
 | Before 0.1 testing | Reference test device (NFR-06) |
 | During pilot | Coverage threshold (70%), XP values, notification cap |
@@ -207,7 +216,7 @@ pnpm --filter @brokely/api dev   # run the API locally
 
 ## 12. Things that went wrong before (avoid repeating)
 
-- This cloud workspace may not reach the npm registry. If installs fail, write code without installing, verify pure logic with Node's built-in test runner (`node --test`, TypeScript type stripping), and let CI or the user's machine do the full install.
+- This cloud workspace may not reach the npm registry. Local copies exist: Prettier at `/opt/node-tools/node_modules/.bin/prettier`, zod 3.25.76 at `/opt/npm-tools/node_modules/zod`, global `tsc` and `tsx`. To test without installing: symlink `node_modules/zod`, add a tiny `node_modules/vitest` shim over `node:test`, then run `tsx --test src/*.test.ts`. typescript-eslint is not available locally, so lint is verified by CI.
 - On the author's Windows machine, `corepack enable` fails (no admin rights for Program Files). pnpm is installed with `npm install -g pnpm@<version from package.json>` instead.
 - The first Vitest run on Windows can time out (antivirus scanning fresh `node_modules`); re-run before debugging.
 - Markdown is excluded from Prettier (`.prettierignore`) because table formatting differences broke format checks.
