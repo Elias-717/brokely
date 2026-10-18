@@ -47,10 +47,10 @@ To read a .docx: `pandoc -t markdown <file>`.
   - Monorepo scaffold pushed; CI green; `packages/domain/src/money.ts` with 12 tests
   - First local install on the author's Windows machine; `pnpm-lock.yaml` committed; CI uses `--frozen-lockfile` + `cache: pnpm`
   - `.gitattributes` forces LF (Windows `core.autocrlf=true` broke Prettier checks)
+  - Expo app generated in `apps/mobile` (SDK 58, blank-typescript, dev client, EAS linked; package `com.elias717.brokely`); not yet run on a phone
 - **In progress / waiting on the user:**
   - 5 student interviews
   - TNG samples still needed: QR merchant payment, top-up, refund, and hidden notification extras (is there a transaction ID?)
-  - Generate the Expo app in `apps/mobile` (commands in `apps/mobile/README.md`)
 - **Next agent tasks:**
   1. After interviews: update PRD/SRS to v1.2 with D-10…D-17, R-09 and interview findings
   2. Phase 1: logical ERD from SRS section 7
@@ -172,7 +172,7 @@ Known TNG formats (no transaction ID in visible text; dedupe on Android notifica
 AGENTS.md            ← this file
 CLAUDE.md            ← points here
 apps/api/src         app.ts (buildApp), server.ts, *.test.ts
-apps/mobile          README with setup steps (Expo app not generated yet)
+apps/mobile          Expo app (template App.tsx for now); README with run steps and planned structure
 packages/domain/src  money.ts (+ tests); future: cycle.ts, spending.ts, forecast.ts, debts.ts, xp.ts
 packages/contracts   Zod schemas
 docs/requirements    PRD, SRS (.docx)
