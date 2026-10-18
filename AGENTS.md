@@ -52,16 +52,19 @@ SRS/PRD v1.2 include every decision up to D-21 and R-10. SRS section 15 is the c
   - ERD v0.2: `docs/design/erd.md`; decisions D-20 (one draft revision) and D-21 (used categories archive-only)
   - SRS and PRD v1.2 with full traceability (SRS: 92 FRs ↔ 51 ACs; PRD: 19 requirements cover every FR; change record in SRS section 15)
   - Sync API design v0.1: `docs/design/sync-api.md` (push/pull, aggregates, versions, deterministic IDs, error codes)
+  - Contracts: `packages/contracts` has Zod schemas for every synced entity and the push/pull envelopes, with 25 tests and shared fixtures
+  - Expo app generated on the author's machine (not pushed yet as of 2026-10-19)
 - **In progress / waiting on the user:**
-  - 5 student interviews
-  - TNG samples still needed: QR merchant payment, top-up, refund, and hidden notification extras (is there a transaction ID?)
-  - Generate the Expo app in `apps/mobile` (commands in `apps/mobile/README.md`)
+  - Push the generated Expo app in `apps/mobile`
+- **Deferred (user decision, 2026-10-19):**
+  - Student interviews: skipped for now because of time. Decisions that waited on them (full default category list, D-12 split, D-16 wallet check) stay provisional; ask the user when one becomes blocking.
+  - TNG samples (QR payment, top-up, refund, notification extras): delayed until the author has testing access. 0.2 import design stays provisional.
 - **Next agent tasks:**
-  1. User review of `docs/design/sync-api.md`
-  2. Zod contracts for sync envelopes and entities in `packages/contracts` (with tests)
-  3. Drizzle schemas (SQLite on the phone, PostgreSQL on the server) from `erd.md`
-  4. Phase 1 remainder: low-detail wireframes, mascot art brief
-  5. After interviews: SRS/PRD v1.3 with interview findings
+  1. Phone database schema (Drizzle + expo-sqlite) from `erd.md` and the contracts
+  2. Phase 2: business rules in `packages/domain` (cycles, spending, progress, forecast, debts) test-first from the SRS
+  3. Server database schema (Drizzle + PostgreSQL)
+  4. Phase 1 remainder: low-detail wireframes (the author may sketch first), mascot art brief
+  5. When interviews happen: SRS/PRD v1.3 with findings
 - **Open questions:** see section 11
 
 ---
@@ -203,10 +206,10 @@ pnpm --filter @brokely/api dev   # run the API locally
 
 | When | Question |
 |---|---|
-| Before ERD | Full TNG notification formats (QR payment, top-up, refund) and whether a transaction ID exists in notification extras |
+| Before 0.2 import work | Full TNG notification formats (QR payment, top-up, refund) and whether a transaction ID exists in notification extras (delayed until testing access) |
 | Sync review | Open points in `docs/design/sync-api.md` section 12 |
-| After interviews | Wallet check (D-16): add an optional manual balance check or keep "no balances" strict? |
-| After interviews | Keep Meals / Snacks & treats split (D-12)? |
+| Interviews deferred | Wallet check (D-16): add an optional manual balance check or keep "no balances" strict? Ask when it blocks. |
+| Interviews deferred | Keep Meals / Snacks & treats split (D-12)? Full default category list? Ask before the plan wizard is built. |
 | Phase 4 start | Sign-in provider (library inside our API, e.g. Better Auth, vs managed, e.g. Firebase Auth); hosting provider |
 | Before 0.1 testing | Reference test device (NFR-06) |
 | During pilot | Coverage threshold (70%), XP values, notification cap |
@@ -215,7 +218,7 @@ pnpm --filter @brokely/api dev   # run the API locally
 
 ## 12. Things that went wrong before (avoid repeating)
 
-- This cloud workspace may not reach the npm registry. If installs fail, write code without installing, verify pure logic with Node's built-in test runner (`node --test`, TypeScript type stripping), and let CI or the user's machine do the full install.
+- This cloud workspace may not reach the npm registry. Local copies exist: Prettier at `/opt/node-tools/node_modules/.bin/prettier`, zod 3.25.76 at `/opt/npm-tools/node_modules/zod`, global `tsc` and `tsx`. To test without installing: symlink `node_modules/zod`, add a tiny `node_modules/vitest` shim over `node:test`, then run `tsx --test src/*.test.ts`. typescript-eslint is not available locally, so lint is verified by CI.
 - On the author's Windows machine, `corepack enable` fails (no admin rights for Program Files). pnpm is installed with `npm install -g pnpm@<version from package.json>` instead.
 - The first Vitest run on Windows can time out (antivirus scanning fresh `node_modules`); re-run before debugging.
 - Markdown is excluded from Prettier (`.prettierignore`) because table formatting differences broke format checks.
