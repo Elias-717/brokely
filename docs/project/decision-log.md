@@ -23,6 +23,8 @@ Decisions D-01 to D-09 and R-01 to R-08 were taken on 19 Oct 2026 while reviewin
 | D-15 | Fill a gap with an estimate | Add in **0.2**. | Estimated entries count as spending but are clearly marked, never count as logged days, and are excluded from the everyday rate. |
 | D-16 | Wallet check | **Decide after the interviews.** | Optional manual balance check; would change the "no balances" non-goal. |
 | D-17 | Bill repeat options | Add **"every N weeks"** and every N days. | Fix FR-CAT-03; replace the AC-02 laundry example with a realistic pattern (e.g. every 2 weeks at RM16). |
+| D-18 | Cycle end | When an active cycle's end date passes it becomes **completed automatically**; the app shows the summary and offers "Start next cycle" (a draft copied from the current revision). | Lifecycle draft → active → completed → archived; only drafts can be deleted. Completed cycles still own their dates (no overlap with active ones). |
+| D-19 | Editing completed cycles | **Everything stays editable** in a completed cycle: transactions and the plan. | Plan edits still create a new revision (original kept, D-03); the end-of-cycle summary recomputes with final = latest revision. XP is never re-earned by edits (BR-25). |
 
 ## Calculation rules
 
@@ -36,4 +38,5 @@ Decisions D-01 to D-09 and R-01 to R-08 were taken on 19 Oct 2026 while reviewin
 | R-06 | Elapsed days | Today counts only once it is covered. | Elapsed days = cycle days before today, plus today if covered. |
 | R-07 | Debt write-off | A receivable write-off becomes spending. | Recorded in a category the user chooses, on the write-off date. A payable write-off only closes the debt. |
 | R-08 | Pace | Derived from the forecast. | "Over pace" if forecast > planned spending; hidden when the forecast is hidden. |
-| R-09 | Forecast gate and range | From **day 14** (coverage ≥ 70%), shown as a **range**. | Replaces the 7-day gate. Range method defined in SRS v1.2 (initial proposal: everyday-rate part ±15%, rounded to RM10). Pace uses the middle of the range. |
+| R-09 | Forecast gate and range | From **day 14** (coverage ≥ 70%), shown as a **range**. | Replaces the 7-day gate. Range method: see R-10. Pace uses the middle of the range. |
+| R-10 | Forecast range method | Everyday-rate part ±15%, rounded to RM10. | Low = N + still to come + 0.85 × everyday rate × days left, rounded **down** to RM10; high = same with 1.15, rounded **up** to RM10. The unrounded middle (×1.00) is used for pace. 15% to be tuned with pilot data. |

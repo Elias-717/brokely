@@ -32,14 +32,14 @@ and reviewable, and prefer clarity over cleverness. Ask the user before making p
 | Student interview script | `docs/project/interview-guide.md` |
 
 To read a .docx: `pandoc -t markdown <file>`.
-**Pending:** decisions D-10 to D-17 and R-09 are newer than SRS/PRD v1.1. Until v1.2 exists, the decision log overrides v1.1 where they differ.
+**Pending:** decisions D-10 to D-19 and R-09 to R-10 are newer than SRS/PRD v1.1. Until v1.2 exists, the decision log overrides v1.1 where they differ.
 
 ---
 
 ## 3. Current state (update every session)
 
 - **Date of last update:** 2026-10-19
-- **Phase:** 0 — Prepare
+- **Phase:** 0 — Prepare (finishing) and 1 — Design (started: ERD draft)
 - **Done:**
   - PRD and SRS v1.1 written; decision log D-01…D-17, R-01…R-09
   - Interview guide written; research on the author's spending data done (kept private, not in repo)
@@ -47,13 +47,15 @@ To read a .docx: `pandoc -t markdown <file>`.
   - Monorepo scaffold pushed; CI green; `packages/domain/src/money.ts` with 12 tests
   - First local install on the author's Windows machine; `pnpm-lock.yaml` committed; CI uses `--frozen-lockfile` + `cache: pnpm`
   - `.gitattributes` forces LF (Windows `core.autocrlf=true` broke Prettier checks)
+  - Decisions D-18, D-19 (cycle lifecycle, completed cycles editable) and R-10 (forecast range)
+  - ERD draft v0.1: `docs/design/erd.md` (Mermaid diagram, tables, sync tables, golden-path trace, invariants)
 - **In progress / waiting on the user:**
   - 5 student interviews
   - TNG samples still needed: QR merchant payment, top-up, refund, and hidden notification extras (is there a transaction ID?)
   - Generate the Expo app in `apps/mobile` (commands in `apps/mobile/README.md`)
 - **Next agent tasks:**
-  1. After interviews: update PRD/SRS to v1.2 with D-10…D-17, R-09 and interview findings
-  2. Phase 1: logical ERD from SRS section 7
+  1. After interviews: update PRD/SRS to v1.2 with D-10…D-19, R-09…R-10, ERD changes and interview findings
+  2. Phase 1: user review of `docs/design/erd.md` (open points in its section 8), then sync API contract (`docs/design/sync-api.md`), then Drizzle schemas
 - **Open questions:** see section 11
 
 ---
@@ -140,7 +142,7 @@ Category remaining = Cᵢ − Nᵢ (may be negative). Left in plan = B − N.
 **Bills.** Repeat daily, on weekdays, every N days/weeks, monthly, or once (D-17). "Mark paid" creates one linked transaction with an editable amount; the item leaves "still to come". Never counted twice.
 
 **Progress.** Covered day = a spending entry or a "No spending today" check-in. Elapsed days = days before today + today if covered. Coverage = covered ÷ elapsed. Daily average = N ÷ elapsed. Everyday rate = (N − bill-linked spending) ÷ elapsed.
-**Forecast** = N + still to come + everyday rate × days left, shown **only from day 14 with coverage ≥ 70%**, as a **range** (R-09). Pace = over pace if forecast (middle) > P. Estimated "gap fill" entries (0.2) count as spending but not as covered days and not in the everyday rate.
+**Forecast** = N + still to come + everyday rate × days left, shown **only from day 14 with coverage ≥ 70%**, as a **range** (R-09): everyday part ×0.85 / ×1.15, low rounded down and high rounded up to RM10 (R-10). Pace = over pace if forecast (middle) > P. Estimated "gap fill" entries (0.2) count as spending but not as covered days and not in the everyday rate.
 
 **Debts.** Outstanding = principal − repayments − write-offs ± audited adjustments; never negative without an adjustment. Writing off money owed to you becomes spending in a chosen category (R-07).
 
@@ -195,8 +197,7 @@ pnpm --filter @brokely/api dev   # run the API locally
 | When | Question |
 |---|---|
 | Before ERD | Full TNG notification formats (QR payment, top-up, refund) and whether a transaction ID exists in notification extras |
-| Before ERD | Plan status transitions (draft → active → completed → archived) and what happens when an active cycle's end date passes |
-| Before ERD | Forecast range method (proposal: everyday-rate part ±15%, rounded to RM10) |
+| ERD review | One draft revision at a time? Archive-only categories once used? (ERD section 8) |
 | After interviews | Wallet check (D-16): add an optional manual balance check or keep "no balances" strict? |
 | After interviews | Keep Meals / Snacks & treats split (D-12)? |
 | Phase 4 start | Sign-in provider (library inside our API, e.g. Better Auth, vs managed, e.g. Firebase Auth); hosting provider |
