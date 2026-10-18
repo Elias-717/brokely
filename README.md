@@ -7,7 +7,7 @@ laundry first, log what they actually spend (offline, with or without an account
 and from friends, and see honest insights. It is a gamified experience: the Brokely mascot grows from
 good money habits, and notifications are written to be fun.
 
-> Status: **Phase 0 (prepare)**. Requirements v1.1 are drafted; the domain package has its first money
+> Status: **Phase 0 (prepare)**. Agents and new contributors: start with [AGENTS.md](AGENTS.md). Requirements v1.1 are drafted; the domain package has its first money
 > rules and tests. See the development plan below.
 
 ## Repository layout
