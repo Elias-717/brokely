@@ -5,25 +5,9 @@ Expo Go is not used, because release 0.2 adds a native Kotlin TNG notification l
 
 ## Status
 
-Not created yet. The Expo project is generated on a developer machine (it needs the npm registry and
-picks the current Expo SDK). From the repo root:
-
-```bash
-pnpm create expo-app apps/mobile --template blank-typescript
-cd apps/mobile
-npx expo install expo-dev-client
-```
-
-Then in `app.json`:
-
-- set `"name": "Brokely"` and `"slug": "brokely"`
-- set `android.package` to `"com.brokely.app"`
-
-Add the shared packages:
-
-```bash
-pnpm add @brokely/domain@workspace:* @brokely/contracts@workspace:*
-```
+Generated from the `blank-typescript` template (Expo SDK 58) with `expo-dev-client`.
+`app.json`: name `Brokely`, slug `brokely`, Android package `com.elias717.brokely`, linked to an EAS project.
+`@brokely/domain` and `@brokely/contracts` are added as workspace dependencies.
 
 ## Running on a phone
 
