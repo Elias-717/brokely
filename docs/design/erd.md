@@ -1,6 +1,7 @@
-# Brokely — Logical Data Model (ERD) v0.1
+# Brokely — Logical Data Model (ERD) v0.2
 
-Status: **draft for review** (Phase 1). Source: SRS v1.1 section 7, updated with decisions D-01…D-19 and R-01…R-10.
+Status: **reviewed draft** (Phase 1). Source: SRS v1.2 section 7 and decisions D-01…D-21, R-01…R-10.
+v0.2: review points resolved (D-20, D-21) and sync design applied ([`sync-api.md`](sync-api.md) S-01, S-05, S-06).
 This is the *logical* model shared by the phone (SQLite) and the server (PostgreSQL). Physical details
 (indexes, exact SQL types) follow in the Drizzle schemas.
 
@@ -151,9 +152,9 @@ Sync-only tables (not shown): `outbox_operation` and `sync_state` on the phone; 
 | Table | Key columns | Constraints and rules |
 |---|---|---|
 | `planning_cycle` | `start_date`, `end_date_exclusive`, `status` | `start_date < end_date_exclusive`. The user enters an inclusive end date; stored as end + 1 day (BR-03). **No two cycles with status `active` or `completed` may share a date** (BR-05 extended by D-18: completed cycles still own their dates). Drafts and archived cycles may overlap. Postgres: `EXCLUDE USING gist (user_id WITH =, daterange(start_date, end_date_exclusive) WITH &&) WHERE status IN ('active','completed')`. SQLite: checked by the domain before saving. |
-| `plan_revision` | `cycle_id`, `revision_no`, `budget_sen`, `approved_at`, `shortfall_acknowledged` | `UNIQUE (cycle_id, revision_no)`. Revision 1 is the original. Once `approved_at` is set, the row and its allocations are never edited; a change creates revision n+1 (D-03). Allowed in completed cycles too (D-19). The *current* revision = highest approved `revision_no`. Approval requires `shortfall_acknowledged = true` when U < 0 (FR-PLN-10). |
+| `plan_revision` | `cycle_id`, `revision_no`, `budget_sen`, `approved_at`, `shortfall_acknowledged` | `UNIQUE (cycle_id, revision_no)`. Revision 1 is the original. Once `approved_at` is set, the row and its allocations are never edited; a change creates revision n+1 (D-03). Allowed in completed cycles too (D-19). The *current* revision = highest approved `revision_no`. **At most one unapproved (draft) revision per cycle**, discarded if not approved (D-20, FR-PLN-16). Approval requires `shortfall_acknowledged = true` when U < 0 (FR-PLN-10). |
 | `allocation` | `revision_id`, `category_id`, `amount_sen` | `UNIQUE (revision_id, category_id)`; `amount_sen >= 0`. Set-asides are allocations to categories of kind `set_aside` (D-04). |
-| `category` | `name`, `kind`, `sort_order`, `archived_at` | `kind IN ('essential','optional','set_aside')`. Unique name per user among non-deleted rows. Archiving keeps history (FR-CAT-02); never hard-delete a category with transactions. |
+| `category` | `name`, `kind`, `sort_order`, `archived_at` | `kind IN ('essential','optional','set_aside')`. Unique name per user among non-deleted rows. Archiving keeps history (FR-CAT-02). **A category with any allocation or transaction can only be archived, never deleted** (D-21, FR-CAT-08, BR-28). |
 
 **Cycle lifecycle (D-18, D-19):**
 
@@ -170,7 +171,7 @@ the current revision, dated from the next day).
 | Table | Key columns | Constraints and rules |
 |---|---|---|
 | `bill` | `category_id`, `amount_sen`, `repeat_kind`, `repeat_params`, `anchor_date` | `repeat_params` examples: weekdays `{"days":[1,4]}`; every N weeks `{"n":2}` from `anchor_date` (D-17); monthly `{"day":5}` (a day past month end means last day). |
-| `scheduled_item` | `bill_id`, `due_date`, `amount_sen`, `status`, `transaction_id` | `UNIQUE (bill_id, due_date)` so items are never generated twice. Generated only for real dates inside a cycle (FR-CAT-04). `transaction_id` is `UNIQUE` and set only when `status = 'paid'` (Mark paid, R-05). Editing a bill regenerates only `upcoming` items (FR-CAT-07). |
+| `scheduled_item` | `bill_id`, `due_date`, `amount_sen`, `status`, `transaction_id` | `id = UUIDv5(bill_id + due_date)` (deterministic, S-05) and `UNIQUE (bill_id, due_date)`, so items are never generated twice, even by two phones. Generated only for real dates inside a cycle (FR-CAT-04). `transaction_id` is `UNIQUE` and set only when `status = 'paid'` (Mark paid, R-05). Editing a bill regenerates only `upcoming` items (FR-CAT-07). |
 
 ### Money movements
 | Table | Key columns | Constraints and rules |
@@ -199,7 +200,7 @@ the current revision, dated from the next day).
 ### Progress
 | Table | Key columns | Constraints and rules |
 |---|---|---|
-| `day_check_in` | `local_date` | `UNIQUE (user_id, local_date)` among non-deleted rows. "No spending today" (R-01). Undo = delete marker. |
+| `day_check_in` | `local_date` | `UNIQUE (user_id, local_date)` among non-deleted rows; the server merges a second check-in for the same day (S-06). "No spending today" (R-01). Undo = delete marker. |
 
 ### Settings
 | Table | Key columns | Constraints and rules |
@@ -211,7 +212,7 @@ the current revision, dated from the next day).
 
 | Table | Where | Columns | Purpose |
 |---|---|---|---|
-| `outbox_operation` | phone | `operation_id` (UUIDv7), `entity`, `entity_id`, `op` (`upsert`/`delete`), `base_version`, `payload`, `status` (`pending`/`failed`/`conflict`), `attempts`, `last_error` | Written **in the same SQLite transaction** as the change itself (FR-SYNC-04). |
+| `outbox_operation` | phone | `operation_id` (UUIDv7), `entity`, `entity_id`, `op` (`upsert`/`delete`), `base_version`, `payload`, `status` (`pending`/`failed`/`conflict`), `attempts`, `last_error` | **One operation per aggregate** (a transaction with its lines; a revision with its allocations; S-01). Written **in the same SQLite transaction** as the change itself (FR-SYNC-04). |
 | `sync_state` | phone | `key`, `value` (pull cursor, linked account id) | Remembers where pull stopped. |
 | `processed_operation` | server | `operation_id` PK, `user_id`, `result`, `processed_at` | A repeated push returns the stored result instead of applying twice (FR-SYNC-05). |
 | `server_seq` column | server, every synced table | `BIGINT` from one global sequence, set on every write | `GET /sync/pull?since=<seq>` returns rows with a higher `server_seq`, including delete markers. |
@@ -236,13 +237,13 @@ row and queues one `upsert` per row; IDs never change, so nothing is duplicated 
 
 1. **Create plan:** insert `planning_cycle` (draft, 2 Nov – 1 Dec exclusive), `plan_revision` r1 (budget 40000),
    six `allocation` rows (Meals 25000, Laundry 4000, Transport 2000, Phone & data 2000, Emergency 3000 [set_aside], Fun 4000).
-   U = 40000 − 40000 = 0. Each insert also writes an `outbox_operation`, in the same SQLite transaction.
+   U = 40000 − 40000 = 0. Outbox (same SQLite transaction): one operation for the cycle and one for revision r1 with its allocations.
 2. **Approve:** set `approved_at` on r1, cycle `status = active`.
 3. **Record RM5 laundry:** insert `transaction` (purchase, 500, today's `local_date`) + one `transaction_line`
-   (spending, Laundry, 500) + two outbox operations, in one SQLite transaction.
+   (spending, Laundry, 500) + **one** outbox operation for the whole aggregate, in one SQLite transaction.
 4. **Home screen (derived by the domain):** N = 500; Laundry remaining = 4000 − 500 = 3500; left in plan = 40000 − 500 = 39500; budget still 40000.
-5. **Sync:** push sends the operations; the server checks ownership, version and that lines sum to the amount,
-   applies them, sets `server_seq`, stores `processed_operation`. A retry returns the stored result (AC-20).
+5. **Sync:** `POST /v1/sync/push` sends the operations; the server checks ownership, version and that lines sum to the amount,
+   applies them, sets `server_seq`, stores `processed_operation`. A retry returns `duplicate` with the stored result (AC-20). Another phone receives the changes through `GET /v1/sync/pull`.
 
 ## 7. Invariants and where they are enforced
 
@@ -257,8 +258,8 @@ row and queues one `upsert` per row; IDs never change, so nothing is duplicated 
 | One check-in per day | `UNIQUE` | `UNIQUE` |
 | User sees only their own rows | — | every query filtered by `user_id` (FR-ACC-04) |
 
-## 8. Open points for review
+## 8. Review outcome
 
-1. Changes from SRS v1.1 section 7, to carry into SRS v1.2: `budget_sen` moved from the cycle to `plan_revision` (a revision can change the budget); `scheduled_item.cycle_id` removed (derived by date); debt principal and status derived instead of stored; `debt_adjustment` table added; `transaction.local_date` and `is_estimate` added.
-2. Should a draft revision (unapproved edits to an active plan) be allowed to exist alongside the current one, or are edits approved immediately? Proposal: one draft revision at a time, discarded if not approved.
-3. Category deletion: proposal is archive only once a category has any allocation or transaction.
+1. Changes from SRS v1.1 section 7 are carried into **SRS v1.2** (section 7 and change record section 15): budget on `plan_revision`; `scheduled_item.cycle_id` removed; debt principal and status derived; `debt_adjustment` added; `transaction.local_date` and `is_estimate` added.
+2. **One draft revision at a time** — decided (D-20, FR-PLN-16, AC-47).
+3. **Used categories are archive-only** — decided (D-21, FR-CAT-08, BR-28, AC-27).
