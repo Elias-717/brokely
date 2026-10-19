@@ -57,3 +57,10 @@ const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Frida
 export function weekdayName(date: LocalDate): string {
   return WEEKDAYS[weekday(date)]!;
 }
+
+/** Today's saves happen now; a save for another day is stamped at noon that day. */
+export function occurredAtFor(date: LocalDate, day: LocalDate): string {
+  if (date === day) return new Date().toISOString();
+  const [y, m, d] = date.split("-").map(Number) as [number, number, number];
+  return new Date(y, m - 1, d, 12).toISOString();
+}

@@ -1,5 +1,11 @@
 import { formatRM, type Sen } from "@brokely/domain";
-import { dismissCard, getNickname, postponeCard } from "@brokely/local-db";
+import {
+  checkInNoSpending,
+  dismissCard,
+  getNickname,
+  postponeCard,
+  undoCheckIn,
+} from "@brokely/local-db";
 import { router } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 import { repo } from "../../src/db/client";
@@ -11,6 +17,7 @@ import { BrokelyAvatar } from "../../src/ui/chat";
 import { Button, Screen, Sticker } from "../../src/ui/components";
 import { fonts, space, type } from "../../src/ui/theme";
 import { useTheme } from "../../src/ui/theme-context";
+import { useUndo } from "../../src/ui/undo";
 
 /** A forecast bound is a whole RM10 step (R-10), so it reads best without sen. */
 const wholeRM = (amount: Sen) => `RM${Math.round(amount / 100)}`;
@@ -24,6 +31,7 @@ export default function HomeScreen() {
   const day = today();
   const home = useRead((db) => readHome(db, day), [day]);
   const nickname = useRead(getNickname);
+  const showUndo = useUndo();
 
   const header = (
     <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
@@ -117,6 +125,35 @@ export default function HomeScreen() {
           </Text>
         ) : null}
       </Sticker>
+
+      {/* Nothing logged today: one tap marks a covered day (FR-TXN-08, R-01) */}
+      {home.offerCheckIn ? (
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: space.sm,
+            borderWidth: 2,
+            borderStyle: "dashed",
+            borderColor: colors.outline,
+            borderRadius: 14,
+            backgroundColor: colors.card,
+            paddingLeft: space.md,
+            padding: 6,
+          }}
+        >
+          <Text style={[type.strong, { flex: 1, color: colors.text, fontSize: 15 }]}>
+            Spent nothing today?
+          </Text>
+          <Button
+            label="No spending today"
+            onPress={() => {
+              checkInNoSpending(repo, day);
+              showUndo("Marked today as no spending", () => undoCheckIn(repo, day));
+            }}
+          />
+        </View>
+      ) : null}
 
       {/* The next essential card, one at a time (FR-PLN-20, D-30, D-35) */}
       {home.card && meta ? (

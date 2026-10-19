@@ -10,26 +10,19 @@ import {
   type RepoResult,
 } from "@brokely/local-db";
 import { router } from "expo-router";
-import { useMemo, useState, type ReactNode } from "react";
-import {
-  KeyboardAvoidingView,
-  Pressable,
-  ScrollView,
-  Switch,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { useMemo, useState } from "react";
+import { KeyboardAvoidingView, Pressable, ScrollView, Switch, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { repo } from "../src/db/client";
 import { useRead } from "../src/db/use-read";
 import { categoriesByUse } from "../src/lib/category-order";
 import { categoryEmoji } from "../src/lib/essentials-meta";
 import { refusalText } from "../src/lib/messages";
-import { dayMonth, today } from "../src/lib/today";
+import { dayMonth, occurredAtFor, today } from "../src/lib/today";
 import { Button } from "../src/ui/components";
 import { pickDate } from "../src/ui/date-picker";
 import { Keypad } from "../src/ui/keypad";
+import { Chip, Field, Labelled } from "../src/ui/sheet-parts";
 import { fonts, MIN_TOUCH, radius, space, type } from "../src/ui/theme";
 import { useTheme } from "../src/ui/theme-context";
 import { useUndo } from "../src/ui/undo";
@@ -44,13 +37,6 @@ const MORE: { kind: MoreKind; label: string }[] = [
   { kind: "lent", label: "I lent money" },
   { kind: "borrowed", label: "I borrowed money" },
 ];
-
-/** Today's saves happen now; a save for another day is stamped at noon that day. */
-function occurredAt(date: LocalDate, day: LocalDate): string {
-  if (date === day) return new Date().toISOString();
-  const [y, m, d] = date.split("-").map(Number) as [number, number, number];
-  return new Date(y, m - 1, d, 12).toISOString();
-}
 
 /**
  * S4 / S4c Quick add (FR-TXN-01/02/03/10/11, FR-DEBT-01/05, D-01, D-24, D-26, D-28, D-38):
@@ -83,7 +69,7 @@ export default function QuickAdd() {
   const amount = parseAmount(amountText);
   const share = parseAmount(shareText);
   const picked = categories.find((c) => c.id === categoryId) ?? categories[0];
-  const when = { localDate: date, occurredAt: occurredAt(date, day) };
+  const when = { localDate: date, occurredAt: occurredAtFor(date, day) };
   const cleanNote = note.trim();
 
   /** Saves, then closes the sheet and offers Undo (D-38). */
@@ -472,94 +458,5 @@ function Segmented({ value, onChange }: { value: Mode; onChange: (mode: Mode) =>
         );
       })}
     </View>
-  );
-}
-
-function Chip({
-  label,
-  selected,
-  dashed,
-  onPress,
-}: {
-  label: string;
-  selected?: boolean;
-  dashed?: boolean;
-  onPress: () => void;
-}) {
-  const { colors } = useTheme();
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      onPress={onPress}
-      style={{
-        minHeight: MIN_TOUCH - 4,
-        justifyContent: "center",
-        paddingHorizontal: space.md,
-        borderRadius: 99,
-        borderWidth: 2,
-        borderStyle: dashed ? "dashed" : "solid",
-        borderColor: colors.outline,
-        backgroundColor: selected ? colors.primary : dashed ? undefined : colors.card,
-      }}
-    >
-      <Text
-        style={{
-          fontFamily: selected ? fonts.heavy : fonts.bold,
-          fontSize: 15,
-          color: selected ? colors.onPrimary : colors.text,
-        }}
-      >
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
-function Labelled({ label, children }: { label: string; children: ReactNode }) {
-  const { colors } = useTheme();
-  return (
-    <View style={{ gap: space.xs }}>
-      <Text style={[type.small, { color: colors.muted }]}>{label}</Text>
-      {children}
-    </View>
-  );
-}
-
-function Field({
-  value,
-  onChange,
-  placeholder,
-  label,
-  numeric,
-}: {
-  value: string;
-  onChange: (text: string) => void;
-  placeholder: string;
-  label?: string;
-  numeric?: boolean;
-}) {
-  const { colors } = useTheme();
-  return (
-    <TextInput
-      value={value}
-      onChangeText={onChange}
-      placeholder={placeholder}
-      placeholderTextColor={colors.muted}
-      accessibilityLabel={label ?? placeholder}
-      keyboardType={numeric ? "decimal-pad" : "default"}
-      maxLength={numeric ? 12 : 120}
-      style={{
-        minHeight: MIN_TOUCH,
-        paddingHorizontal: space.sm,
-        borderRadius: radius.button,
-        borderWidth: 2,
-        borderColor: colors.outline,
-        backgroundColor: colors.card,
-        color: colors.text,
-        fontFamily: fonts.bold,
-        fontSize: 15,
-      }}
-    />
   );
 }

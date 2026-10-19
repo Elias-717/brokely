@@ -288,3 +288,13 @@ export function unskipScheduledItem(ctx: RepoContext, id: string) {
     updateScheduledItem(scope, item, { status: "upcoming" });
   });
 }
+
+/** Transactions that paid a bill item (Mark paid), e.g. to label them in Records (R-05). */
+export function paidBillTransactionIds(db: Db): Set<string> {
+  const rows = db
+    .select({ transactionId: scheduledItems.transactionId })
+    .from(scheduledItems)
+    .where(and(isNull(scheduledItems.deletedAt), eq(scheduledItems.status, "paid")))
+    .all();
+  return new Set(rows.flatMap((r) => (r.transactionId ? [r.transactionId] : [])));
+}

@@ -49,6 +49,8 @@ export type HomeModel =
       readonly stillToComeSen: Sen;
       readonly spentByCategory: readonly { name: string; amountSen: Sen }[];
       readonly card: { categoryId: string; name: string; position: number; total: number } | null;
+      /** Nothing logged today yet: offer "No spending today" (FR-TXN-08, R-01). */
+      readonly offerCheckIn: boolean;
     };
 
 export function readHome(db: Db, today: LocalDate): HomeModel {
@@ -85,6 +87,8 @@ export function readHome(db: Db, today: LocalDate): HomeModel {
   });
 
   const planDays = lengthInDays({ start: trackingStart, endExclusive: range.endExclusive });
+  const loggedToday =
+    transactions.some((t) => t.localDate === today) || listCheckInDates(db, range).includes(today);
   const categories = listCategories(db, { includeArchived: true });
   const nameOf = new Map(categories.map((c) => [c.id, c.name]));
 
@@ -124,6 +128,7 @@ export function readHome(db: Db, today: LocalDate): HomeModel {
       })),
     stillToComeSen: progress.stillToComeSen,
     spentByCategory,
+    offerCheckIn: !loggedToday && today >= trackingStart,
     card: next
       ? {
           categoryId: next.id,

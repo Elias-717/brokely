@@ -9,6 +9,7 @@ import {
   editBill,
   listScheduledItems,
   markBillPaid,
+  paidBillTransactionIds,
   skipScheduledItem,
   unskipScheduledItem,
   type BillInput,
@@ -116,6 +117,7 @@ describe("bill repository", () => {
       lines: [expect.objectContaining({ categoryId: category("Laundry"), amountSen: 2200 })],
     });
     expect(items()[0]).toMatchObject({ status: "paid", transactionId: paid.value.transactionId });
+    expect(paidBillTransactionIds(ctx.db)).toEqual(new Set([paid.value.transactionId]));
     expect(stillToComeSen()).toBe(4000);
 
     // Skip the next one: it leaves still to come (FR-CAT-06).

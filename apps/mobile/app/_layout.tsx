@@ -70,6 +70,10 @@ function AppStack() {
           name="quick-add"
           options={{ presentation: "transparentModal", animation: "slide_from_bottom" }}
         />
+        <Stack.Screen
+          name="record/[id]"
+          options={{ presentation: "transparentModal", animation: "slide_from_bottom" }}
+        />
       </Stack>
       <StatusBar style={scheme === "dark" ? "light" : "dark"} />
     </>
