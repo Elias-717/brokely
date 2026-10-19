@@ -3,6 +3,7 @@ import { z } from "zod";
 export * from "./primitives";
 export * from "./entities";
 export * from "./sync";
+export * from "./ids";
 
 /** Response of GET /health. */
 export const HealthResponseSchema = z.object({
