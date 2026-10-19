@@ -29,6 +29,7 @@ and reviewable, and prefer clarity over cleverness. Ask the user before making p
 | Why, users, scope per release, success measures | `docs/requirements/Brokely_Product_Requirements_Document_v1.2.docx` |
 | Every decision with its consequences (D-xx, R-xx) | `docs/project/decision-log.md` |
 | Data model and sync API | `docs/design/erd.md`, `docs/design/sync-api.md` |
+| Screens (wireframes) | `docs/design/wireframes.md` → Figma file `Hm2YNImm4pKtD11ke0iPKb` |
 | Words allowed in UI and docs | `docs/project/glossary.md` |
 | Student interview script | `docs/project/interview-guide.md` |
 
@@ -40,7 +41,7 @@ SRS v1.3 (PRD v1.2) includes every decision up to D-22 and R-10. SRS section 15 
 ## 3. Current state (update every session)
 
 - **Date of last update:** 2026-10-19
-- **Phase:** 2 — Domain core done (2026-10-19); Phase 1 wireframes (Figma) still open; next is 3 — Offline app
+- **Phase:** 2 — Domain core done (2026-10-19); wireframes v0.1 drawn, waiting for the author's review; next is 3 — Offline app
 - **Done:**
   - PRD and SRS v1.1 written, then v1.2; decision log D-01…D-21, R-01…R-10
   - Interview guide written; research on the author's spending data done (kept private, not in repo)
@@ -56,14 +57,15 @@ SRS v1.3 (PRD v1.2) includes every decision up to D-22 and R-10. SRS section 15 
   - Expo app generated in `apps/mobile` and pushed (SDK 58, blank-typescript, dev client, EAS linked; package `com.elias717.brokely`); not yet run on a phone
   - **Phase 2 domain core:** `packages/domain` implements BR-01…BR-28 (dates, cycles, bills, plan, spending, progress/forecast, debts, XP) with 85 tests; every BR is covered (see `docs/design/domain-rules.md`). New sync error code `DEBT_EXCEEDS_OUTSTANDING` (contracts + sync-api §6)
   - Phone database schema: `packages/local-db` (Drizzle sqlite-core, driver-free) with 11 constraint tests on in-memory better-sqlite3 (merged via PR #2; drizzle-orm 0.44.7, drizzle-kit 0.31.11, better-sqlite3 12.11.1)
+  - Wireframes v0.1: 13 low-fidelity screens (S1–S10) in Figma, file `Hm2YNImm4pKtD11ke0iPKb`; screen → ID map, checked example numbers and 5 layout proposals in `docs/design/wireframes.md`
 - **Deferred (user decision, 2026-10-19):**
   - Student interviews: skipped for now because of time. Decisions that waited on them (full default category list, D-12 split, D-16 wallet check) stay provisional; ask the user when one becomes blocking.
   - TNG samples (QR payment, top-up, refund, notification extras): delayed until the author has testing access. 0.2 import design stays provisional.
 - **Next agent tasks:**
-  1. Wireframes in Figma (Figma connected 2026-10-19)
+  1. Author reviews wireframes v0.1 and the 5 layout proposals in `docs/design/wireframes.md`; record confirmed ones as decisions
   2. Phase 3 setup: wire expo-sqlite + `@brokely/local-db` into the app (needs a lockfile update by the user); generate migrations with `pnpm --filter @brokely/local-db db:generate`; repositories that write record + outbox in one transaction
   3. Server database schema (Drizzle + PostgreSQL), before Phase 4
-  4. Phase 1 remainder: wireframes in Figma after Phase 2 (the author will connect Figma); mascot art is being drawn by the author from `docs/design/mascot-brief.md`
+  4. Mascot art is being drawn by the author from `docs/design/mascot-brief.md` (PNGs go to `apps/mobile/assets/mascot/`)
   5. When interviews happen: SRS/PRD v1.3 with findings
 - **Open questions:** see section 11
 
@@ -188,7 +190,7 @@ packages/domain/src  money, dates, cycle, bills, plan, transactions, spending, p
 packages/contracts   Zod schemas (entities, sync envelopes, fixtures)
 packages/local-db    phone database schema (Drizzle sqlite-core); tested in Node, used with expo-sqlite
 docs/requirements    PRD v1.2, SRS v1.3 (.docx)
-docs/design          erd.md, sync-api.md, mascot-brief.md, domain-rules.md (BR → code → tests)
+docs/design          erd.md, sync-api.md, mascot-brief.md, domain-rules.md (BR → code → tests), wireframes.md (Figma link)
 docs/project         decision log, glossary, interview guide
 .github/workflows    ci.yml
 ```
