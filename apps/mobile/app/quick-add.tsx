@@ -31,7 +31,9 @@ type Mode = "spent" | "in" | "more";
 type MoreKind = "transfer" | "lent" | "borrowed";
 
 const FRIEND = "From a friend";
-const FROM = ["From family", "Meal money", FRIEND, "Part-time", "Gift", "Other"];
+/** Shortcut to More → I borrowed: saved as a debt, not money in. */
+const BORROWED = "Borrowed (debt)";
+const FROM = ["From family", "Meal money", FRIEND, "Part-time", "Gift", BORROWED, "Other"];
 const MORE: { kind: MoreKind; label: string }[] = [
   { kind: "transfer", label: "Between my own wallets" },
   { kind: "lent", label: "I lent money" },
@@ -115,6 +117,11 @@ export default function QuickAdd() {
         ({ id }) => deleteTransaction(repo, id),
       );
     }
+    if (mode === "in" && from === BORROWED) {
+      // A shortcut to More → I borrowed: money received that must be paid back is a debt,
+      // never money in or spending (FR-DEBT-06).
+      return saveDebt(false);
+    }
     if (mode === "in") {
       // "From a friend · Ali · birthday": the source, the friend's name if given, the note.
       const source = [from, from === FRIEND ? person.trim() : "", cleanNote]
@@ -139,8 +146,15 @@ export default function QuickAdd() {
         ({ id }) => deleteTransaction(repo, id),
       );
     }
-    if (!person.trim()) return setProblem("Add who it's with.");
-    const lent = moreKind === "lent";
+    return saveDebt(moreKind === "lent");
+  };
+
+  /** I lent (owed to me) or I borrowed (I owe), with the debt it opens (FR-DEBT-01). */
+  const saveDebt = (lent: boolean) => {
+    if (amount === null || amount <= 0) return;
+    if (!person.trim()) {
+      return setProblem(lent ? "Add who you lent to." : "Add who you borrowed from.");
+    }
     return finish(
       createDebt(repo, {
         direction: lent ? "owed_to_me" : "owed_by_me",
@@ -164,9 +178,11 @@ export default function QuickAdd() {
       ? "Save"
       : mode === "spent"
         ? `Save ${formatRM(amount)} · ${picked?.name ?? ""}`
-        : mode === "in"
-          ? `Save money in · ${formatRM(amount)}`
-          : `Save ${formatRM(amount)}`;
+        : mode === "in" && from === BORROWED
+          ? `Save borrowed · ${formatRM(amount)}`
+          : mode === "in"
+            ? `Save money in · ${formatRM(amount)}`
+            : `Save ${formatRM(amount)}`;
 
   const chips = showAll ? categories : categories.slice(0, 4);
 
@@ -268,7 +284,20 @@ export default function QuickAdd() {
                       placeholder="Friend's name (optional)"
                     />
                     <Text style={[type.small, { color: colors.muted }]}>
-                      Need to pay it back? Use More → I borrowed money.
+                      Need to pay it back? Pick {BORROWED}.
+                    </Text>
+                  </View>
+                ) : null}
+                {from === BORROWED ? (
+                  <View style={{ gap: space.xs, marginTop: space.sm }}>
+                    <Field
+                      value={person}
+                      onChange={setPerson}
+                      placeholder="Who did you borrow from?"
+                    />
+                    <Text style={[type.small, { color: colors.muted }]}>
+                      Saved as a debt you'll pay back: not money in and not spending. It shows in
+                      Debts.
                     </Text>
                   </View>
                 ) : null}
