@@ -34,6 +34,8 @@ export const entityDataSchemas = {
 } as const;
 
 export type EntityName = keyof typeof entityDataSchemas;
+/** The `data` of an upsert for one entity, as the phone builds it. */
+export type EntityData<E extends EntityName> = z.input<(typeof entityDataSchemas)[E]>;
 export const EntityNameSchema = z.enum(
   Object.keys(entityDataSchemas) as [EntityName, ...EntityName[]],
 );

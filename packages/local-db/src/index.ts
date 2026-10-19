@@ -16,3 +16,5 @@ export type DebtRow = InferSelectModel<typeof schema.debts>;
 export type DayCheckInRow = InferSelectModel<typeof schema.dayCheckIns>;
 export type OutboxOperationRow = InferSelectModel<typeof schema.outboxOperations>;
 export type NewOutboxOperation = InferInsertModel<typeof schema.outboxOperations>;
+
+export * from "./repositories";

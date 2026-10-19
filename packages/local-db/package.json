@@ -13,6 +13,8 @@
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
+    "@brokely/contracts": "workspace:*",
+    "@brokely/domain": "workspace:*",
     "drizzle-orm": "^0.44.0"
   },
   "devDependencies": {
