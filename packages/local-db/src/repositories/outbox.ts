@@ -62,3 +62,16 @@ export function enqueueDelete(
 export function touched(at: string) {
   return { updatedAt: at, syncStatus: "pending" as const };
 }
+
+/** The sync columns of a row created on this phone (FR-SYNC-03): new ID, version 1, pending. */
+export function freshRow(scope: Pick<WriteScope, "at" | "newId">) {
+  return {
+    id: scope.newId(),
+    userId: null,
+    version: 1,
+    createdAt: scope.at,
+    updatedAt: scope.at,
+    deletedAt: null,
+    syncStatus: "pending" as const,
+  };
+}

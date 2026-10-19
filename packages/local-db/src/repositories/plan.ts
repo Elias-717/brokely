@@ -26,7 +26,7 @@ import {
   type RepoContext,
   type WriteScope,
 } from "./context";
-import { enqueueUpsert } from "./outbox";
+import { enqueueUpsert, freshRow } from "./outbox";
 import { purchaseInput, recordTransactionIn } from "./transactions";
 
 /**
@@ -119,16 +119,6 @@ function cycleData(row: CycleRow): EntityData<"planning_cycle"> {
   };
 }
 
-const syncedNew = (scope: WriteScope) => ({
-  id: scope.newId(),
-  userId: null,
-  version: 1,
-  createdAt: scope.at,
-  updatedAt: scope.at,
-  deletedAt: null,
-  syncStatus: "pending" as const,
-});
-
 export interface QuickStartInput {
   readonly budgetSen: Sen;
   /** Dates as the student sees them; both included (FR-PLN-02). */
@@ -151,7 +141,7 @@ export function quickStartIn(scope: WriteScope, input: QuickStartInput) {
   const range = cycleFromInclusive(start, end);
 
   const cycle: CycleRow = {
-    ...syncedNew(scope),
+    ...freshRow(scope),
     startDate: range.start,
     endDateExclusive: range.endExclusive,
     trackingStartDate: asLocalDate(input.trackingStartDate ?? start),
@@ -195,7 +185,7 @@ function insertApprovedRevision(
   shortfallAcknowledged: boolean,
 ): string {
   const revision: RevisionRow = {
-    ...syncedNew(scope),
+    ...freshRow(scope),
     cycleId,
     revisionNo,
     budgetSen,
@@ -203,7 +193,7 @@ function insertApprovedRevision(
     shortfallAcknowledged,
   };
   const rows = parts.map((p) => ({
-    ...syncedNew(scope),
+    ...freshRow(scope),
     revisionId: revision.id,
     categoryId: p.categoryId,
     amountSen: p.amountSen,
