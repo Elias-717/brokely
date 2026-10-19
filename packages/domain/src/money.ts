@@ -70,3 +70,19 @@ export function formatRM(amount: Sen): string {
   const cents = String(abs % 100).padStart(2, "0");
   return `${negative ? "-" : ""}RM${ringgit.toLocaleString("en-MY")}.${cents}`;
 }
+
+/**
+ * Reads money a student typed ("250", "250.5", "RM 1,234.56") as whole sen, or null if it is
+ * not an amount. Works on the digits as text, never on floating-point ringgit (BR-01, rule 1):
+ * "0.29" is exactly 29 sen. At most two decimals; no signs, exponents or spaces inside.
+ */
+export function parseAmount(typed: string): Sen | null {
+  const text = typed.trim().replace(/^rm\s*/i, "");
+  const match = /^(\d{1,3}(?:,\d{3})+|\d*)(?:\.(\d{0,2}))?$/.exec(text);
+  if (!match) return null;
+  const whole = (match[1] ?? "").replace(/,/g, "");
+  const cents = match[2] ?? "";
+  if (whole === "" && cents === "") return null; // "", "RM", "."
+  const value = Number(whole || "0") * 100 + Number(cents.padEnd(2, "0"));
+  return Number.isSafeInteger(value) ? sen(value) : null;
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { divideSen, formatRM, roundHalfEven, sen, sumSen } from "./money";
+import { divideSen, formatRM, parseAmount, roundHalfEven, sen, sumSen } from "./money";
 
 describe("sen", () => {
   it("accepts whole numbers of sen", () => {
@@ -61,4 +61,34 @@ describe("formatRM", () => {
   it("groups thousands", () => {
     expect(formatRM(sen(123456))).toBe("RM1,234.56");
   });
+});
+
+describe("parseAmount (typed money to whole sen, BR-01)", () => {
+  it.each([
+    ["250", 25000],
+    ["250.5", 25050],
+    ["250.50", 25050],
+    ["RM 250.00", 25000],
+    ["rm250", 25000],
+    ["1,234.56", 123456],
+    ["  12 ", 1200],
+    [".5", 50],
+    ["0", 0],
+    ["0.07", 7],
+    ["12.", 1200],
+  ])("reads %j as %i sen", (typed, expected) => {
+    expect(parseAmount(typed)).toBe(expected);
+  });
+
+  it("never uses floating point: 0.29 is exactly 29 sen, 1.005 is refused", () => {
+    expect(parseAmount("0.29")).toBe(29); // 0.29 * 100 in floats is 28.999999999999996
+    expect(parseAmount("1.005")).toBeNull(); // no fractions of a sen
+  });
+
+  it.each(["", "   ", "abc", "-5", "12.3.4", "RM", "1,23", "5e3", ".", "1 000"])(
+    "refuses %j",
+    (typed) => {
+      expect(parseAmount(typed)).toBeNull();
+    },
+  );
 });
