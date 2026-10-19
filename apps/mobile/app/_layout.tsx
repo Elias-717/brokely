@@ -11,6 +11,7 @@ import { ActivityIndicator, Text, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { db } from "../src/db/client";
 import { ThemeProvider, useTheme } from "../src/ui/theme-context";
+import { UndoProvider } from "../src/ui/undo";
 
 /**
  * App start: bring the phone database up to the latest schema (FR-SYNC-02) and load the bundled
@@ -48,7 +49,9 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <AppStack />
+        <UndoProvider>
+          <AppStack />
+        </UndoProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );
@@ -63,7 +66,10 @@ function AppStack() {
       >
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="welcome" />
-        <Stack.Screen name="quick-add" options={{ presentation: "modal" }} />
+        <Stack.Screen
+          name="quick-add"
+          options={{ presentation: "transparentModal", animation: "slide_from_bottom" }}
+        />
       </Stack>
       <StatusBar style={scheme === "dark" ? "light" : "dark"} />
     </>

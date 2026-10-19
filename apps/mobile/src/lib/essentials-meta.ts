@@ -69,3 +69,18 @@ const OTHER: EssentialMeta = {
 export function essentialMeta(name: string): EssentialMeta {
   return META[name] ?? { ...OTHER, intro: `Let's plan ${name.toLowerCase()}` };
 }
+
+/** A small picture for every default category, used in "Saved RM12.00 · Meals 🍛". */
+const EMOJI: Record<string, string> = {
+  "Snacks & treats": "🍪",
+  "Fun & trips": "🎉",
+  Shopping: "🛍️",
+  "Gifts & charity": "💝",
+  Other: "✨",
+  Emergency: "🛟",
+  Savings: "🐷",
+};
+
+export function categoryEmoji(name: string): string {
+  return META[name]?.emoji ?? EMOJI[name] ?? "";
+}

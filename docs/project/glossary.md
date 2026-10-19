@@ -21,7 +21,7 @@ Plain meanings only. The exact formulas live in the SRS business rules (section 
 - **Debt**: money you owe a friend, or a friend owes you.
 - **Write-off**: giving up on a debt. If a friend never pays you back, it counts as spending.
 - **Bill**: a payment you know is coming, like laundry every 2 weeks. Tap "Mark paid" when you pay it.
-- **Money in**: money you receive, like money from family, PTPTN or part-time pay. Not spending.
+- **Money in**: money you receive: from family, meal money, from a friend (a gift; money you must pay back is a loan, "I borrowed"), part-time pay, a gift. Not spending.
 - **Wallet check**: you type how much money you really have (cash, TNG and bank together); Brokely compares it with your records since your last check.
 - **Spent before Brokely**: one entry for what you spent this month before you started using the app.
 
