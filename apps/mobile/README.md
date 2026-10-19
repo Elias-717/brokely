@@ -18,6 +18,10 @@ pnpm --filter ./apps/mobile add "@brokely/<package>@workspace:*"
 
 ## Running on a phone
 
+Run these **inside `apps/mobile`** (`cd apps/mobile`), never at the repo root. Local builds need
+`ANDROID_HOME` pointing at the Android SDK (usually `%LOCALAPPDATA%\Android\Sdk`) and the phone
+connected with USB debugging on (`adb devices` should list it).
+
 ```bash
 npx expo run:android      # local development build (needs Android Studio / SDK)
 # or
