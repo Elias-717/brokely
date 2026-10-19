@@ -38,7 +38,7 @@ place. Per-table CRUD endpoints would spread that logic across dozens of routes.
 ## 3. Synced entities
 
 `category`, `planning_cycle`, `plan_revision` (+ `allocations`), `bill`, `scheduled_item`, `transaction` (+ `lines`),
-`transaction_edit` (append-only), `debt`, `debt_adjustment`, `day_check_in`, `user_settings`.
+`transaction_edit` (append-only), `debt`, `debt_adjustment`, `day_check_in`, `wallet_check`, `user_settings`.
 Release 0.2 adds `merchant_category` and `xp_event`. `pending_import` never leaves the phone.
 
 ## 4. Push

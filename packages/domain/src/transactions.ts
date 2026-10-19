@@ -14,7 +14,9 @@ export type TransactionType =
   | "lend"
   | "repayment_received"
   | "repayment_made"
-  | "write_off";
+  | "write_off"
+  /** Money received, e.g. allowance, PTPTN, part-time pay. Never spending (FR-TXN-11, D-26). */
+  | "income";
 
 export type Line =
   | { readonly kind: "spending"; readonly categoryId: string; readonly amountSen: Sen }
@@ -30,6 +32,8 @@ export interface Transaction {
   readonly writeOffCategoryId?: string | null;
   /** Gap-fill estimate (D-15, 0.2). */
   readonly isEstimate?: boolean;
+  /** ISO instant with offset; needed by the wallet check to know what happened since (R-13). */
+  readonly occurredAt?: string;
 }
 
 export type DebtDirection = "owed_by_me" | "owed_to_me";

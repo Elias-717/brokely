@@ -1,5 +1,6 @@
 import { sen, sumSen, type Sen } from "./money";
 import { fail, OK, type RuleResult } from "./result";
+import type { Transaction } from "./transactions";
 
 /**
  * Plans and revisions: BR-06, BR-07, BR-08, BR-28, FR-PLN-09/10/11/16, D-03, D-04, D-20, D-21.
@@ -112,4 +113,19 @@ export function checkCanDeleteCategory(usage: {
   return usage.allocations > 0 || usage.transactionLines > 0
     ? fail("CATEGORY_IN_USE", "This category has history. Archive it instead of deleting it.")
     : OK;
+}
+
+/**
+ * Money in never changes the budget by itself. When money received in the cycle is more than
+ * the budget, suggest adding the difference as a new revision (FR-TXN-11, D-26).
+ * Pass the cycle's transactions; only income counts.
+ */
+export function moneyInSuggestion(
+  cycleTransactions: readonly Pick<Transaction, "type" | "amountSen">[],
+  budgetSen: Sen,
+): Sen | null {
+  const received = sumSen(
+    cycleTransactions.filter((t) => t.type === "income").map((t) => t.amountSen),
+  );
+  return received > budgetSen ? sen(received - budgetSen) : null;
 }

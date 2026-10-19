@@ -5,6 +5,7 @@ import {
   PlanningCycleSchema,
   ScheduledItemSchema,
   TransactionSchema,
+  WalletCheckSchema,
 } from "./entities";
 import { ids, laundryPurchase, splitMeal } from "./fixtures";
 import { LocalDateSchema, SignedSenSchema } from "./primitives";
@@ -82,11 +83,53 @@ describe("TransactionSchema", () => {
 
 describe("PlanningCycleSchema", () => {
   it("requires the end to be after the start (BR-03)", () => {
-    const cycle = { startDate: "2026-11-02", endDateExclusive: "2026-12-02", status: "active" };
+    const cycle = {
+      startDate: "2026-11-02",
+      endDateExclusive: "2026-12-02",
+      trackingStartDate: "2026-11-02",
+      status: "active",
+    };
     expect(PlanningCycleSchema.safeParse(cycle).success).toBe(true);
     expect(
       PlanningCycleSchema.safeParse({ ...cycle, endDateExclusive: "2026-11-02" }).success,
     ).toBe(false);
+  });
+
+  it("keeps the tracking start inside the cycle (BR-29, R-12)", () => {
+    const cycle = {
+      startDate: "2026-11-01",
+      endDateExclusive: "2026-12-01",
+      trackingStartDate: "2026-11-15", // caught up mid-month (D-25)
+      status: "active",
+    };
+    expect(PlanningCycleSchema.safeParse(cycle).success).toBe(true);
+    expect(
+      PlanningCycleSchema.safeParse({ ...cycle, trackingStartDate: "2026-10-31" }).success,
+    ).toBe(false);
+    expect(
+      PlanningCycleSchema.safeParse({ ...cycle, trackingStartDate: "2026-12-01" }).success,
+    ).toBe(false);
+  });
+});
+
+describe("income and wallet checks (FR-TXN-11, FR-WAL-01, D-26, D-27)", () => {
+  it("accepts income with no lines and rejects lines on income", () => {
+    const income = { ...laundryPurchase, type: "income", lines: [], note: "From family" };
+    expect(TransactionSchema.safeParse(income).success).toBe(true);
+    expect(TransactionSchema.safeParse({ ...income, lines: laundryPurchase.lines }).success).toBe(
+      false,
+    );
+  });
+
+  it("accepts a wallet check of RM0 and rejects a negative one", () => {
+    const check = {
+      checkedAt: "2026-11-16T12:00:00+08:00",
+      localDate: "2026-11-16",
+      amountSen: 0,
+      note: "",
+    };
+    expect(WalletCheckSchema.safeParse(check).success).toBe(true);
+    expect(WalletCheckSchema.safeParse({ ...check, amountSen: -1 }).success).toBe(false);
   });
 });
 

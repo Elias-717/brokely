@@ -192,3 +192,33 @@ describe("forecast range and pace (BR-20, BR-21, R-10, AC-13)", () => {
     expect(quick(35000).forecast?.pace).toBe("over_pace");
   });
 });
+
+describe("catch-up month: progress counts from the day the student joined (BR-29, R-12, AC-60)", () => {
+  // Joined on day 15 after "Catch me up": RM350 spent before Brokely (dated day 14),
+  // then RM10 meals every day from day 15 to day 28.
+  const opening = purchase(cat.meals, 35000, day(14));
+  const meals = Array.from({ length: 14 }, (_, i) => purchase(cat.meals, 1000, day(15 + i)));
+  const transactions = [opening, ...meals];
+  const joined = progress({ today: day(28), transactions, trackingStart: day(15) });
+
+  it("counts spending before joining in N but not in the daily figures", () => {
+    expect(joined.spentSen).toBe(49000);
+    expect(joined.elapsedDays).toBe(14);
+    expect(joined.coveredDays).toBe(14);
+    expect(joined.dailyAverage).toEqual({ numerator: 14000, denominator: 14 }); // RM10 a day
+    expect(joined.everydayRate).toEqual({ numerator: 14000, denominator: 14 });
+    expect(joined.daysLeft).toBe(2);
+  });
+
+  it("shows the forecast 14 days after joining: 490 + 10 × 2 = RM510", () => {
+    expect(joined.forecast).not.toBe(null);
+    if (!joined.forecast) return;
+    expect(formatRM(roundHalfEven(joined.forecast.middle))).toBe("RM510.00");
+  });
+
+  it("would hide the forecast if the days before joining counted as missed", () => {
+    const fromFirst = progress({ today: day(28), transactions });
+    expect(fromFirst.elapsedDays).toBe(28);
+    expect(fromFirst.forecast).toBe(null); // 14 of 28 logged = 50%
+  });
+});

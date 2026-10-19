@@ -51,6 +51,7 @@ erDiagram
         uuid id PK
         date start_date
         date end_date_exclusive
+        date tracking_start_date "= start_date unless caught up (R-12)"
         text status "draft|active|completed|archived"
     }
     PLAN_REVISION {
@@ -94,7 +95,7 @@ erDiagram
     }
     TRANSACTION {
         uuid id PK
-        text type "purchase|refund|transfer|borrow|lend|repayment_received|repayment_made|write_off"
+        text type "purchase|refund|transfer|borrow|lend|repayment_received|repayment_made|write_off|income"
         int amount_sen "> 0"
         instant occurred_at
         date local_date
@@ -151,7 +152,7 @@ Sync-only tables (not shown): `outbox_operation` and `sync_state` on the phone; 
 ### Plan
 | Table | Key columns | Constraints and rules |
 |---|---|---|
-| `planning_cycle` | `start_date`, `end_date_exclusive`, `status` | `start_date < end_date_exclusive`. The user enters an inclusive end date; stored as end + 1 day (BR-03). **No two cycles with status `active` or `completed` may share a date** (BR-05 extended by D-18: completed cycles still own their dates). Drafts and archived cycles may overlap. Postgres: `EXCLUDE USING gist (user_id WITH =, daterange(start_date, end_date_exclusive) WITH &&) WHERE status IN ('active','completed')`. SQLite: checked by the domain before saving. |
+| `planning_cycle` | `start_date`, `end_date_exclusive`, `tracking_start_date`, `status` | `start_date < end_date_exclusive`; `start_date ≤ tracking_start_date < end_date_exclusive` (tracking starts later only after a mid-month catch-up, D-25, BR-29). The user enters an inclusive end date; stored as end + 1 day (BR-03). **No two cycles with status `active` or `completed` may share a date** (BR-05 extended by D-18: completed cycles still own their dates). Drafts and archived cycles may overlap. Postgres: `EXCLUDE USING gist (user_id WITH =, daterange(start_date, end_date_exclusive) WITH &&) WHERE status IN ('active','completed')`. SQLite: checked by the domain before saving. |
 | `plan_revision` | `cycle_id`, `revision_no`, `budget_sen`, `approved_at`, `shortfall_acknowledged` | `UNIQUE (cycle_id, revision_no)`. Revision 1 is the original. Once `approved_at` is set, the row and its allocations are never edited; a change creates revision n+1 (D-03). Allowed in completed cycles too (D-19). The *current* revision = highest approved `revision_no`. **At most one unapproved (draft) revision per cycle**, discarded if not approved (D-20, FR-PLN-16). Approval requires `shortfall_acknowledged = true` when U < 0 (FR-PLN-10). |
 | `allocation` | `revision_id`, `category_id`, `amount_sen` | `UNIQUE (revision_id, category_id)`; `amount_sen >= 0`. Set-asides are allocations to categories of kind `set_aside` (D-04). |
 | `category` | `name`, `kind`, `sort_order`, `archived_at` | `kind IN ('essential','optional','set_aside')`. Unique name per user among non-deleted rows. Archiving keeps history (FR-CAT-02). **A category with any allocation or transaction can only be archived, never deleted** (D-21, FR-CAT-08, BR-28). |
@@ -187,6 +188,7 @@ the current revision, dated from the next day).
 | `purchase` | ≥ 1 spending line; optional debt lines (split with a friend, D-01) | Spending lines add to N. A debt line opens or adds to an `owed_to_me` debt. |
 | `refund` | spending lines mirroring the refunded categories | Subtracts from N. |
 | `transfer` | none | No effect on spending or debts. |
+| `income` | none | Money in (D-26). Never spending; never changes the budget by itself. |
 | `borrow` / `lend` | one debt line | Opens or adds to a debt (`owed_by_me` / `owed_to_me`). |
 | `repayment_received` / `repayment_made` | one debt line | Reduces the debt's outstanding amount. |
 | `write_off` | one debt line | Reduces outstanding to zero. For `owed_to_me`, the amount is also spending in `write_off_category_id` on `local_date` (R-07). |
@@ -200,6 +202,7 @@ the current revision, dated from the next day).
 ### Progress
 | Table | Key columns | Constraints and rules |
 |---|---|---|
+| `wallet_check` | `checked_at`, `local_date`, `amount_sen` | `amount_sen ≥ 0`. Typed by the student (FR-WAL-01). Expected amount and difference are derived, never stored (BR-30). |
 | `day_check_in` | `local_date` | `UNIQUE (user_id, local_date)` among non-deleted rows; the server merges a second check-in for the same day (S-06). "No spending today" (R-01). Undo = delete marker. |
 
 ### Settings

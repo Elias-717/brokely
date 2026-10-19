@@ -10,3 +10,4 @@ export * from "./progress";
 export * from "./debts";
 export * from "./xp";
 export * from "./categories";
+export * from "./wallet";

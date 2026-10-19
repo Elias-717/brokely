@@ -34,6 +34,11 @@ Phase 2 traceability: every business rule in SRS v1.2 section 5 (BR-01…BR-28) 
 | BR-27 | Cycle lifecycle; automatic completion; next cycle | `cycle.ts` `statusOn`, `nextCycleRange` | `cycle.test.ts` (AC-48) |
 | — | Default categories (FR-CAT-01, D-22) | `categories.ts` `DEFAULT_CATEGORIES` | `categories.test.ts` (AC-52) |
 | BR-28 | Used categories are archive-only | `plan.ts` `checkCanDeleteCategory` → `CATEGORY_IN_USE` | `plan.test.ts` (AC-27) |
+| BR-29 | Progress counts from the tracking start (catch-up, R-12) | `progress.ts` `computeProgress` (`trackingStart`) | `progress.test.ts` (AC-60) |
+| BR-30 | Wallet check: expected since the last check, difference | `wallet.ts` `expectedSinceLastCheck`, `walletDifference` | `wallet.test.ts` (AC-62) |
+| BR-31 | Money in / out by transaction type | `wallet.ts` `moneyEffect` | `wallet.test.ts` |
+| FR-PLN-21 | Mid-month start: fresh or catch up (D-25) | `cycle.ts` `midMonthStart`, `offersCatchUp` | `cycle.test.ts` (AC-58, AC-59) |
+| FR-TXN-11 | Money in suggests a plan change (D-26) | `plan.ts` `moneyInSuggestion` | `plan.test.ts` (AC-61) |
 
 Also covered: FR-TXN-04 lines sum (`checkLinesSum`, AC-10), FR-TXN-06 refund limit (`checkRefund`, AC-09),
 FR-PLN-16 one draft (`checkCanCreateDraft`, AC-47), FR-INS-04 chart shares (`shareOfSpending`, AC-17),

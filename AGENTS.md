@@ -25,8 +25,8 @@ and reviewable, and prefer clarity over cleverness. Ask the user before making p
 
 | What | Where |
 |---|---|
-| Behaviour, formulas (BR-xx), data model, quality targets (NFR-xx), acceptance tests (AC-xx) | `docs/requirements/Brokely_Software_Requirements_Specification_v1.5.docx` |
-| Why, users, scope per release, success measures | `docs/requirements/Brokely_Product_Requirements_Document_v1.4.docx` |
+| Behaviour, formulas (BR-xx), data model, quality targets (NFR-xx), acceptance tests (AC-xx) | `docs/requirements/Brokely_Software_Requirements_Specification_v1.6.docx` |
+| Why, users, scope per release, success measures | `docs/requirements/Brokely_Product_Requirements_Document_v1.5.docx` |
 | Every decision with its consequences (D-xx, R-xx) | `docs/project/decision-log.md` |
 | Data model and sync API | `docs/design/erd.md`, `docs/design/sync-api.md` |
 | Screens (wireframes) | `docs/design/wireframes.md` → Figma file `Hm2YNImm4pKtD11ke0iPKb` |
@@ -34,14 +34,14 @@ and reviewable, and prefer clarity over cleverness. Ask the user before making p
 | Student interview script | `docs/project/interview-guide.md` |
 
 To read a .docx: `pandoc -t markdown <file>`.
-SRS v1.5 (PRD v1.4) includes every decision up to D-24 and R-11. SRS section 15 is the change record: **whenever a requirement changes, add a row there** (ID, type, what changed, decision) so traceability is never lost. Requirement IDs are never reused.
+SRS v1.6 (PRD v1.5) includes every decision up to D-27 and R-13. SRS section 15 is the change record: **whenever a requirement changes, add a row there** (ID, type, what changed, decision) so traceability is never lost. Requirement IDs are never reused.
 
 ---
 
 ## 3. Current state (update every session)
 
 - **Date of last update:** 2026-10-19
-- **Phase:** 2 — Domain core done (2026-10-19); wireframes v0.3 drawn and usability-reviewed (D-23, D-24); next is 3 — Offline app
+- **Phase:** 2 — Domain core done (2026-10-19); wireframes v0.4 (21 screens) drawn and usability-reviewed (D-23…D-27); next is 3 — Offline app
 - **Done:**
   - PRD and SRS v1.1 written, then v1.2; decision log D-01…D-21, R-01…R-10
   - Interview guide written; research on the author's spending data done (kept private, not in repo)
@@ -57,18 +57,19 @@ SRS v1.5 (PRD v1.4) includes every decision up to D-24 and R-11. SRS section 15 
   - Expo app generated in `apps/mobile` and pushed (SDK 58, blank-typescript, dev client, EAS linked; package `com.elias717.brokely`); not yet run on a phone
   - **Phase 2 domain core:** `packages/domain` implements BR-01…BR-28 (dates, cycles, bills, plan, spending, progress/forecast, debts, XP) with 85 tests; every BR is covered (see `docs/design/domain-rules.md`). New sync error code `DEBT_EXCEEDS_OUTSTANDING` (contracts + sync-api §6)
   - Phone database schema: `packages/local-db` (Drizzle sqlite-core, driver-free) with 11 constraint tests on in-memory better-sqlite3 (merged via PR #2; drizzle-orm 0.44.7, drizzle-kit 0.31.11, better-sqlite3 12.11.1)
-  - Wireframes v0.3: 17 low-fidelity screens in Figma, file `Hm2YNImm4pKtD11ke0iPKb`; screen → ID map, checked example numbers and 5 layout proposals in `docs/design/wireframes.md`
+  - Wireframes v0.4: 21 low-fidelity screens in Figma, file `Hm2YNImm4pKtD11ke0iPKb`; screen → ID map, checked example numbers and 5 layout proposals in `docs/design/wireframes.md`
   - **D-23 lighter first run** (author's request): Welcome with one Brokely picture (0.1) → Quick start (budget + dates) → Home with essential cards one at a time; guided setup optional. **R-11**: pace compares with the budget while P = 0 (`paceTarget`, 89 domain tests). SRS v1.4 (FR-PLN-19/20, FR-MAS-08, AC-53…56), PRD v1.3 (PRD-20), glossary v1.3, mascot brief asks for `brokely_welcome.png` first
   - **D-24 usability review** of the wireframes (U-01…U-11 in `docs/design/wireframes.md`): centre + tab bar (Home · Records · + · Insights · More), Undo after save (FR-TXN-10, AC-57), one-line quick start, Later on essential cards, 48 dp targets. SRS v1.5, PRD v1.4
+  - **D-25 mid-month start** (Start fresh / Catch me up) with **R-12** (progress counts from `tracking_start_date`); **D-26 money in** (transaction type `income`, plan suggestion); **D-27 wallet check** (resolves D-16) with **R-13** (expected since the last check). Domain `midMonthStart`, `moneyInSuggestion`, `wallet.ts` (104 tests); contracts `income`, `trackingStartDate`, `WalletCheckSchema`, entity `wallet_check`; phone DB `tracking_start_date`, `wallet_checks`. SRS v1.6 (FR-PLN-21, FR-TXN-11, FR-WAL-01…04, BR-29…31, AC-58…63), PRD v1.5 (PRD-21…23)
 - **Deferred (user decision, 2026-10-19):**
-  - Student interviews: skipped for now because of time. Decisions that waited on them (full default category list, D-12 split, D-16 wallet check) stay provisional; ask the user when one becomes blocking.
+  - Student interviews: skipped for now because of time. Decisions that waited on them (D-12 Meals / Snacks split) stay provisional; categories (D-22) and wallet check (D-27) were decided early by the author; ask the user when one becomes blocking.
   - TNG samples (QR payment, top-up, refund, notification extras): delayed until the author has testing access. 0.2 import design stays provisional.
 - **Next agent tasks:**
   1. Author reviews wireframes v0.3 and the 4 remaining layout proposals in `docs/design/wireframes.md`; record confirmed ones as decisions
   2. Phase 3 setup: wire expo-sqlite + `@brokely/local-db` into the app (needs a lockfile update by the user); generate migrations with `pnpm --filter @brokely/local-db db:generate`; repositories that write record + outbox in one transaction
   3. Server database schema (Drizzle + PostgreSQL), before Phase 4
   4. Mascot art is being drawn by the author from `docs/design/mascot-brief.md` (PNGs go to `apps/mobile/assets/mascot/`); `brokely_welcome.png` is needed first (0.1 welcome screen)
-  5. When interviews happen: SRS v1.6 / PRD v1.5 with findings
+  5. When interviews happen: SRS v1.7 / PRD v1.6 with findings
 - **Open questions:** see section 11
 
 ---
@@ -80,7 +81,7 @@ SRS v1.5 (PRD v1.4) includes every decision up to D-24 and R-11. SRS section 15 
 3. **Business rules live in `packages/domain`** as pure functions with unit tests. No React, database, network or `Date.now()` inside; pass "today" in as an argument (NFR-02).
 4. **Every rule and test references its ID** (BR-, FR-, AC-, D-, R-) in a comment or test name.
 5. **Offline first.** Every record gets a phone-generated UUID (prefer UUIDv7). Every write goes into the outbox in the same database transaction (FR-SYNC-03/04).
-6. **Never claim a balance.** The UI says "left in plan", never "balance" (BR-12). Use only glossary words.
+6. **Never claim a balance.** The UI says "left in plan", never "balance" (BR-12). The wallet check (D-27) only compares with an amount the student typed, worded as "based on your check on…". Use only glossary words ("allowance" is retired; say "money in" / "from family").
 7. **Public repo, private data.** Never commit spending exports, real notification text with names, interview notes, secrets or `.env` files. Anonymise fixtures (e.g. `[FRIEND A]`).
 8. **No paid AI services** in the product (NFR-20). Notification text comes from local templates.
 9. **Fun never replaces clarity.** Notifications: fact and action first, exact numbers, no shaming for essentials or overspending (D-07, SRS section 6).
@@ -160,6 +161,12 @@ Category remaining = Cᵢ − Nᵢ (may be negative). Left in plan = B − N.
 **Progress.** Covered day = a spending entry or a "No spending today" check-in. Elapsed days = days before today + today if covered. Coverage = covered ÷ elapsed. Daily average = N ÷ elapsed. Everyday rate = (N − bill-linked spending) ÷ elapsed.
 **Forecast** = N + still to come + everyday rate × days left, shown **only from day 14 with coverage ≥ 70%**, as a **range** (R-09): everyday part ×0.85 / ×1.15, low rounded down and high rounded up to RM10 (R-10). Pace = over pace if forecast (middle) > P, or > B while P = 0 (R-11). Estimated "gap fill" entries (0.2) count as spending but not as covered days and not in the everyday rate.
 
+**Mid-month (D-25, R-12).** After the 1st, quick start offers Start fresh (today → month end, budget = what's left) or Catch me up (whole month + one "Spent before Brokely" entry dated the day before). Progress (covered/elapsed days, daily average, everyday rate) counts from `tracking_start_date`; earlier spending still counts in N.
+
+**Money in (D-26).** Transaction type `income`, no lines, never spending, never changes B; if money in during the cycle > B, suggest adding the difference (new revision).
+
+**Wallet check (D-27, R-13).** Optional; student types total money (cash + TNG + bank). Expected = last check + in − out since. In: income, borrow, repayment_received, refund. Out: purchase (full amount), lend, repayment_made. Neither: transfer, write_off. Offer to log a difference; never automatic.
+
 **Debts.** Outstanding = principal − repayments − write-offs ± audited adjustments; never negative without an adjustment. Writing off money owed to you becomes spending in a chosen category (R-07).
 
 **Imports (0.2).** Every TNG capture becomes a pending import and counts for nothing until confirmed (D-02). Person-to-person transfers must be given a type. Unknown wording: never guess an amount. Raw text deleted on confirm/dismiss or after 30 days.
@@ -191,10 +198,10 @@ AGENTS.md            ← this file
 CLAUDE.md            ← points here
 apps/api/src         app.ts (buildApp), server.ts, *.test.ts
 apps/mobile          Expo app (template App.tsx for now); README with run steps and planned structure
-packages/domain/src  money, dates, cycle, bills, plan, transactions, spending, progress (forecast), debts, xp, result (+ tests)
+packages/domain/src  money, dates, cycle, bills, plan, transactions, spending, progress (forecast), debts, wallet, xp, result (+ tests)
 packages/contracts   Zod schemas (entities, sync envelopes, fixtures)
 packages/local-db    phone database schema (Drizzle sqlite-core); tested in Node, used with expo-sqlite
-docs/requirements    PRD v1.4, SRS v1.5 (.docx)
+docs/requirements    PRD v1.5, SRS v1.6 (.docx)
 docs/design          erd.md, sync-api.md, mascot-brief.md, domain-rules.md (BR → code → tests), wireframes.md (Figma link)
 docs/project         decision log, glossary, interview guide
 .github/workflows    ci.yml
@@ -216,7 +223,6 @@ pnpm --filter @brokely/api dev   # run the API locally
 |---|---|
 | Before 0.2 import work | Full TNG notification formats (QR payment, top-up, refund) and whether a transaction ID exists in notification extras (delayed until testing access) |
 | Sync review | Open points in `docs/design/sync-api.md` section 12 |
-| Interviews deferred | Wallet check (D-16): add an optional manual balance check or keep "no balances" strict? Ask when it blocks. |
 | Phase 4 start | Sign-in provider (library inside our API, e.g. Better Auth, vs managed, e.g. Firebase Auth); hosting provider |
 | Before 0.1 testing | Reference test device (NFR-06) |
 | Before 0.2 mascot screen | XP thresholds for the 3 growth stages; priority between moods (e.g. proud vs worried on the same day) |

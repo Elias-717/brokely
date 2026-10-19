@@ -67,10 +67,16 @@ export const planningCycles = sqliteTable(
     ...synced(),
     startDate: text("start_date").notNull(),
     endDateExclusive: text("end_date_exclusive").notNull(), // inclusive end + 1 day (BR-03)
+    // First tracked day; equals start_date unless the student caught up mid-month (R-12, D-25).
+    trackingStartDate: text("tracking_start_date").notNull(),
     status: text("status", { enum: CYCLE_STATUSES }).notNull().default("draft"),
   },
   (t) => [
     check("planning_cycles_dates_check", sql`${t.startDate} < ${t.endDateExclusive}`),
+    check(
+      "planning_cycles_tracking_check",
+      sql`${t.startDate} <= ${t.trackingStartDate} and ${t.trackingStartDate} < ${t.endDateExclusive}`,
+    ),
     check("planning_cycles_status_check", sql`${t.status} in (${inList(CYCLE_STATUSES)})`),
     // No overlap between active/completed cycles (BR-05) is checked by @brokely/domain before
     // saving; SQLite has no exclusion constraints. The server enforces it too (sync-api §6).
@@ -191,6 +197,7 @@ export const TRANSACTION_TYPES = [
   "repayment_received",
   "repayment_made",
   "write_off",
+  "income", // money received; never spending (FR-TXN-11, D-26)
 ] as const;
 
 export const transactions = sqliteTable(
@@ -308,6 +315,22 @@ export const dayCheckIns = sqliteTable(
     uniqueIndex("day_check_ins_live_date_unique")
       .on(t.localDate)
       .where(sql`${t.deletedAt} is null`),
+  ],
+);
+
+/** What the student says they have in total: cash, TNG and bank (FR-WAL-01, D-27). */
+export const walletChecks = sqliteTable(
+  "wallet_checks",
+  {
+    ...synced(),
+    checkedAt: text("checked_at").notNull(),
+    localDate: text("local_date").notNull(),
+    amountSen: integer("amount_sen").notNull(),
+    note: text("note").notNull().default(""),
+  },
+  (t) => [
+    check("wallet_checks_amount_check", sql`${t.amountSen} >= 0`),
+    index("wallet_checks_checked_at_idx").on(t.checkedAt),
   ],
 );
 

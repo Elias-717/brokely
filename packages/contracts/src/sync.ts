@@ -11,6 +11,7 @@ import {
   TransactionEditSchema,
   TransactionSchema,
   UserSettingsSchema,
+  WalletCheckSchema,
 } from "./entities";
 import { IdSchema, InstantSchema, VersionSchema } from "./primitives";
 
@@ -28,6 +29,7 @@ export const entityDataSchemas = {
   debt: DebtSchema,
   debt_adjustment: DebtAdjustmentSchema,
   day_check_in: DayCheckInSchema,
+  wallet_check: WalletCheckSchema,
   user_settings: UserSettingsSchema,
 } as const;
 

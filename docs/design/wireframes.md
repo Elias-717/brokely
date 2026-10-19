@@ -1,7 +1,7 @@
-# Wireframes v0.3 (low fidelity)
+# Wireframes v0.4 (low fidelity)
 
 **Figma file:** [Brokely Wireframes](https://www.figma.com/design/Hm2YNImm4pKtD11ke0iPKb) — page "Wireframes".
-**Status:** v0.2, 2026-10-19. v0.1 drew the 4-step plan wizard as the first thing a student sees; the author found that too heavy, so v0.2 adds a lighter first run (D-23): **Welcome → Quick start → Home with essential cards**. The wizard stays as an optional guided setup. v0.3 applies a usability review (D-24, section "Usability review" below).
+**Status:** v0.2, 2026-10-19. v0.1 drew the 4-step plan wizard as the first thing a student sees; the author found that too heavy, so v0.2 adds a lighter first run (D-23): **Welcome → Quick start → Home with essential cards**. The wizard stays as an optional guided setup. v0.3 applies a usability review (D-24, section "Usability review" below). v0.4 adds starting mid-month (D-25), money in (D-26) and the wallet check (D-27).
 
 These are grey boxes: they fix **structure, words and numbers**, not colours, fonts or art.
 The font (Inter) is a placeholder. The mascot is a dashed slot until the author's pictures land in
@@ -35,14 +35,17 @@ shortfall state (unallocated −RM17.00).
 | Screen | What it shows | Requirement IDs |
 |---|---|---|
 | S1 Welcome | Brokely picture, greeting, "Let's go", "Just track my spending for now" | FR-MAS-08, FR-ACC-01, FR-PLN-04, FR-PLN-19, AC-55 |
-| S1b Quick start | Budget, pre-filled dates, one friendly line, "Start my plan"; link to guided setup | FR-PLN-19, FR-PLN-01, 02, 08, 09, AC-53 |
+| S1c Already spent some this month? | Shown after the 1st: Start fresh / Catch me up | FR-PLN-21, D-25 |
+| S1b Quick start · Start fresh | What's left until month end, pre-filled dates, one friendly line | FR-PLN-19, FR-PLN-21, FR-PLN-01, 02, 08, 09, AC-53, AC-58 |
+| S1d Quick start · Catch me up | Money for the month, already spent (rough), "Mostly on" category, left in plan | FR-PLN-21, BR-29, AC-59, R-12 |
 | S3a Home · day 1 after quick start | One essential card (Add / Not for me / Later), forecast as one quiet line | FR-PLN-20, FR-PLN-05…07, FR-INS-01, FR-INS-06, AC-54, R-11 |
 | S2a Guided setup (optional) · cycle and budget | Budget only, inclusive dates | FR-PLN-01…03, AC-04 |
 | S2b Guided setup (optional) · essentials | How often and how much; repeats become bills | FR-PLN-05, FR-CAT-01, FR-CAT-03 |
 | S2c Guided setup (optional) · suggested amounts | "30 × RM9.00" basis, editable; set-asides | FR-PLN-06, FR-PLN-07, FR-PLN-12, BR-05 |
 | S2d Guided setup (optional) · review | Totals, shortfall acknowledgement, Approve | FR-PLN-08…10, BR-04, AC-04 |
-| S3 Home | Left in plan with pace and forecast on one line, still to come, categories; "Saved · Undo" message | FR-INS-01, 02, 06, 07, 08, FR-TXN-08, FR-TXN-10, FR-CAT-05, FR-MAS-01 |
-| S4 Quick add (sheet) | Opens from the centre +; keypad, category chips, split switch (opens the lines when on) | FR-TXN-01…05, FR-TXN-10, FR-DEBT-05, D-01 |
+| S3 Home | Left in plan with pace and forecast on one line, money in and Wallet check links, plan suggestion when money in passes the budget, still to come, categories; "Saved · Undo" message | FR-INS-01, 02, 06, 07, 08, FR-TXN-08, FR-TXN-10, FR-TXN-11, FR-WAL-01, FR-CAT-05, FR-MAS-01 |
+| S4 Quick add (sheet) | Opens from the centre +; Spent / Money in switch; keypad, category chips, split switch | FR-TXN-01…05, FR-TXN-10, FR-TXN-11, FR-DEBT-05, D-01 |
+| S4c Quick add · Money in | Amount, "From" chips (From family, PTPTN / scholarship, Part-time, Gift, Other) | FR-TXN-11, AC-61, D-26 |
 | S5 Records | By day, filters, check-ins; sync dots only after sign-in | FR-TXN-01, 07, 08, FR-SYNC-06, FR-DEBT-06 |
 | S6 Bills | Upcoming/Paid, Mark paid, Skip, + New bill | FR-CAT-03…07, D-17, BR-06 |
 | S6b Mark paid (sheet) | Editable amount and date, category effect | FR-CAT-05, R-05 |
@@ -50,6 +53,7 @@ shortfall state (unallocated −RM17.00).
 | S7b Write off (sheet) | Category chips, "Keep it open" | FR-DEBT-04, R-07 |
 | S8 Insights | Doughnut with % and RM, daily average with coverage, forecast | FR-INS-03…06, FR-INS-08, R-09, R-10 |
 | S9 More | Current plan (edit = new revision), Bills, Debts, account, time zone, notifications, export, delete | FR-PLN-11, FR-PLN-16, FR-ACC-02, 05–07, FR-NOT-05 |
+| S11 Wallet check (sheet) | Type what you have; compared with your records since the last check; log the difference or leave it | FR-WAL-01…04, BR-30, BR-31, AC-62, AC-63 |
 | S10 Cycle finished | Original → final → actual, still editable, start next cycle | FR-PLN-14, 15, 17, 18, D-18, D-19 |
 
 ## Layout proposals to review (not decisions yet)

@@ -40,6 +40,12 @@ export interface ProgressInput {
   readonly plannedSpendingSen: Sen;
   /** B from the current revision; pace compares with it while P is 0 (R-11). */
   readonly budgetSen: Sen;
+  /**
+   * First day the student tracked this cycle (catch-up start, D-25). Covered days, elapsed days,
+   * daily average and everyday rate count from here; earlier spending still counts in N (R-12).
+   * Defaults to the cycle start.
+   */
+  readonly trackingStart?: LocalDate;
   readonly debtDirectionOf: DebtDirectionOf;
 }
 
@@ -110,9 +116,16 @@ export function computeProgress(input: ProgressInput): Progress {
   const transactions = input.transactions.filter((t) => contains(range, t.localDate));
   const spentSen = totalSpending(spendingByCategory(transactions, input.debtDirectionOf));
 
-  const covered = coveredDates(range, transactions, input.checkIns);
-  const elapsed = elapsedDays(range, today, covered);
-  const daysLeft = lengthInDays(range) - elapsed;
+  // Tracked window [trackingStart, end): the days Brokely has actually watched (BR-29, R-12).
+  const trackingStart =
+    input.trackingStart && contains(range, input.trackingStart) ? input.trackingStart : range.start;
+  const tracked: DateRange = { start: trackingStart, endExclusive: range.endExclusive };
+  const trackedTransactions = transactions.filter((t) => contains(tracked, t.localDate));
+  const trackedSen = totalSpending(spendingByCategory(trackedTransactions, input.debtDirectionOf));
+
+  const covered = coveredDates(tracked, trackedTransactions, input.checkIns);
+  const elapsed = elapsedDays(tracked, today, covered);
+  const daysLeft = lengthInDays(tracked) - elapsed;
   const windowEnd = today >= range.endExclusive ? range.endExclusive : today;
   const coveredDays = [...covered].filter(
     (d) => d < windowEnd || (d === today && covered.has(today)),
@@ -124,9 +137,11 @@ export function computeProgress(input: ProgressInput): Progress {
       .filter((s) => s.status === "paid" && s.transactionId)
       .map((s) => s.transactionId),
   );
-  const nonEveryday = transactions.filter((t) => billTransactionIds.has(t.id) || t.isEstimate);
+  const nonEveryday = trackedTransactions.filter(
+    (t) => billTransactionIds.has(t.id) || t.isEstimate,
+  );
   const nonEverydaySen = totalSpending(spendingByCategory(nonEveryday, input.debtDirectionOf));
-  const everydaySen = sen(spentSen - nonEverydaySen);
+  const everydaySen = sen(trackedSen - nonEverydaySen);
 
   // Still to come = upcoming (not paid, not skipped) items in this cycle (BR-19).
   const stillToComeSen = sumSen(
@@ -145,7 +160,7 @@ export function computeProgress(input: ProgressInput): Progress {
     daysLeft,
     coveredDays,
     coverage: hasElapsed ? { numerator: coveredDays, denominator: elapsed } : null,
-    dailyAverage: hasElapsed ? divideSen(spentSen, elapsed) : null,
+    dailyAverage: hasElapsed ? divideSen(trackedSen, elapsed) : null,
     everydayRate: hasElapsed ? divideSen(everydaySen, elapsed) : null,
     stillToComeSen,
     forecast: gateMet

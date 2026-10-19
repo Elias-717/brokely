@@ -1,4 +1,4 @@
-import { addDays, daysBetween, type LocalDate } from "./dates";
+import { addDays, dayOfMonth, daysBetween, lastDayOfMonth, type LocalDate } from "./dates";
 import { fail, OK, type RuleResult } from "./result";
 
 /**
@@ -74,5 +74,43 @@ export function nextCycleRange(range: DateRange): DateRange {
   return {
     start: range.endExclusive,
     endExclusive: addDays(range.endExclusive, lengthInDays(range)),
+  };
+}
+
+export type MidMonthMode = "fresh" | "catch_up";
+
+export interface MidMonthStart {
+  readonly range: DateRange;
+  /** First day progress counts from (BR-29, R-12). */
+  readonly trackingStart: LocalDate;
+  /** Date for the single "Spent before Brokely" entry; null when starting fresh. */
+  readonly openingEntryDate: LocalDate | null;
+}
+
+/** Catching up only makes sense after the 1st of the month (D-25). */
+export function offersCatchUp(today: LocalDate): boolean {
+  return dayOfMonth(today) > 1;
+}
+
+/**
+ * Mid-month start (FR-PLN-21, D-25):
+ * - fresh: today to the end of the month, budget = what is left to spend;
+ * - catch_up: the whole month, budget = the full amount, plus one opening entry dated the day
+ *   before today so it counts in N but stays outside the tracked days (R-12).
+ */
+export function midMonthStart(today: LocalDate, mode: MidMonthMode): MidMonthStart {
+  const monthEnd = addDays(today, lastDayOfMonth(today) - dayOfMonth(today));
+  if (mode === "fresh" || !offersCatchUp(today)) {
+    return {
+      range: cycleFromInclusive(today, monthEnd),
+      trackingStart: today,
+      openingEntryDate: null,
+    };
+  }
+  const monthStart = addDays(today, 1 - dayOfMonth(today));
+  return {
+    range: cycleFromInclusive(monthStart, monthEnd),
+    trackingStart: today,
+    openingEntryDate: addDays(today, -1),
   };
 }

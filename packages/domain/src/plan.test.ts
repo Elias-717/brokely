@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { sen } from "./money";
+import { txn } from "./test-fixtures";
 import {
   checkCanApprove,
   checkCanCreateDraft,
   checkCanDeleteCategory,
   checkCanEditRevision,
   currentRevision,
+  moneyInSuggestion,
   nextRevisionNo,
   originalRevision,
   planTotals,
@@ -103,5 +105,19 @@ describe("category deletion (BR-28, D-21, AC-27)", () => {
 
   it("allows deleting a category that was never used", () => {
     expect(checkCanDeleteCategory({ allocations: 0, transactionLines: 0 }).ok).toBe(true);
+  });
+});
+
+describe("money in suggests a plan change (FR-TXN-11, D-26, AC-61)", () => {
+  const income = (amount: number) => txn("income", amount, []);
+  it("suggests adding RM100 when RM500 came in against a RM400 budget", () => {
+    expect(moneyInSuggestion([income(30000), income(20000)], sen(40000))).toBe(10000);
+  });
+  it("suggests nothing when money in does not exceed the budget", () => {
+    expect(moneyInSuggestion([income(40000)], sen(40000))).toBe(null);
+    expect(moneyInSuggestion([], sen(40000))).toBe(null);
+  });
+  it("ignores everything that is not money in", () => {
+    expect(moneyInSuggestion([txn("borrow", 90000, [])], sen(40000))).toBe(null);
   });
 });

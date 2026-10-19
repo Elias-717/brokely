@@ -6,7 +6,9 @@ import {
   cycleFromInclusive,
   inclusiveEnd,
   lengthInDays,
+  midMonthStart,
   nextCycleRange,
+  offersCatchUp,
   statusOn,
   type CycleLike,
 } from "./cycle";
@@ -136,5 +138,32 @@ describe("bill dates and suggestions (BR-09, FR-CAT-04, AC-02)", () => {
       "2026-11-22",
     ]);
     expect(billDates({ kind: "once" }, d("2026-12-05"), november)).toEqual([]);
+  });
+});
+
+describe("mid-month start (FR-PLN-21, D-25, AC-58, AC-59)", () => {
+  const today = localDate("2026-11-15");
+
+  it("start fresh: today to the end of the month, tracked from today", () => {
+    const fresh = midMonthStart(today, "fresh");
+    expect(fresh.range).toEqual(
+      cycleFromInclusive(localDate("2026-11-15"), localDate("2026-11-30")),
+    );
+    expect(fresh.trackingStart).toBe("2026-11-15");
+    expect(fresh.openingEntryDate).toBe(null);
+  });
+
+  it("catch me up: the whole month, tracked from today, opening entry the day before", () => {
+    const catchUp = midMonthStart(today, "catch_up");
+    expect(catchUp.range).toEqual(
+      cycleFromInclusive(localDate("2026-11-01"), localDate("2026-11-30")),
+    );
+    expect(catchUp.trackingStart).toBe("2026-11-15");
+    expect(catchUp.openingEntryDate).toBe("2026-11-14");
+  });
+
+  it("offers no catch-up on the 1st (nothing to catch up)", () => {
+    expect(offersCatchUp(localDate("2026-11-01"))).toBe(false);
+    expect(offersCatchUp(today)).toBe(true);
   });
 });

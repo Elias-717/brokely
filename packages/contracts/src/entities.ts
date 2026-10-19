@@ -35,11 +35,16 @@ export const PlanningCycleSchema = z
   .object({
     startDate: LocalDateSchema,
     endDateExclusive: LocalDateSchema, // inclusive end + 1 day (BR-03)
+    trackingStartDate: LocalDateSchema, // first tracked day; = startDate unless caught up (R-12)
     status: CycleStatusSchema,
   })
   .refine((c) => c.startDate < c.endDateExclusive, {
     message: "A cycle must end after it starts",
     path: ["endDateExclusive"],
+  })
+  .refine((c) => c.startDate <= c.trackingStartDate && c.trackingStartDate < c.endDateExclusive, {
+    message: "Tracking must start inside the cycle (BR-29)",
+    path: ["trackingStartDate"],
   });
 export type PlanningCycle = z.infer<typeof PlanningCycleSchema>;
 
@@ -116,6 +121,7 @@ export const TransactionTypeSchema = z.enum([
   "repayment_received",
   "repayment_made",
   "write_off",
+  "income", // money received; never spending (FR-TXN-11, D-26)
 ]);
 export type TransactionType = z.infer<typeof TransactionTypeSchema>;
 
@@ -162,7 +168,8 @@ export const TransactionSchema = z
           ]);
         break;
       case "transfer":
-        if (t.lines.length > 0) fail("A transfer has no lines");
+      case "income":
+        if (t.lines.length > 0) fail(`A ${t.type} has no lines`);
         break;
       default:
         // borrow, lend, repayments and write-offs touch exactly one debt.
@@ -203,6 +210,15 @@ export const DebtAdjustmentSchema = z.object({
 export type DebtAdjustment = z.infer<typeof DebtAdjustmentSchema>;
 
 // ── Progress and settings ───────────────────────────────────────────────────
+
+/** What the student says they have in total: cash, TNG and bank (FR-WAL-01, D-27). */
+export const WalletCheckSchema = z.object({
+  checkedAt: InstantSchema,
+  localDate: LocalDateSchema,
+  amountSen: AllocationSenSchema, // whole sen, may be 0
+  note: NoteSchema,
+});
+export type WalletCheck = z.infer<typeof WalletCheckSchema>;
 
 export const DayCheckInSchema = z.object({ localDate: LocalDateSchema }); // R-01
 export type DayCheckIn = z.infer<typeof DayCheckInSchema>;

@@ -12,6 +12,7 @@ import {
   bills,
   transactionLines,
   transactions,
+  walletChecks,
 } from "./schema";
 import { createTestDb, stamp } from "./test-db";
 
@@ -32,6 +33,7 @@ async function seedPlan(db: TestDb) {
     id: CYCLE,
     startDate: "2026-11-02",
     endDateExclusive: "2026-12-02",
+    trackingStartDate: "2026-11-02",
     status: "active",
     ...stamp,
   });
@@ -220,6 +222,41 @@ describe("phone schema", () => {
       .set({ deletedAt: stamp.createdAt })
       .where(eq(dayCheckIns.id, id(120)));
     await db.insert(dayCheckIns).values({ id: id(122), localDate: "2026-11-03", ...stamp });
+  });
+
+  it("keeps a cycle's tracking start inside the cycle (BR-29, R-12)", async () => {
+    const cycle = (n: number, trackingStartDate: string) => ({
+      id: id(n),
+      startDate: "2027-01-01",
+      endDateExclusive: "2027-02-01",
+      trackingStartDate,
+      status: "draft" as const,
+      ...stamp,
+    });
+    await db.insert(planningCycles).values(cycle(130, "2027-01-15")); // caught up mid-month
+    await expect(db.insert(planningCycles).values(cycle(131, "2026-12-31"))).rejects.toThrow();
+    await expect(db.insert(planningCycles).values(cycle(132, "2027-02-01"))).rejects.toThrow();
+  });
+
+  it("stores income with no lines and wallet checks of zero or more (FR-TXN-11, FR-WAL-01)", async () => {
+    await db.insert(transactions).values({
+      id: id(140),
+      type: "income",
+      amountSen: 60000,
+      occurredAt: "2026-11-02T09:00:00+08:00",
+      localDate: "2026-11-02",
+      note: "Allowance",
+      ...stamp,
+    });
+    const check = (n: number, amountSen: number) => ({
+      id: id(n),
+      checkedAt: "2026-11-16T12:00:00+08:00",
+      localDate: "2026-11-16",
+      amountSen,
+      ...stamp,
+    });
+    await db.insert(walletChecks).values(check(141, 0));
+    await expect(db.insert(walletChecks).values(check(142, -100))).rejects.toThrow();
   });
 
   it("marks new rows as pending sync, version 1 (FR-SYNC-06, D-06)", async () => {
