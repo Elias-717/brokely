@@ -40,8 +40,8 @@ SRS v1.6 (PRD v1.5) includes every decision up to D-27 and R-13; D-28 is layout 
 
 ## 3. Current state (update every session)
 
-- **Date of last update:** 2026-10-19 (Phase 3 session 1)
-- **Phase:** 3 — Offline app **in progress** (started 2026-10-19): repositories, migrations, app shell and S1 Welcome done; next is quick start (S1c/S1b/S1d)
+- **Date of last update:** 2026-10-20 (Phase 3 session 2)
+- **Phase:** 3 — Offline app **in progress** (started 2026-10-19): repositories, migrations, app shell, theme with dark mode, S1 Welcome and quick start (S1c/S1b/S1d) done; next is S3a Home with essential cards
 - **Done:**
   - PRD and SRS v1.1 written, then v1.2; decision log D-01…D-21, R-01…R-10
   - Interview guide written; research on the author's spending data done (kept private, not in repo)
@@ -65,6 +65,8 @@ SRS v1.6 (PRD v1.5) includes every decision up to D-27 and R-13; D-28 is layout 
   - **D-29** (author): only Laundry and Phone & internet cards create a bill (`fixedBill` in `DEFAULT_CATEGORIES`); other cards only set an allocation
   - **D-30** card choices remembered on the phone only; **D-31** visual style = "vintage cartoon" (cream, ink, broccoli green, mustard; Lilita One + Nunito); **D-32** dark mode in 0.1 ("vintage at night"), follows the phone setting. Mockups: claude.ai artifact "Brokely style directions". SRS/PRD need a dark-mode requirement in the next revision
   - First debug build runs on the emulator (Windows build setup in section 12)
+  - Theme (D-31/D-32): light + dark tokens in `apps/mobile/src/ui/theme.ts`, `ThemeProvider` (Light / Dark / Same as phone under More, stored in phone-only `local_prefs`, migration 0001), bundled Lilita One + Nunito (3 weights), sticker cards, stroke tab icons (react-native-svg), expo-system-ui
+  - Quick start S1c/S1b/S1d (`app/quick-start/`), date picker (@react-native-community/datetimepicker), `parseAmount` in domain (typed money to exact sen); shared form pieces in `src/ui/form.tsx`
   - Contracts: `scheduledItemId(billId, dueDate)` = UUIDv5 under `BROKELY_ID_NAMESPACE` (S-05), value pinned by a test; uuid 11.1.0
   - App dependencies via `expo install` (expo-sqlite, expo-router + peers, expo-crypto), drizzle-orm, `@brokely/local-db`, uuid (v7 from expo-crypto bytes). Migration `packages/local-db/drizzle/0000_initial.sql` + `migrations.js` (export `@brokely/local-db/migrations`); a test fails if `schema.ts` changes without `db:generate`. Metro `.sql` + babel inline-import
   - App shell: `app/_layout.tsx` runs migrations first; tabs Home · Records · (+) · Insights · More; + opens `quick-add` modal; first run (no categories) → **S1 Welcome** with `main_design.png`. `CI=1 npx expo export --platform android` bundles (3.2 MB). Not yet run on a phone
@@ -75,9 +77,9 @@ SRS v1.6 (PRD v1.5) includes every decision up to D-27 and R-13; D-28 is layout 
   - **Handoff (2026-10-19):** work moves from the claude.ai cloud workspace to **Claude Code on the author's Windows machine**. Locally the npm registry works, so dependencies can be installed and `pnpm-lock.yaml` updated directly (the "cannot update the lockfile" limitation in section 12 applies only to the cloud workspace).
 - **Next agent tasks (Phase 3 — offline app; exit: all of 0.1 works on one phone, offline, no account):**
   1. **Run on the author's phone** with a development build (`npx expo run:android` or `eas build --profile development --platform android`) to prove migrations + S1 on a real device before building many screens; name the reference device (NFR-06)
-  2. **Screens in this order**, each from its Figma frame (`docs/design/wireframes.md`; S1 = node 9:288, S1b 9:306, S1c 16:330, S1d 16:349): S1c/S1b/S1d quick start (repo: `quickStart`, catch-up `openingSpend`; domain `midMonthStart`) → S3a Home with essential cards (`acceptEssentialCard`; card queue Later/Not for me needs a small phone-only table — schema change + `db:generate`) → S4/S4c quick add with Undo (`recordPurchase`, `recordMoneyIn`, `deleteTransaction`) → S5 Records → S6/S6b Bills + Mark paid → S7/S7b Debts → S8 Insights (`computeProgress`) → S11 Wallet check → S9 More, settings (`user_settings` repo still missing), export/delete → S10 cycle finished. Guided setup S2a–S2d after the main flow. Apply D-31/D-32 first: light + dark tokens in `apps/mobile/src/ui/theme.ts`, bundled fonts, stroke icons
+  2. **Screens in this order**, each from its Figma frame (`docs/design/wireframes.md`; S1 = node 9:288, S1b 9:306, S1c 16:330, S1d 16:349): S3a Home with essential cards (`acceptEssentialCard`; card queue Later/Not for me per cycle in `local_prefs`, D-30) → S4/S4c quick add with Undo (`recordPurchase`, `recordMoneyIn`, `deleteTransaction`) → S5 Records → S6/S6b Bills + Mark paid → S7/S7b Debts → S8 Insights (`computeProgress`) → S11 Wallet check → S9 More, settings (`user_settings` repo still missing), export/delete → S10 cycle finished. Guided setup S2a–S2d after the main flow.
   3. Repositories still missing: user settings, guided-setup draft revisions (D-20, AC-47), start next cycle (AC-48), export
-  4. Later: server database schema (Drizzle + PostgreSQL) before Phase 4; SRS v1.7 / PRD v1.6 (add D-29 to the change record) when interviews happen
+  4. Later: server database schema (Drizzle + PostgreSQL) before Phase 4; SRS v1.7 / PRD v1.6 (add D-29…D-32 to the change record; dark mode is new 0.1 scope) when interviews happen
 - **Open questions:** see section 11
 
 ---
