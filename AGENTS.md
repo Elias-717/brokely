@@ -62,7 +62,7 @@ SRS/PRD v1.2 include every decision up to D-21 and R-10. SRS section 15 is the c
   1. Phase 2: business rules in `packages/domain` (cycles, spending, progress, forecast, debts) test-first from the SRS
   2. Server database schema (Drizzle + PostgreSQL)
   3. Phase 3 setup: wire expo-sqlite + `@brokely/local-db` into the app; generate migrations with `pnpm --filter @brokely/local-db db:generate`
-  4. Phase 1 remainder: low-detail wireframes (the author may sketch first), mascot art brief
+  4. Phase 1 remainder: wireframes in Figma after Phase 2 (the author will connect Figma); mascot art is being drawn by the author from `docs/design/mascot-brief.md`
   5. When interviews happen: SRS/PRD v1.3 with findings
 - **Open questions:** see section 11
 
@@ -187,7 +187,7 @@ packages/domain/src  money.ts (+ tests); future: cycle.ts, spending.ts, forecast
 packages/contracts   Zod schemas (entities, sync envelopes, fixtures)
 packages/local-db    phone database schema (Drizzle sqlite-core); tested in Node, used with expo-sqlite
 docs/requirements    PRD, SRS v1.2 (.docx)
-docs/design          erd.md, sync-api.md
+docs/design          erd.md, sync-api.md, mascot-brief.md
 docs/project         decision log, glossary, interview guide
 .github/workflows    ci.yml
 ```
