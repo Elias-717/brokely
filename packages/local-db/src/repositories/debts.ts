@@ -9,7 +9,7 @@ import {
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { debtAdjustments, debts } from "../schema";
 import { RepoError, write, type Db, type RepoContext, type WriteScope } from "./context";
-import { enqueueUpsert, freshRow } from "./outbox";
+import { enqueueDelete, enqueueUpsert, freshRow, touched } from "./outbox";
 import {
   debtAdjustmentsOf,
   recordTransactionIn,
@@ -231,5 +231,27 @@ export function adjustDebt(
     });
     scope.tx.insert(debtAdjustments).values(row).run();
     return { id: row.id };
+  });
+}
+
+/**
+ * Removes a debt that has no transactions left, e.g. after Undo of the lend, borrow or split
+ * that created it (D-38). A debt with history is never deleted; it settles or is written off.
+ */
+export function deleteDebt(ctx: RepoContext, id: string) {
+  return write(ctx, (scope) => {
+    const debt = liveDebt(scope.tx, id);
+    if (transactionsForDebts(scope.tx, [id]).length > 0) {
+      throw new RepoError(
+        "VALIDATION_FAILED",
+        "This debt has payments on it, so it can't be removed",
+      );
+    }
+    enqueueDelete(scope, "debt", id, debt.version);
+    scope.tx
+      .update(debts)
+      .set({ deletedAt: scope.at, ...touched(scope.at) })
+      .where(eq(debts.id, id))
+      .run();
   });
 }

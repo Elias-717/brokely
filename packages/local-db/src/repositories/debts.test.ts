@@ -7,6 +7,7 @@ import type { RepoContext } from "./context";
 import {
   adjustDebt,
   createDebt,
+  deleteDebt,
   getDebt,
   listDebts,
   recordRepayment,
@@ -184,5 +185,16 @@ describe("debt repository", () => {
       ok: false,
       code: "DEBT_EXCEEDS_OUTSTANDING",
     });
+  });
+
+  it("Undo of a lend removes the transaction, then the empty debt, with delete markers (D-38)", () => {
+    const { debtId, transactionId } = debt("owed_to_me", 2000);
+
+    expect(deleteDebt(ctx, debtId)).toMatchObject({ ok: false, code: "VALIDATION_FAILED" });
+    expect(deleteTransaction(ctx, transactionId).ok).toBe(true);
+    expect(deleteDebt(ctx, debtId).ok).toBe(true);
+
+    expect(listDebts(ctx.db)).toHaveLength(0);
+    expect(outbox().slice(-1)[0]).toMatchObject({ entity: "debt", op: "delete", baseVersion: 1 });
   });
 });
