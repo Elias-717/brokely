@@ -66,7 +66,7 @@ SRS v1.3 (PRD v1.2) includes every decision up to D-22 and R-10. SRS section 15 
   2. Phase 3 setup: wire expo-sqlite + `@brokely/local-db` into the app (needs a lockfile update by the user); generate migrations with `pnpm --filter @brokely/local-db db:generate`; repositories that write record + outbox in one transaction
   3. Server database schema (Drizzle + PostgreSQL), before Phase 4
   4. Mascot art is being drawn by the author from `docs/design/mascot-brief.md` (PNGs go to `apps/mobile/assets/mascot/`)
-  5. When interviews happen: SRS/PRD v1.3 with findings
+  5. When interviews happen: SRS v1.4 / PRD v1.3 with findings
 - **Open questions:** see section 11
 
 ---
