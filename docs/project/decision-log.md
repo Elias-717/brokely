@@ -27,6 +27,7 @@ Decisions D-01 to D-09 and R-01 to R-08 were taken on 19 Oct 2026 while reviewin
 | D-19 | Editing completed cycles | **Everything stays editable** in a completed cycle: transactions and the plan. | Plan edits still create a new revision (original kept, D-03); the end-of-cycle summary recomputes with final = latest revision. XP is never re-earned by edits (BR-25). |
 | D-20 | Draft revisions | **At most one unapproved draft revision per cycle**; discarded if not approved. | FR-PLN-16, AC-47 (SRS v1.2). |
 | D-21 | Category deletion | A category with any allocation or transaction can **only be archived**, never deleted. | FR-CAT-08, BR-28, AC-27 (SRS v1.2). |
+| D-22 | Default categories (19 Oct) | **Essential:** Meals, Groceries & toiletries, Laundry, Transport, Phone & internet, Health. **Optional:** Snacks & treats, Fun & trips, Shopping, Gifts & charity, Other. **Set-asides:** Emergency, Savings. The author delegated the choice to the evidence. | Based on the author's 6-month data (Food 204 entries; Shopping/stock-ups 25; laundry 10; trips, health, phone/internet, gifts present) and competitor Oink's set (Food, Transport, Utilities, Entertainment, Savings, Shopping, Bills, Health, Other). No "Bills" category (bills are a feature) and no "Uncategorized" (pending imports wait for review instead). Debts are not categories. FR-CAT-01 and AC-52 in SRS v1.3. Revisit after interviews. |
 
 ## Calculation rules
 
