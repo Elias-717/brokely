@@ -1,7 +1,7 @@
 {
   "name": "@brokely/mobile",
   "version": "1.0.0",
-  "main": "index.ts",
+  "main": "expo-router/entry",
   "dependencies": {
     "@brokely/contracts": "workspace:*",
     "@brokely/domain": "workspace:*",
