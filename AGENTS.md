@@ -25,8 +25,8 @@ and reviewable, and prefer clarity over cleverness. Ask the user before making p
 
 | What | Where |
 |---|---|
-| Behaviour, formulas (BR-xx), data model, quality targets (NFR-xx), acceptance tests (AC-xx) | `docs/requirements/Brokely_Software_Requirements_Specification_v1.4.docx` |
-| Why, users, scope per release, success measures | `docs/requirements/Brokely_Product_Requirements_Document_v1.3.docx` |
+| Behaviour, formulas (BR-xx), data model, quality targets (NFR-xx), acceptance tests (AC-xx) | `docs/requirements/Brokely_Software_Requirements_Specification_v1.5.docx` |
+| Why, users, scope per release, success measures | `docs/requirements/Brokely_Product_Requirements_Document_v1.4.docx` |
 | Every decision with its consequences (D-xx, R-xx) | `docs/project/decision-log.md` |
 | Data model and sync API | `docs/design/erd.md`, `docs/design/sync-api.md` |
 | Screens (wireframes) | `docs/design/wireframes.md` → Figma file `Hm2YNImm4pKtD11ke0iPKb` |
@@ -34,14 +34,14 @@ and reviewable, and prefer clarity over cleverness. Ask the user before making p
 | Student interview script | `docs/project/interview-guide.md` |
 
 To read a .docx: `pandoc -t markdown <file>`.
-SRS v1.4 (PRD v1.3) includes every decision up to D-23 and R-11. SRS section 15 is the change record: **whenever a requirement changes, add a row there** (ID, type, what changed, decision) so traceability is never lost. Requirement IDs are never reused.
+SRS v1.5 (PRD v1.4) includes every decision up to D-24 and R-11. SRS section 15 is the change record: **whenever a requirement changes, add a row there** (ID, type, what changed, decision) so traceability is never lost. Requirement IDs are never reused.
 
 ---
 
 ## 3. Current state (update every session)
 
 - **Date of last update:** 2026-10-19
-- **Phase:** 2 — Domain core done (2026-10-19); wireframes v0.2 drawn (lighter first run, D-23), waiting for the author's review; next is 3 — Offline app
+- **Phase:** 2 — Domain core done (2026-10-19); wireframes v0.3 drawn and usability-reviewed (D-23, D-24); next is 3 — Offline app
 - **Done:**
   - PRD and SRS v1.1 written, then v1.2; decision log D-01…D-21, R-01…R-10
   - Interview guide written; research on the author's spending data done (kept private, not in repo)
@@ -57,17 +57,18 @@ SRS v1.4 (PRD v1.3) includes every decision up to D-23 and R-11. SRS section 15 
   - Expo app generated in `apps/mobile` and pushed (SDK 58, blank-typescript, dev client, EAS linked; package `com.elias717.brokely`); not yet run on a phone
   - **Phase 2 domain core:** `packages/domain` implements BR-01…BR-28 (dates, cycles, bills, plan, spending, progress/forecast, debts, XP) with 85 tests; every BR is covered (see `docs/design/domain-rules.md`). New sync error code `DEBT_EXCEEDS_OUTSTANDING` (contracts + sync-api §6)
   - Phone database schema: `packages/local-db` (Drizzle sqlite-core, driver-free) with 11 constraint tests on in-memory better-sqlite3 (merged via PR #2; drizzle-orm 0.44.7, drizzle-kit 0.31.11, better-sqlite3 12.11.1)
-  - Wireframes v0.2: 15 low-fidelity screens in Figma, file `Hm2YNImm4pKtD11ke0iPKb`; screen → ID map, checked example numbers and 5 layout proposals in `docs/design/wireframes.md`
+  - Wireframes v0.3: 17 low-fidelity screens in Figma, file `Hm2YNImm4pKtD11ke0iPKb`; screen → ID map, checked example numbers and 5 layout proposals in `docs/design/wireframes.md`
   - **D-23 lighter first run** (author's request): Welcome with one Brokely picture (0.1) → Quick start (budget + dates) → Home with essential cards one at a time; guided setup optional. **R-11**: pace compares with the budget while P = 0 (`paceTarget`, 89 domain tests). SRS v1.4 (FR-PLN-19/20, FR-MAS-08, AC-53…56), PRD v1.3 (PRD-20), glossary v1.3, mascot brief asks for `brokely_welcome.png` first
+  - **D-24 usability review** of the wireframes (U-01…U-11 in `docs/design/wireframes.md`): centre + tab bar (Home · Records · + · Insights · More), Undo after save (FR-TXN-10, AC-57), one-line quick start, Later on essential cards, 48 dp targets. SRS v1.5, PRD v1.4
 - **Deferred (user decision, 2026-10-19):**
   - Student interviews: skipped for now because of time. Decisions that waited on them (full default category list, D-12 split, D-16 wallet check) stay provisional; ask the user when one becomes blocking.
   - TNG samples (QR payment, top-up, refund, notification extras): delayed until the author has testing access. 0.2 import design stays provisional.
 - **Next agent tasks:**
-  1. Author reviews wireframes v0.2 and the 5 layout proposals in `docs/design/wireframes.md`; record confirmed ones as decisions
+  1. Author reviews wireframes v0.3 and the 4 remaining layout proposals in `docs/design/wireframes.md`; record confirmed ones as decisions
   2. Phase 3 setup: wire expo-sqlite + `@brokely/local-db` into the app (needs a lockfile update by the user); generate migrations with `pnpm --filter @brokely/local-db db:generate`; repositories that write record + outbox in one transaction
   3. Server database schema (Drizzle + PostgreSQL), before Phase 4
   4. Mascot art is being drawn by the author from `docs/design/mascot-brief.md` (PNGs go to `apps/mobile/assets/mascot/`); `brokely_welcome.png` is needed first (0.1 welcome screen)
-  5. When interviews happen: SRS v1.5 / PRD v1.4 with findings
+  5. When interviews happen: SRS v1.6 / PRD v1.5 with findings
 - **Open questions:** see section 11
 
 ---
@@ -141,7 +142,8 @@ Workspace packages export TypeScript source directly (`"exports": "./src/index.t
 
 ## 8. Domain quick reference (full rules: SRS section 5 + decision log)
 
-**First run (D-23).** Welcome (one Brokely picture, fixed greeting, never promise "you won't go broke") → Quick start (budget + dates, approve) → Home suggests essentials one card at a time; each accepted card = new revision. Guided setup optional.
+**First run (D-23).** Welcome (one Brokely picture, fixed greeting, never promise "you won't go broke") → Quick start (budget + dates, approve) → Home suggests essentials one card at a time (Add / Not for me / Later); each accepted card = new revision. Guided setup optional.
+**Navigation (D-24).** Tabs: Home · Records · (+) · Insights · More. Quick add from every tab; Undo after save, no confirm dialogs. Touch targets ≥ 48 dp (NFR-07).
 
 **Plan.** B = budget, Cᵢ = category allocations, Sⱼ = set-asides (a category of kind `set_aside`).
 Planned spending P = ΣCᵢ. Unallocated U = B − (ΣCᵢ + ΣSⱼ); U < 0 is a shortfall that must be acknowledged.
@@ -192,7 +194,7 @@ apps/mobile          Expo app (template App.tsx for now); README with run steps 
 packages/domain/src  money, dates, cycle, bills, plan, transactions, spending, progress (forecast), debts, xp, result (+ tests)
 packages/contracts   Zod schemas (entities, sync envelopes, fixtures)
 packages/local-db    phone database schema (Drizzle sqlite-core); tested in Node, used with expo-sqlite
-docs/requirements    PRD v1.3, SRS v1.4 (.docx)
+docs/requirements    PRD v1.4, SRS v1.5 (.docx)
 docs/design          erd.md, sync-api.md, mascot-brief.md, domain-rules.md (BR → code → tests), wireframes.md (Figma link)
 docs/project         decision log, glossary, interview guide
 .github/workflows    ci.yml
