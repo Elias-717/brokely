@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { localDate } from "./dates";
 import { sen } from "./money";
 import { cat, debtLine, purchase, spend, txn } from "./test-fixtures";
 import type { Transaction } from "./transactions";
