@@ -1,50 +1,72 @@
+import { LilitaOne_400Regular } from "@expo-google-fonts/lilita-one/400Regular";
+import { Nunito_500Medium } from "@expo-google-fonts/nunito/500Medium";
+import { Nunito_700Bold } from "@expo-google-fonts/nunito/700Bold";
+import { Nunito_800ExtraBold } from "@expo-google-fonts/nunito/800ExtraBold";
 import migrations from "@brokely/local-db/migrations";
 import { useMigrations } from "drizzle-orm/expo-sqlite/migrator";
+import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, Text, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { db } from "../src/db/client";
-import { Body, Screen, Title } from "../src/ui/components";
-import { colors } from "../src/ui/theme";
+import { ThemeProvider, useTheme } from "../src/ui/theme-context";
 
 /**
- * App start: bring the phone database up to the latest schema before any screen can read it
- * (FR-SYNC-02). Migrations run once per new version and are fast on later starts.
+ * App start: bring the phone database up to the latest schema (FR-SYNC-02) and load the bundled
+ * fonts (D-31) before any screen renders. Only the three weights we use are bundled (NFR-19).
  */
 export default function RootLayout() {
   const { success, error } = useMigrations(db, migrations);
+  const [fontsLoaded] = useFonts({
+    LilitaOne_400Regular,
+    Nunito_500Medium,
+    Nunito_700Bold,
+    Nunito_800ExtraBold,
+  });
 
   if (error) {
+    // Plain styling on purpose: the theme reads the database, which just failed.
     return (
-      <SafeAreaProvider>
-        <Screen>
-          <Title>Brokely couldn't open your data</Title>
-          <Body>
-            Nothing was changed. Please restart the app; if this keeps happening, tell us:
-          </Body>
-          <Body muted>{error.message}</Body>
-        </Screen>
-      </SafeAreaProvider>
+      <View style={{ flex: 1, padding: 24, justifyContent: "center", gap: 12 }}>
+        <Text style={{ fontSize: 22, fontWeight: "700" }}>Brokely couldn't open your data</Text>
+        <Text style={{ fontSize: 16 }}>
+          Nothing was changed. Please restart the app; if this keeps happening, tell us:
+        </Text>
+        <Text style={{ fontSize: 14, color: "#555" }}>{error.message}</Text>
+      </View>
     );
   }
-  if (!success) {
+  if (!success || !fontsLoaded) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-        <ActivityIndicator color={colors.primary} />
+        <ActivityIndicator />
       </View>
     );
   }
 
   return (
     <SafeAreaProvider>
-      <Stack screenOptions={{ headerShown: false }}>
+      <ThemeProvider>
+        <AppStack />
+      </ThemeProvider>
+    </SafeAreaProvider>
+  );
+}
+
+function AppStack() {
+  const { colors, scheme } = useTheme();
+  return (
+    <>
+      <Stack
+        screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}
+      >
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="welcome" />
         <Stack.Screen name="quick-start" />
         <Stack.Screen name="quick-add" options={{ presentation: "modal" }} />
       </Stack>
-      <StatusBar style="dark" />
-    </SafeAreaProvider>
+      <StatusBar style={scheme === "dark" ? "light" : "dark"} />
+    </>
   );
 }

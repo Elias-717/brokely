@@ -6,6 +6,8 @@
     "@brokely/contracts": "workspace:*",
     "@brokely/domain": "workspace:*",
     "@brokely/local-db": "workspace:*",
+    "@expo-google-fonts/lilita-one": "^0.4.1",
+    "@expo-google-fonts/nunito": "^0.4.2",
     "drizzle-orm": "^0.44.7",
     "expo": "~58.0.14",
     "expo-constants": "~58.0.12",
@@ -16,10 +18,12 @@
     "expo-router": "~58.0.23",
     "expo-sqlite": "~58.0.13",
     "expo-status-bar": "~58.0.3",
+    "expo-system-ui": "~58.0.6",
     "react": "19.3.0",
     "react-native": "0.88.0",
     "react-native-safe-area-context": "~5.10.1",
     "react-native-screens": "~4.30.0",
+    "react-native-svg": "15.16.0",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
