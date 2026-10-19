@@ -159,6 +159,7 @@ The same `packages/domain` functions run on the phone before saving and on the s
 | `DRAFT_REVISION_EXISTS` | One unapproved draft revision per cycle | FR-PLN-16 |
 | `SHORTFALL_NOT_ACKNOWLEDGED` | Approval with U < 0 needs acknowledgement | FR-PLN-10 |
 | `CATEGORY_IN_USE` | A used category can only be archived, not deleted | FR-CAT-08, BR-28 |
+| `DEBT_EXCEEDS_OUTSTANDING` | A repayment or write-off can't take a debt below zero without an adjustment | BR-22 |
 | `REFERENCE_MISSING` | Referenced row unknown or deleted | — |
 | `NOT_FOUND` | Update/delete of an unknown row, or another user's row | FR-ACC-04 |
 
