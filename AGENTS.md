@@ -64,11 +64,15 @@ SRS v1.6 (PRD v1.5) includes every decision up to D-27 and R-13; D-28 is layout 
 - **Deferred (user decision, 2026-10-19):**
   - Student interviews: skipped for now because of time. Decisions that waited on them (D-12 Meals / Snacks split) stay provisional; categories (D-22) and wallet check (D-27) were decided early by the author; ask the user when one becomes blocking.
   - TNG samples (QR payment, top-up, refund, notification extras): delayed until the author has testing access. 0.2 import design stays provisional.
-- **Next agent tasks:**
-  1. Phase 3 setup: wire expo-sqlite + `@brokely/local-db` into the app (needs a lockfile update by the user); generate migrations with `pnpm --filter @brokely/local-db db:generate`; repositories that write record + outbox in one transaction
-  2. Server database schema (Drizzle + PostgreSQL), before Phase 4
-  3. Mascot art is being drawn by the author from `docs/design/mascot-brief.md` (PNGs go to `apps/mobile/assets/mascot/`); `brokely_welcome.png` is needed first (0.1 welcome screen)
-  4. When interviews happen: SRS v1.7 / PRD v1.6 with findings
+  - **Mascot art delivered** (commit 3b535fb): `apps/mobile/assets/mascot/` has all 12 pictures `brokely_s{1-3}_{happy,worried,proud,sleepy}.png` plus `main_design.png`. **The 0.1 welcome screen uses `main_design.png`** (author's choice; replaces the planned `brokely_welcome.png`). Total is ~15 MB of PNG: convert to WebP / resize (≈512 px) before release to meet the ≤ 5 MB budget (NFR-19); keep the PNG sources.
+  - **Handoff (2026-10-19):** work moves from the claude.ai cloud workspace to **Claude Code on the author's Windows machine**. Locally the npm registry works, so dependencies can be installed and `pnpm-lock.yaml` updated directly (the "cannot update the lockfile" limitation in section 12 applies only to the cloud workspace).
+- **Next agent tasks (Phase 3 — offline app; exit: all of 0.1 works on one phone, offline, no account):**
+  1. **Repositories in `packages/local-db`** (no new deps): one function per user action (create/edit/delete transaction with lines, approve plan/revision, accept essential card, mark bill paid, check-in, wallet check, money in, debt actions). Each writes the record(s) **and** an outbox operation in one `db.transaction` (rule 5; outbox shape in `docs/design/sync-api.md`); validate with `@brokely/domain` rules first. Use the sync drizzle API so the same code runs on better-sqlite3 (tests) and expo-sqlite (phone). Tests first, IDs in names.
+  2. **App dependencies** (on a branch, then merge): in `apps/mobile` run `npx expo install expo-sqlite expo-router react-native-safe-area-context react-native-screens expo-linking expo-constants expo-font`, add `drizzle-orm`, `@brokely/local-db` (workspace), a UUIDv7 generator (e.g. `uuidv7`); drizzle-kit migrations for Expo (`driver: "expo"` in `packages/local-db/drizzle.config.ts`, `pnpm --filter @brokely/local-db db:generate`, plus babel inline-import / metro `sql` extension as the Drizzle Expo docs say). Commit the lockfile; CI must stay green.
+  3. **Open the DB and run migrations at app start**; switch the app entry to Expo Router with the tab layout Home · Records · (+) · Insights · More (D-24).
+  4. **Screens in this order**, each from its Figma frame (`docs/design/wireframes.md` lists every screen with its IDs): S1 Welcome (main_design.png + greeting) → S1c/S1b/S1d quick start incl. Start fresh / Catch me up → S3a Home with essential cards → S4/S4c quick add with Undo → S5 Records → S6/S6b Bills + Mark paid → S7/S7b Debts → S8 Insights → S11 Wallet check → S9 More, settings, export/delete → S10 cycle finished. Guided setup S2a–S2d after the main flow. Visual style (colours, fonts) is not decided yet: ask the author before polishing, keep the grey wireframe look until then.
+  5. First run on the author's phone with a development build (`eas build --profile development --platform android` or `npx expo run:android`); name the reference device (NFR-06).
+  6. Later: server database schema (Drizzle + PostgreSQL) before Phase 4; SRS v1.7 / PRD v1.6 when interviews happen.
 - **Open questions:** see section 11
 
 ---
@@ -232,7 +236,7 @@ pnpm --filter @brokely/api dev   # run the API locally
 ## 12. Things that went wrong before (avoid repeating)
 
 - This cloud workspace may not reach the npm registry. Local copies exist: Prettier at `/opt/node-tools/node_modules/.bin/prettier`, zod 3.25.76 at `/opt/npm-tools/node_modules/zod`, global `tsc` and `tsx`. To test without installing: symlink `node_modules/zod`, add a tiny `node_modules/vitest` shim over `node:test`, then run `tsx --test src/*.test.ts`. typescript-eslint is not available locally, so lint is verified by CI.
-- This workspace cannot update `pnpm-lock.yaml` (no registry). When a change adds dependencies, push it on a branch and ask the user to run `pnpm install` there and push the lockfile; CI uses `--frozen-lockfile`.
+- The claude.ai cloud workspace cannot update `pnpm-lock.yaml` (no registry); on the author's machine (Claude Code) just install normally. When a change adds dependencies, push it on a branch and ask the user to run `pnpm install` there and push the lockfile; CI uses `--frozen-lockfile`.
 - pnpm 10 skips dependency build scripts unless listed in `onlyBuiltDependencies` (`pnpm-workspace.yaml`); better-sqlite3 needs it.
 - On the author's Windows machine, `corepack enable` fails (no admin rights for Program Files). pnpm is installed with `npm install -g pnpm@<version from package.json>` instead.
 - The first Vitest run on Windows can time out (antivirus scanning fresh `node_modules`); re-run before debugging.

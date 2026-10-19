@@ -31,6 +31,10 @@ students feel broke, and Brokely helps their money grow by helping them plan.
 | Proud | 3+ day logging streak | Chest out, sparkles or a small flame |
 | Sleepy | No logged day for 3+ days | Half-closed eyes, "zzz" |
 
+## Delivered (19 Oct)
+
+All 12 pictures and `main_design.png` are in `apps/mobile/assets/mascot/`. The author chose **`main_design.png` for the 0.1 welcome screen** instead of a separate `brokely_welcome.png`. Sizes are ~1250 px PNGs (~15 MB total): resize and convert to WebP before release (NFR-19, ≤ 5 MB).
+
 ## Needed first, for 0.1: the welcome picture (D-23, FR-MAS-08)
 
 One extra picture is needed **before** the 12 above, because it ships in 0.1 on the first-run welcome screen:
