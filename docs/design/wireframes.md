@@ -1,7 +1,7 @@
-# Wireframes v0.4 (low fidelity)
+# Wireframes v0.5 (low fidelity)
 
 **Figma file:** [Brokely Wireframes](https://www.figma.com/design/Hm2YNImm4pKtD11ke0iPKb) — page "Wireframes".
-**Status:** v0.2, 2026-10-19. v0.1 drew the 4-step plan wizard as the first thing a student sees; the author found that too heavy, so v0.2 adds a lighter first run (D-23): **Welcome → Quick start → Home with essential cards**. The wizard stays as an optional guided setup. v0.3 applies a usability review (D-24, section "Usability review" below). v0.4 adds starting mid-month (D-25), money in (D-26) and the wallet check (D-27).
+**Status:** v0.2, 2026-10-19. v0.1 drew the 4-step plan wizard as the first thing a student sees; the author found that too heavy, so v0.2 adds a lighter first run (D-23): **Welcome → Quick start → Home with essential cards**. The wizard stays as an optional guided setup. v0.3 applies a usability review (D-24, section "Usability review" below). v0.4 adds starting mid-month (D-25), money in (D-26) and the wallet check (D-27). v0.5 applies the author's layout choices (D-28).
 
 These are grey boxes: they fix **structure, words and numbers**, not colours, fonts or art.
 The font (Inter) is a placeholder. The mascot is a dashed slot until the author's pictures land in
@@ -42,7 +42,7 @@ shortfall state (unallocated −RM17.00).
 | S2a Guided setup (optional) · cycle and budget | Budget only, inclusive dates | FR-PLN-01…03, AC-04 |
 | S2b Guided setup (optional) · essentials | How often and how much; repeats become bills | FR-PLN-05, FR-CAT-01, FR-CAT-03 |
 | S2c Guided setup (optional) · suggested amounts | "30 × RM9.00" basis, editable; set-asides | FR-PLN-06, FR-PLN-07, FR-PLN-12, BR-05 |
-| S2d Guided setup (optional) · review | Totals, shortfall acknowledgement, Approve | FR-PLN-08…10, BR-04, AC-04 |
+| S2d Guided setup (optional) · review | Totals, shortfall warning, Approve asks "Approve anyway?" | FR-PLN-08…10, BR-04, AC-04 |
 | S3 Home | Left in plan with pace and forecast on one line, money in and Wallet check links, plan suggestion when money in passes the budget, still to come, categories; "Saved · Undo" message | FR-INS-01, 02, 06, 07, 08, FR-TXN-08, FR-TXN-10, FR-TXN-11, FR-WAL-01, FR-CAT-05, FR-MAS-01 |
 | S4 Quick add (sheet) | Opens from the centre +; Spent / Money in switch; keypad, category chips, split switch | FR-TXN-01…05, FR-TXN-10, FR-TXN-11, FR-DEBT-05, D-01 |
 | S4c Quick add · Money in | Amount, "From" chips (From family, PTPTN / scholarship, Part-time, Gift, Other) | FR-TXN-11, AC-61, D-26 |
@@ -52,19 +52,18 @@ shortfall state (unallocated −RM17.00).
 | S7 Debts | Owed to me / I owe, repayments, Write off | FR-DEBT-01…06, R-07 |
 | S7b Write off (sheet) | Category chips, "Keep it open" | FR-DEBT-04, R-07 |
 | S8 Insights | Doughnut with % and RM, daily average with coverage, forecast | FR-INS-03…06, FR-INS-08, R-09, R-10 |
-| S9 More | Current plan (edit = new revision), Bills, Debts, account, time zone, notifications, export, delete | FR-PLN-11, FR-PLN-16, FR-ACC-02, 05–07, FR-NOT-05 |
+| S9 More | Current plan (edit = new revision), Brokely, Wallet check, Bills, Debts, account, settings, your data (export or delete) | FR-PLN-11, FR-PLN-16, FR-ACC-02, 05–07, FR-NOT-05 |
 | S11 Wallet check (sheet) | Type what you have; compared with your records since the last check; log the difference or leave it | FR-WAL-01…04, BR-30, BR-31, AC-62, AC-63 |
+| S12 Brokely (0.2) | Mascot, stage, mood, XP bar, streak | FR-MAS-01…06, BR-24…26 |
 | S10 Cycle finished | Original → final → actual, still editable, start next cycle | FR-PLN-14, 15, 17, 18, D-18, D-19 |
 
-## Layout proposals to review (not decisions yet)
-
-These are wireframe choices, not product decisions. Confirm or change them; confirmed ones go in the decision log.
+## Layout choices (all decided)
 
 1. ~~Tab bar~~ — **decided (D-24):** Home · Records · (+) · Insights · More. Bills and Debts open from More (and Bills from Home's "Still to come").
-2. **Quick add is a bottom sheet** with a keypad and category chips, purchase by default; other types (refund, transfer, borrow, lend) sit behind a type switch not drawn yet.
-3. **Shortfall (guided setup only; quick start can't have one):** Approve stays disabled until a checkbox "I understand my plan is over budget" is ticked.
-4. **Mascot on Home** sits beside "Left in plan" (top right), hidden when the student turns it off.
-5. **Forecast label:** on Home it is one line under "Left in plan" ("On pace · forecast RM190 – RM220"); before the gate a quiet "Forecast shows from day 14". Insights keeps the full card.
+2. **Quick add** — decided (D-28): a sheet with keypad and category chips; switch Spent \| Money in \| More (More = refund, transfer, lend, borrow).
+3. **Shortfall** — decided (D-28): no tick box; Approve asks once "Your plan is RM17.00 over budget. Approve anyway?" (guided setup only; quick start can't have a shortfall).
+4. **Mascot** — decided (D-28): small at the top right of Home and its own Brokely screen (S12), opened from More or by tapping it (0.2); hidden when the student turns it off.
+5. **Forecast** — decided (D-28): on Home it is one line under "Left in plan" ("On pace · forecast RM190 – RM220"); before the gate a quiet "Forecast shows from day 14". Insights keeps the full card.
 
 ## Usability review (v0.3, 2026-10-19)
 

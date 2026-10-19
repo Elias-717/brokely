@@ -34,14 +34,14 @@ and reviewable, and prefer clarity over cleverness. Ask the user before making p
 | Student interview script | `docs/project/interview-guide.md` |
 
 To read a .docx: `pandoc -t markdown <file>`.
-SRS v1.6 (PRD v1.5) includes every decision up to D-27 and R-13. SRS section 15 is the change record: **whenever a requirement changes, add a row there** (ID, type, what changed, decision) so traceability is never lost. Requirement IDs are never reused.
+SRS v1.6 (PRD v1.5) includes every decision up to D-27 and R-13; D-28 is layout only (no requirement change). SRS section 15 is the change record: **whenever a requirement changes, add a row there** (ID, type, what changed, decision) so traceability is never lost. Requirement IDs are never reused.
 
 ---
 
 ## 3. Current state (update every session)
 
 - **Date of last update:** 2026-10-19
-- **Phase:** 2 — Domain core done (2026-10-19); wireframes v0.4 (21 screens) drawn and usability-reviewed (D-23…D-27); next is 3 — Offline app
+- **Phase:** 2 — Domain core done (2026-10-19); wireframes v0.5 (22 screens) drawn, usability-reviewed and all layout choices decided (D-23…D-28); next is 3 — Offline app
 - **Done:**
   - PRD and SRS v1.1 written, then v1.2; decision log D-01…D-21, R-01…R-10
   - Interview guide written; research on the author's spending data done (kept private, not in repo)
@@ -57,7 +57,7 @@ SRS v1.6 (PRD v1.5) includes every decision up to D-27 and R-13. SRS section 15 
   - Expo app generated in `apps/mobile` and pushed (SDK 58, blank-typescript, dev client, EAS linked; package `com.elias717.brokely`); not yet run on a phone
   - **Phase 2 domain core:** `packages/domain` implements BR-01…BR-28 (dates, cycles, bills, plan, spending, progress/forecast, debts, XP) with 85 tests; every BR is covered (see `docs/design/domain-rules.md`). New sync error code `DEBT_EXCEEDS_OUTSTANDING` (contracts + sync-api §6)
   - Phone database schema: `packages/local-db` (Drizzle sqlite-core, driver-free) with 11 constraint tests on in-memory better-sqlite3 (merged via PR #2; drizzle-orm 0.44.7, drizzle-kit 0.31.11, better-sqlite3 12.11.1)
-  - Wireframes v0.4: 21 low-fidelity screens in Figma, file `Hm2YNImm4pKtD11ke0iPKb`; screen → ID map, checked example numbers and 5 layout proposals in `docs/design/wireframes.md`
+  - Wireframes v0.5: 22 low-fidelity screens in Figma, file `Hm2YNImm4pKtD11ke0iPKb`; screen → ID map and checked example numbers in `docs/design/wireframes.md`; **D-28** layout choices (quick add Spent | Money in | More; shortfall asks "Approve anyway?"; mascot small on Home + own Brokely screen; forecast one line on Home)
   - **D-23 lighter first run** (author's request): Welcome with one Brokely picture (0.1) → Quick start (budget + dates) → Home with essential cards one at a time; guided setup optional. **R-11**: pace compares with the budget while P = 0 (`paceTarget`, 89 domain tests). SRS v1.4 (FR-PLN-19/20, FR-MAS-08, AC-53…56), PRD v1.3 (PRD-20), glossary v1.3, mascot brief asks for `brokely_welcome.png` first
   - **D-24 usability review** of the wireframes (U-01…U-11 in `docs/design/wireframes.md`): centre + tab bar (Home · Records · + · Insights · More), Undo after save (FR-TXN-10, AC-57), one-line quick start, Later on essential cards, 48 dp targets. SRS v1.5, PRD v1.4
   - **D-25 mid-month start** (Start fresh / Catch me up) with **R-12** (progress counts from `tracking_start_date`); **D-26 money in** (transaction type `income`, plan suggestion); **D-27 wallet check** (resolves D-16) with **R-13** (expected since the last check). Domain `midMonthStart`, `moneyInSuggestion`, `wallet.ts` (104 tests); contracts `income`, `trackingStartDate`, `WalletCheckSchema`, entity `wallet_check`; phone DB `tracking_start_date`, `wallet_checks`. SRS v1.6 (FR-PLN-21, FR-TXN-11, FR-WAL-01…04, BR-29…31, AC-58…63), PRD v1.5 (PRD-21…23)
@@ -65,11 +65,10 @@ SRS v1.6 (PRD v1.5) includes every decision up to D-27 and R-13. SRS section 15 
   - Student interviews: skipped for now because of time. Decisions that waited on them (D-12 Meals / Snacks split) stay provisional; categories (D-22) and wallet check (D-27) were decided early by the author; ask the user when one becomes blocking.
   - TNG samples (QR payment, top-up, refund, notification extras): delayed until the author has testing access. 0.2 import design stays provisional.
 - **Next agent tasks:**
-  1. Author reviews wireframes v0.3 and the 4 remaining layout proposals in `docs/design/wireframes.md`; record confirmed ones as decisions
-  2. Phase 3 setup: wire expo-sqlite + `@brokely/local-db` into the app (needs a lockfile update by the user); generate migrations with `pnpm --filter @brokely/local-db db:generate`; repositories that write record + outbox in one transaction
-  3. Server database schema (Drizzle + PostgreSQL), before Phase 4
-  4. Mascot art is being drawn by the author from `docs/design/mascot-brief.md` (PNGs go to `apps/mobile/assets/mascot/`); `brokely_welcome.png` is needed first (0.1 welcome screen)
-  5. When interviews happen: SRS v1.7 / PRD v1.6 with findings
+  1. Phase 3 setup: wire expo-sqlite + `@brokely/local-db` into the app (needs a lockfile update by the user); generate migrations with `pnpm --filter @brokely/local-db db:generate`; repositories that write record + outbox in one transaction
+  2. Server database schema (Drizzle + PostgreSQL), before Phase 4
+  3. Mascot art is being drawn by the author from `docs/design/mascot-brief.md` (PNGs go to `apps/mobile/assets/mascot/`); `brokely_welcome.png` is needed first (0.1 welcome screen)
+  4. When interviews happen: SRS v1.7 / PRD v1.6 with findings
 - **Open questions:** see section 11
 
 ---
