@@ -40,7 +40,7 @@ SRS/PRD v1.2 include every decision up to D-21 and R-10. SRS section 15 is the c
 ## 3. Current state (update every session)
 
 - **Date of last update:** 2026-10-19
-- **Phase:** 1 — Design (finishing: wireframes and mascot brief left); next is 2 — Domain core
+- **Phase:** 2 — Domain core done (2026-10-19); Phase 1 wireframes (Figma) still open; next is 3 — Offline app
 - **Done:**
   - PRD and SRS v1.1 written, then v1.2; decision log D-01…D-21, R-01…R-10
   - Interview guide written; research on the author's spending data done (kept private, not in repo)
@@ -54,14 +54,15 @@ SRS/PRD v1.2 include every decision up to D-21 and R-10. SRS section 15 is the c
   - Sync API design v0.1: `docs/design/sync-api.md` (push/pull, aggregates, versions, deterministic IDs, error codes)
   - Contracts: `packages/contracts` has Zod schemas for every synced entity and the push/pull envelopes, with 25 tests and shared fixtures
   - Expo app generated in `apps/mobile` and pushed (SDK 58, blank-typescript, dev client, EAS linked; package `com.elias717.brokely`); not yet run on a phone
+  - **Phase 2 domain core:** `packages/domain` implements BR-01…BR-28 (dates, cycles, bills, plan, spending, progress/forecast, debts, XP) with 85 tests; every BR is covered (see `docs/design/domain-rules.md`). New sync error code `DEBT_EXCEEDS_OUTSTANDING` (contracts + sync-api §6)
   - Phone database schema: `packages/local-db` (Drizzle sqlite-core, driver-free) with 11 constraint tests on in-memory better-sqlite3 (merged via PR #2; drizzle-orm 0.44.7, drizzle-kit 0.31.11, better-sqlite3 12.11.1)
 - **Deferred (user decision, 2026-10-19):**
   - Student interviews: skipped for now because of time. Decisions that waited on them (full default category list, D-12 split, D-16 wallet check) stay provisional; ask the user when one becomes blocking.
   - TNG samples (QR payment, top-up, refund, notification extras): delayed until the author has testing access. 0.2 import design stays provisional.
 - **Next agent tasks:**
-  1. Phase 2: business rules in `packages/domain` (cycles, spending, progress, forecast, debts) test-first from the SRS
-  2. Server database schema (Drizzle + PostgreSQL)
-  3. Phase 3 setup: wire expo-sqlite + `@brokely/local-db` into the app; generate migrations with `pnpm --filter @brokely/local-db db:generate`
+  1. Wireframes in Figma (the author connects Figma), then the full default category list from the author
+  2. Phase 3 setup: wire expo-sqlite + `@brokely/local-db` into the app (needs a lockfile update by the user); generate migrations with `pnpm --filter @brokely/local-db db:generate`; repositories that write record + outbox in one transaction
+  3. Server database schema (Drizzle + PostgreSQL), before Phase 4
   4. Phase 1 remainder: wireframes in Figma after Phase 2 (the author will connect Figma); mascot art is being drawn by the author from `docs/design/mascot-brief.md`
   5. When interviews happen: SRS/PRD v1.3 with findings
 - **Open questions:** see section 11
@@ -183,11 +184,11 @@ AGENTS.md            ← this file
 CLAUDE.md            ← points here
 apps/api/src         app.ts (buildApp), server.ts, *.test.ts
 apps/mobile          Expo app (template App.tsx for now); README with run steps and planned structure
-packages/domain/src  money.ts (+ tests); future: cycle.ts, spending.ts, forecast.ts, debts.ts, xp.ts
+packages/domain/src  money, dates, cycle, bills, plan, transactions, spending, progress (forecast), debts, xp, result (+ tests)
 packages/contracts   Zod schemas (entities, sync envelopes, fixtures)
 packages/local-db    phone database schema (Drizzle sqlite-core); tested in Node, used with expo-sqlite
 docs/requirements    PRD, SRS v1.2 (.docx)
-docs/design          erd.md, sync-api.md, mascot-brief.md
+docs/design          erd.md, sync-api.md, mascot-brief.md, domain-rules.md (BR → code → tests)
 docs/project         decision log, glossary, interview guide
 .github/workflows    ci.yml
 ```
@@ -212,6 +213,7 @@ pnpm --filter @brokely/api dev   # run the API locally
 | Interviews deferred | Keep Meals / Snacks & treats split (D-12)? Full default category list? Ask before the plan wizard is built. |
 | Phase 4 start | Sign-in provider (library inside our API, e.g. Better Auth, vs managed, e.g. Firebase Auth); hosting provider |
 | Before 0.1 testing | Reference test device (NFR-06) |
+| Before 0.2 mascot screen | XP thresholds for the 3 growth stages; priority between moods (e.g. proud vs worried on the same day) |
 | During pilot | Coverage threshold (70%), XP values, notification cap |
 
 ---
@@ -224,4 +226,5 @@ pnpm --filter @brokely/api dev   # run the API locally
 - On the author's Windows machine, `corepack enable` fails (no admin rights for Program Files). pnpm is installed with `npm install -g pnpm@<version from package.json>` instead.
 - The first Vitest run on Windows can time out (antivirus scanning fresh `node_modules`); re-run before debugging.
 - Markdown is excluded from Prettier (`.prettierignore`) because table formatting differences broke format checks.
+- The Phase 2 plan mentioned backtests on the author's real months; they are NOT committed (public repo, rule 7). Tests use synthetic data shaped like the SRS examples.
 - A first 2-week data sample overstated treats (35%); 6 months showed ~10%. Don't generalise from small samples; label evidence size.
