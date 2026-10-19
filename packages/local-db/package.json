@@ -5,7 +5,8 @@
   "description": "Phone database schema (Drizzle + SQLite), from docs/design/erd.md. Driver-free so it is tested in Node and used with expo-sqlite on the phone.",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./migrations": "./drizzle/migrations.js"
   },
   "scripts": {
     "test": "vitest run",
