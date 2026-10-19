@@ -82,7 +82,7 @@ SRS v1.6 (PRD v1.5) includes every decision up to D-27 and R-13; D-28 is layout 
   1. **Run on the author's phone** with a development build (`npx expo run:android` or `eas build --profile development --platform android`) to prove migrations + S1 on a real device before building many screens; name the reference device (NFR-06)
   2. **Screens in this order**, each from its Figma frame (`docs/design/wireframes.md`; S1 = node 9:288, S1b 9:306, S1c 16:330, S1d 16:349): S3a Home with essential cards (`acceptEssentialCard`; card queue Later/Not for me per cycle in `local_prefs`, D-30) → S4/S4c quick add with Undo (`recordPurchase`, `recordMoneyIn`, `deleteTransaction`) → S5 Records → S6/S6b Bills + Mark paid → S7/S7b Debts → S8 Insights (`computeProgress`) → S11 Wallet check → S9 More, settings (`user_settings` repo still missing), export/delete → S10 cycle finished. Guided setup S2a–S2d after the main flow.
   3. Repositories still missing: user settings, guided-setup draft revisions (D-20, AC-47), start next cycle (AC-48), export
-  4. Later: server database schema (Drizzle + PostgreSQL) before Phase 4; SRS v1.7 / PRD v1.6 (add D-29…D-37 to the change record; dark mode is new 0.1 scope; D-36 rewords AC-02 and AC-54: laundry is never a dated bill) when interviews happen
+  4. Later: server database schema (Drizzle + PostgreSQL) before Phase 4; SRS v1.7 / PRD v1.6 (add D-29…D-39 and R-14 to the change record; D-39 needs a new FR/AC for in-app money tips; dark mode is new 0.1 scope; D-36 rewords AC-02 and AC-54: laundry is never a dated bill) when interviews happen
 - **Open questions:** see section 11
 
 ---
@@ -189,6 +189,8 @@ Known TNG formats (no transaction ID in visible text; dedupe on Android notifica
 
 **Mascot and XP (0.2).** One welcome picture already in 0.1 (FR-MAS-08). Static pictures, no voice. ≥3 growth stages (XP level), ≥4 moods: happy (on track), worried (over pace), proud (3+ day streak), sleepy (3+ days unlogged). Initial XP: approve plan 50, log 5, check-in 5, Mark paid 5, confirm import 2, weekly review 20; daily cap 100; once per source event.
 
+**Money tips (0.2, D-39).** Fun financial-literacy tips slide in from the side inside the app as a reward after recording; tap to dismiss; Settings switch (on by default); daily cap; local reviewed templates only. Brief: `docs/design/money-tips.md`.
+
 **Notifications (0.2).** Bill due, evening logging reminder, streak, pace, debt due, pending import. Max 3/day, quiet hours, per-type mute, ≥3 wording variants each. Example: `🧺 Laundry day! Your RM16.00 wash is due. Tap Mark paid once it's spinning.`
 
 **Default categories (D-22, FR-CAT-01).** Essential: Meals, Groceries & toiletries, Laundry, Transport, Phone & internet, Health. Optional: Snacks & treats, Fun & trips, Shopping, Gifts & charity, Other. Set-asides: Emergency, Savings.
@@ -215,7 +217,7 @@ packages/domain/src  money, dates, cycle, bills, plan, transactions, spending, p
 packages/contracts   Zod schemas (entities, sync envelopes, fixtures)
 packages/local-db    phone database schema, repositories (record + outbox), drizzle/ migrations; tested in Node, used with expo-sqlite
 docs/requirements    PRD v1.5, SRS v1.6 (.docx)
-docs/design          erd.md, sync-api.md, mascot-brief.md, domain-rules.md (BR → code → tests), wireframes.md (Figma link)
+docs/design          erd.md, sync-api.md, mascot-brief.md, money-tips.md, domain-rules.md (BR → code → tests), wireframes.md (Figma link)
 docs/project         decision log, glossary, interview guide
 .github/workflows    ci.yml
 ```
@@ -239,6 +241,7 @@ pnpm --filter @brokely/api dev   # run the API locally
 | Phase 4 start | Sign-in provider (library inside our API, e.g. Better Auth, vs managed, e.g. Firebase Auth); hosting provider |
 | Before 0.1 testing | Reference test device (NFR-06) |
 | Before 0.2 mascot screen | XP thresholds for the 3 growth stages; priority between moods (e.g. proud vs worried on the same day) |
+| Before 0.2 money tips | Daily cap and gap, who writes the first tips, tips related to the record or general, XP for tips (`docs/design/money-tips.md`) |
 | During pilot | Coverage threshold (70%), XP values, notification cap |
 
 ---
