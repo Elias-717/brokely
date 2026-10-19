@@ -31,6 +31,7 @@ import {
   type WriteScope,
 } from "./context";
 import { enqueueDelete, enqueueUpsert, touched } from "./outbox";
+import { releaseScheduledItem } from "./scheduled-items";
 
 /**
  * Transactions: FR-TXN-01…08, FR-TXN-10/11, FR-DEBT-06, BR-22, D-01, D-26.
@@ -502,6 +503,7 @@ export function deleteTransactionIn(scope: WriteScope, id: string) {
   const before = getTransaction(scope.tx, id);
   if (!before) throw new RepoError("NOT_FOUND", "That transaction doesn't exist");
   checkRules(scope, before, null);
+  releaseScheduledItem(scope, id); // a deleted bill payment puts the item back (R-05)
   enqueueDelete(scope, "transaction", id, before.version);
   const marker = { deletedAt: scope.at, ...touched(scope.at) };
   scope.tx.update(transactions).set(marker).where(eq(transactions.id, id)).run();

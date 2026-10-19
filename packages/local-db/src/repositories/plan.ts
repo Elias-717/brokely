@@ -16,6 +16,7 @@ import {
 } from "@brokely/domain";
 import { and, eq, gt, inArray, isNull, lte, sql } from "drizzle-orm";
 import { allocations, planningCycles, planRevisions } from "../schema";
+import { syncAllBillItems } from "./bills";
 import { liveCategory } from "./categories";
 import {
   asLocalDate,
@@ -152,6 +153,7 @@ export function quickStartIn(scope: WriteScope, input: QuickStartInput) {
 
   enqueueUpsert(scope, "planning_cycle", cycle.id, null, cycleData(cycle));
   scope.tx.insert(planningCycles).values(cycle).run();
+  syncAllBillItems(scope); // bills made before this cycle get their dates in it (FR-CAT-04)
   const revisionId = insertApprovedRevision(scope, cycle.id, 1, input.budgetSen, [], false);
 
   if (input.openingSpend) {

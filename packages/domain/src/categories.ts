@@ -8,14 +8,16 @@ export interface DefaultCategory {
   readonly key: string;
   readonly name: string;
   readonly kind: CategoryKind;
+  /** A fixed essential: its essential card also creates a repeating bill (D-29). */
+  readonly fixedBill?: true;
 }
 
 export const DEFAULT_CATEGORIES: readonly DefaultCategory[] = [
   { key: "meals", name: "Meals", kind: "essential" },
   { key: "groceries", name: "Groceries & toiletries", kind: "essential" },
-  { key: "laundry", name: "Laundry", kind: "essential" },
+  { key: "laundry", name: "Laundry", kind: "essential", fixedBill: true },
   { key: "transport", name: "Transport", kind: "essential" },
-  { key: "phone", name: "Phone & internet", kind: "essential" },
+  { key: "phone", name: "Phone & internet", kind: "essential", fixedBill: true },
   { key: "health", name: "Health", kind: "essential" },
   { key: "snacks", name: "Snacks & treats", kind: "optional" },
   { key: "fun", name: "Fun & trips", kind: "optional" },
