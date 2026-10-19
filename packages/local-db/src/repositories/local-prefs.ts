@@ -36,3 +36,17 @@ export function getAppearance(db: Db): Appearance {
 export function setAppearance(ctx: RepoContext, appearance: Appearance): void {
   setPref(ctx, "appearance", appearance);
 }
+
+/** Longest nickname kept; bubbles stay readable. */
+export const NICKNAME_MAX = 30;
+
+/** What Brokely calls the student, or null (D-34). Optional, phone-only, never synced. */
+export function getNickname(db: Db): string | null {
+  const value = getPref(db, "nickname");
+  return typeof value === "string" && value !== "" ? value : null;
+}
+
+/** A blank name clears it. */
+export function setNickname(ctx: RepoContext, nickname: string): void {
+  setPref(ctx, "nickname", nickname.trim().slice(0, NICKNAME_MAX));
+}
