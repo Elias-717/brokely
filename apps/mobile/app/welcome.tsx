@@ -1,18 +1,25 @@
-import { seedDefaultCategories } from "@brokely/local-db";
+import { NICKNAME_MAX, seedDefaultCategories, setNickname } from "@brokely/local-db";
 import { router } from "expo-router";
-import { Image, Text, View } from "react-native";
+import { useState } from "react";
+import { Image, KeyboardAvoidingView, ScrollView, Text, TextInput, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { repo } from "../src/db/client";
-import { Body, Button, Card, Screen } from "../src/ui/components";
-import { space, type } from "../src/ui/theme";
+import { Button, Sticker } from "../src/ui/components";
+import { Appear } from "../src/ui/motion";
+import { fonts, radius, space, type } from "../src/ui/theme";
 import { useTheme } from "../src/ui/theme-context";
 
 /**
- * S1 Welcome (FR-MAS-08, FR-PLN-19, FR-PLN-04, AC-55, D-23). One static Brokely picture and the
- * fixed greeting; no XP, mood or growth; never promises the student won't run out of money.
+ * S1 Welcome (FR-MAS-08, FR-PLN-19, FR-PLN-04, AC-55, D-23, D-34). Brokely's fixed greeting in a
+ * speech bubble, one static picture, and an optional nickname kept on this phone only.
+ * No XP, mood or growth; never promises the student won't run out of money.
  */
 export default function WelcomeScreen() {
   const { colors } = useTheme();
+  const [name, setName] = useState("");
+
   const start = (next: "/quick-start" | "/") => {
+    setNickname(repo, name); // blank stays blank (D-34)
     // Both paths offer the default categories (AC-52); this also ends the first run.
     const seeded = seedDefaultCategories(repo);
     if (!seeded.ok) return;
@@ -20,28 +27,73 @@ export default function WelcomeScreen() {
   };
 
   return (
-    <Screen scroll={false}>
-      <View style={{ flex: 1, justifyContent: "center", gap: space.lg }}>
-        <Image
-          source={require("../assets/mascot/main_design.png")}
-          style={{ width: "100%", height: 260 }}
-          resizeMode="contain"
-          accessibilityLabel="Brokely, a broccoli that grows money instead of leaves"
-        />
-        <Card style={{ alignItems: "center" }}>
-          <Text style={[type.title, { color: colors.text, textAlign: "center" }]}>
-            Hi, I'm Brokely! 🥦
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="height">
+        <ScrollView
+          contentContainerStyle={{
+            flexGrow: 1,
+            justifyContent: "center",
+            padding: space.lg,
+            gap: space.lg,
+          }}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Appear>
+            <Sticker style={{ padding: space.md, gap: space.xs, alignItems: "center" }}>
+              <Text style={[type.title, { color: colors.text, textAlign: "center" }]}>
+                Hi, I'm Brokely! 🥦
+              </Text>
+              <Text style={[type.body, { color: colors.muted, textAlign: "center" }]}>
+                Broke is my name, not your future. Let's plan it together.
+              </Text>
+            </Sticker>
+          </Appear>
+          <Image
+            source={require("../assets/mascot/main_design.png")}
+            style={{ width: "100%", height: 260 }}
+            resizeMode="contain"
+            accessibilityLabel="Brokely, a broccoli that grows money instead of leaves"
+          />
+          <View style={{ gap: space.xs }}>
+            <Text style={[type.small, { color: colors.muted }]}>
+              What should I call you? <Text style={{ fontFamily: fonts.body }}>(optional)</Text>
+            </Text>
+            <TextInput
+              value={name}
+              onChangeText={setName}
+              maxLength={NICKNAME_MAX}
+              placeholder="Your name or nickname"
+              placeholderTextColor={colors.muted}
+              autoCapitalize="words"
+              autoComplete="off"
+              returnKeyType="done"
+              accessibilityLabel="What should I call you? Optional"
+              style={{
+                height: 56,
+                borderWidth: 2,
+                borderColor: colors.outline,
+                borderRadius: radius.button,
+                backgroundColor: colors.card,
+                paddingHorizontal: space.md,
+                fontFamily: fonts.bold,
+                fontSize: 18,
+                color: colors.text,
+              }}
+            />
+          </View>
+        </ScrollView>
+        <View style={{ paddingHorizontal: space.lg, paddingBottom: space.lg, gap: space.sm }}>
+          <Button label="Let's go" onPress={() => start("/quick-start")} />
+          <Button
+            label="Just track my spending for now"
+            variant="link"
+            onPress={() => start("/")}
+          />
+          <Text style={[type.small, { color: colors.muted, textAlign: "center" }]}>
+            No account, no bank login. Everything stays on this phone.
           </Text>
-          <Body muted>Broke is my name, not your future. Let's plan it together.</Body>
-        </Card>
-      </View>
-      <View style={{ gap: space.sm, paddingBottom: space.md }}>
-        <Button label="Let's go" onPress={() => start("/quick-start")} />
-        <Button label="Just track my spending for now" variant="link" onPress={() => start("/")} />
-        <Text style={[type.small, { color: colors.muted, textAlign: "center" }]}>
-          No account, no bank login. Everything stays on this phone.
-        </Text>
-      </View>
-    </Screen>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }

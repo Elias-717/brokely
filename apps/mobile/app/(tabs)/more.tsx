@@ -1,7 +1,10 @@
-import type { Appearance } from "@brokely/local-db";
-import { View } from "react-native";
+import { getNickname, NICKNAME_MAX, setNickname, type Appearance } from "@brokely/local-db";
+import { useState } from "react";
+import { Text, TextInput, View } from "react-native";
+import { repo } from "../../src/db/client";
+import { useRead } from "../../src/db/use-read";
 import { Body, Button, Card, Heading, Screen, Title } from "../../src/ui/components";
-import { space } from "../../src/ui/theme";
+import { fonts, radius, space, type } from "../../src/ui/theme";
 import { useTheme } from "../../src/ui/theme-context";
 
 const CHOICES: { value: Appearance; label: string }[] = [
@@ -10,12 +13,41 @@ const CHOICES: { value: Appearance; label: string }[] = [
   { value: "dark", label: "Dark" },
 ];
 
-/** S9 More. For now only Appearance (D-32); plan, bills, debts and your data come later. */
+/** S9 More. For now: what Brokely calls you (D-34) and Appearance (D-32). */
 export default function MoreScreen() {
-  const { appearance, setAppearance } = useTheme();
+  const { colors, appearance, setAppearance } = useTheme();
+  const saved = useRead(getNickname);
+  const [name, setName] = useState(saved ?? "");
+
   return (
     <Screen>
       <Title>More</Title>
+      <Card>
+        <Heading>What Brokely calls you</Heading>
+        <TextInput
+          value={name}
+          onChangeText={setName}
+          onEndEditing={() => setNickname(repo, name)}
+          maxLength={NICKNAME_MAX}
+          placeholder="Your name or nickname (optional)"
+          placeholderTextColor={colors.muted}
+          autoCapitalize="words"
+          returnKeyType="done"
+          accessibilityLabel="What Brokely calls you"
+          style={{
+            height: 52,
+            borderWidth: 2,
+            borderColor: colors.outline,
+            borderRadius: radius.button,
+            backgroundColor: colors.background,
+            paddingHorizontal: space.md,
+            fontFamily: fonts.bold,
+            fontSize: 17,
+            color: colors.text,
+          }}
+        />
+        <Text style={[type.small, { color: colors.muted }]}>Kept on this phone only.</Text>
+      </Card>
       <Card>
         <Heading>Appearance</Heading>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
