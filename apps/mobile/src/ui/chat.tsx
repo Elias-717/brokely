@@ -57,11 +57,14 @@ export function BrokelyAvatar({ size }: { size: number }) {
 export function ChatScreen({
   subtitle,
   onBack,
+  onSkip,
   children,
   footer,
 }: {
   subtitle: string;
   onBack: () => void;
+  /** Shows a "Skip" button at the top right, e.g. to leave planning for later. */
+  onSkip?: () => void;
   children: ReactNode;
   footer: ReactNode;
 }) {
@@ -109,6 +112,25 @@ export function ChatScreen({
             <Text style={[type.heading, { color: colors.text }]}>Brokely</Text>
             <Text style={[type.small, { color: colors.muted }]}>{subtitle}</Text>
           </View>
+          {onSkip ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Skip for now"
+              onPress={onSkip}
+              style={({ pressed }) => ({
+                minHeight: MIN_TOUCH,
+                paddingHorizontal: space.md,
+                justifyContent: "center",
+                borderRadius: 12,
+                borderWidth: 2,
+                borderColor: colors.outline,
+                backgroundColor: colors.background,
+                opacity: pressed ? 0.7 : 1,
+              })}
+            >
+              <Text style={[type.strong, { color: colors.text, fontSize: 15 }]}>Skip</Text>
+            </Pressable>
+          ) : null}
         </View>
         <ScrollView
           ref={scroll}

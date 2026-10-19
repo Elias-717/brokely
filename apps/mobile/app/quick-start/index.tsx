@@ -253,6 +253,8 @@ export default function QuickStartChat() {
             : "Planning with you · step 2 of 2"
       }
       onBack={() => router.replace("/")}
+      // Planning is never required (FR-PLN-04, FR-PLN-19): Home offers "Make a plan" later.
+      onSkip={() => router.replace("/")}
       footer={footer}
     >
       {chat.messages.map((m, i) =>
