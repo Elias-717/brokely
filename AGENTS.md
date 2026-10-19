@@ -40,8 +40,8 @@ SRS v1.6 (PRD v1.5) includes every decision up to D-27 and R-13; D-28 is layout 
 
 ## 3. Current state (update every session)
 
-- **Date of last update:** 2026-10-19
-- **Phase:** 2 — Domain core done (2026-10-19); wireframes v0.5 (22 screens) drawn, usability-reviewed and all layout choices decided (D-23…D-28); next is 3 — Offline app
+- **Date of last update:** 2026-10-19 (Phase 3 session 1)
+- **Phase:** 3 — Offline app **in progress** (started 2026-10-19): repositories, migrations, app shell and S1 Welcome done; next is quick start (S1c/S1b/S1d)
 - **Done:**
   - PRD and SRS v1.1 written, then v1.2; decision log D-01…D-21, R-01…R-10
   - Interview guide written; research on the author's spending data done (kept private, not in repo)
@@ -61,18 +61,21 @@ SRS v1.6 (PRD v1.5) includes every decision up to D-27 and R-13; D-28 is layout 
   - **D-23 lighter first run** (author's request): Welcome with one Brokely picture (0.1) → Quick start (budget + dates) → Home with essential cards one at a time; guided setup optional. **R-11**: pace compares with the budget while P = 0 (`paceTarget`, 89 domain tests). SRS v1.4 (FR-PLN-19/20, FR-MAS-08, AC-53…56), PRD v1.3 (PRD-20), glossary v1.3, mascot brief asks for `brokely_welcome.png` first
   - **D-24 usability review** of the wireframes (U-01…U-11 in `docs/design/wireframes.md`): centre + tab bar (Home · Records · + · Insights · More), Undo after save (FR-TXN-10, AC-57), one-line quick start, Later on essential cards, 48 dp targets. SRS v1.5, PRD v1.4
   - **D-25 mid-month start** (Start fresh / Catch me up) with **R-12** (progress counts from `tracking_start_date`); **D-26 money in** (transaction type `income`, plan suggestion); **D-27 wallet check** (resolves D-16) with **R-13** (expected since the last check). Domain `midMonthStart`, `moneyInSuggestion`, `wallet.ts` (104 tests); contracts `income`, `trackingStartDate`, `WalletCheckSchema`, entity `wallet_check`; phone DB `tracking_start_date`, `wallet_checks`. SRS v1.6 (FR-PLN-21, FR-TXN-11, FR-WAL-01…04, BR-29…31, AC-58…63), PRD v1.5 (PRD-21…23)
+  - **Phase 3 repositories** (`packages/local-db/src/repositories/`): every user action runs in one SQLite transaction that checks `@brokely/domain` rules, writes the rows and one outbox operation per aggregate with the payload validated by `@brokely/contracts` (FR-SYNC-04, S-01). Categories (AC-52, AC-27), quick start incl. catch-up entry (AC-53, AC-59), revisions + shortfall (AC-06, AC-03, AC-29), transactions with edit history and delete markers/Undo (AC-04/05/09/10, AC-57), money in (AC-61), debts (AC-08/10/11, BR-22), check-ins (AC-30), wallet checks (AC-62/63; a logged difference is dated 1 ms before its check), bills with stored scheduled items + Mark paid/skip (AC-12/19/26), essential cards (AC-54). IDs and clock injected (`RepoContext`). 80 local-db tests
+  - **D-29** (author): only Laundry and Phone & internet cards create a bill (`fixedBill` in `DEFAULT_CATEGORIES`); other cards only set an allocation
+  - Contracts: `scheduledItemId(billId, dueDate)` = UUIDv5 under `BROKELY_ID_NAMESPACE` (S-05), value pinned by a test; uuid 11.1.0
+  - App dependencies via `expo install` (expo-sqlite, expo-router + peers, expo-crypto), drizzle-orm, `@brokely/local-db`, uuid (v7 from expo-crypto bytes). Migration `packages/local-db/drizzle/0000_initial.sql` + `migrations.js` (export `@brokely/local-db/migrations`); a test fails if `schema.ts` changes without `db:generate`. Metro `.sql` + babel inline-import
+  - App shell: `app/_layout.tsx` runs migrations first; tabs Home · Records · (+) · Insights · More; + opens `quick-add` modal; first run (no categories) → **S1 Welcome** with `main_design.png`. `CI=1 npx expo export --platform android` bundles (3.2 MB). Not yet run on a phone
 - **Deferred (user decision, 2026-10-19):**
   - Student interviews: skipped for now because of time. Decisions that waited on them (D-12 Meals / Snacks split) stay provisional; categories (D-22) and wallet check (D-27) were decided early by the author; ask the user when one becomes blocking.
   - TNG samples (QR payment, top-up, refund, notification extras): delayed until the author has testing access. 0.2 import design stays provisional.
   - **Mascot art delivered** (commit 3b535fb): `apps/mobile/assets/mascot/` has all 12 pictures `brokely_s{1-3}_{happy,worried,proud,sleepy}.png` plus `main_design.png`. **The 0.1 welcome screen uses `main_design.png`** (author's choice; replaces the planned `brokely_welcome.png`). Total is ~15 MB of PNG: convert to WebP / resize (≈512 px) before release to meet the ≤ 5 MB budget (NFR-19); keep the PNG sources.
   - **Handoff (2026-10-19):** work moves from the claude.ai cloud workspace to **Claude Code on the author's Windows machine**. Locally the npm registry works, so dependencies can be installed and `pnpm-lock.yaml` updated directly (the "cannot update the lockfile" limitation in section 12 applies only to the cloud workspace).
 - **Next agent tasks (Phase 3 — offline app; exit: all of 0.1 works on one phone, offline, no account):**
-  1. **Repositories in `packages/local-db`** (no new deps): one function per user action (create/edit/delete transaction with lines, approve plan/revision, accept essential card, mark bill paid, check-in, wallet check, money in, debt actions). Each writes the record(s) **and** an outbox operation in one `db.transaction` (rule 5; outbox shape in `docs/design/sync-api.md`); validate with `@brokely/domain` rules first. Use the sync drizzle API so the same code runs on better-sqlite3 (tests) and expo-sqlite (phone). Tests first, IDs in names.
-  2. **App dependencies** (on a branch, then merge): in `apps/mobile` run `npx expo install expo-sqlite expo-router react-native-safe-area-context react-native-screens expo-linking expo-constants expo-font`, add `drizzle-orm`, `@brokely/local-db` (workspace), a UUIDv7 generator (e.g. `uuidv7`); drizzle-kit migrations for Expo (`driver: "expo"` in `packages/local-db/drizzle.config.ts`, `pnpm --filter @brokely/local-db db:generate`, plus babel inline-import / metro `sql` extension as the Drizzle Expo docs say). Commit the lockfile; CI must stay green.
-  3. **Open the DB and run migrations at app start**; switch the app entry to Expo Router with the tab layout Home · Records · (+) · Insights · More (D-24).
-  4. **Screens in this order**, each from its Figma frame (`docs/design/wireframes.md` lists every screen with its IDs): S1 Welcome (main_design.png + greeting) → S1c/S1b/S1d quick start incl. Start fresh / Catch me up → S3a Home with essential cards → S4/S4c quick add with Undo → S5 Records → S6/S6b Bills + Mark paid → S7/S7b Debts → S8 Insights → S11 Wallet check → S9 More, settings, export/delete → S10 cycle finished. Guided setup S2a–S2d after the main flow. Visual style (colours, fonts) is not decided yet: ask the author before polishing, keep the grey wireframe look until then.
-  5. First run on the author's phone with a development build (`eas build --profile development --platform android` or `npx expo run:android`); name the reference device (NFR-06).
-  6. Later: server database schema (Drizzle + PostgreSQL) before Phase 4; SRS v1.7 / PRD v1.6 when interviews happen.
+  1. **Run on the author's phone** with a development build (`npx expo run:android` or `eas build --profile development --platform android`) to prove migrations + S1 on a real device before building many screens; name the reference device (NFR-06)
+  2. **Screens in this order**, each from its Figma frame (`docs/design/wireframes.md`; S1 = node 9:288, S1b 9:306, S1c 16:330, S1d 16:349): S1c/S1b/S1d quick start (repo: `quickStart`, catch-up `openingSpend`; domain `midMonthStart`) → S3a Home with essential cards (`acceptEssentialCard`; card queue Later/Not for me needs a small phone-only table — schema change + `db:generate`) → S4/S4c quick add with Undo (`recordPurchase`, `recordMoneyIn`, `deleteTransaction`) → S5 Records → S6/S6b Bills + Mark paid → S7/S7b Debts → S8 Insights (`computeProgress`) → S11 Wallet check → S9 More, settings (`user_settings` repo still missing), export/delete → S10 cycle finished. Guided setup S2a–S2d after the main flow. Keep the grey look (`apps/mobile/src/ui/theme.ts`) until the author picks a visual style; tab icons wait for that too
+  3. Repositories still missing: user settings, guided-setup draft revisions (D-20, AC-47), start next cycle (AC-48), export
+  4. Later: server database schema (Drizzle + PostgreSQL) before Phase 4; SRS v1.7 / PRD v1.6 (add D-29 to the change record) when interviews happen
 - **Open questions:** see section 11
 
 ---
@@ -200,10 +203,10 @@ Known TNG formats (no transaction ID in visible text; dedupe on Android notifica
 AGENTS.md            ← this file
 CLAUDE.md            ← points here
 apps/api/src         app.ts (buildApp), server.ts, *.test.ts
-apps/mobile          Expo app (template App.tsx for now); README with run steps and planned structure
+apps/mobile          Expo Router app (app/ screens, src/db client, src/ui); README with run steps and structure
 packages/domain/src  money, dates, cycle, bills, plan, transactions, spending, progress (forecast), debts, wallet, xp, result (+ tests)
 packages/contracts   Zod schemas (entities, sync envelopes, fixtures)
-packages/local-db    phone database schema (Drizzle sqlite-core); tested in Node, used with expo-sqlite
+packages/local-db    phone database schema, repositories (record + outbox), drizzle/ migrations; tested in Node, used with expo-sqlite
 docs/requirements    PRD v1.5, SRS v1.6 (.docx)
 docs/design          erd.md, sync-api.md, mascot-brief.md, domain-rules.md (BR → code → tests), wireframes.md (Figma link)
 docs/project         decision log, glossary, interview guide
@@ -240,6 +243,8 @@ pnpm --filter @brokely/api dev   # run the API locally
 - pnpm 10 skips dependency build scripts unless listed in `onlyBuiltDependencies` (`pnpm-workspace.yaml`); better-sqlite3 needs it.
 - On the author's Windows machine, `corepack enable` fails (no admin rights for Program Files). pnpm is installed with `npm install -g pnpm@<version from package.json>` instead.
 - The first Vitest run on Windows can time out (antivirus scanning fresh `node_modules`); re-run before debugging.
+- The author's Windows machine has no `gh` CLI. CI status: `curl -s "https://api.github.com/repos/Elias-717/brokely/actions/runs?head_sha=<full sha>"` (unauthenticated limit 60/hour: poll every 30 s, not faster). CI runs only on `main` pushes and PRs, so branch work is verified locally with `pnpm install --frozen-lockfile && pnpm check`, then fast-forwarded.
+- Vitest does not type-check: run `pnpm typecheck` (or `pnpm check`) before trusting green tests.
 - Markdown is excluded from Prettier (`.prettierignore`) because table formatting differences broke format checks.
 - The Phase 2 plan mentioned backtests on the author's real months; they are NOT committed (public repo, rule 7). Tests use synthetic data shaped like the SRS examples.
 - A first 2-week data sample overstated treats (35%); 6 months showed ~10%. Don't generalise from small samples; label evidence size.
