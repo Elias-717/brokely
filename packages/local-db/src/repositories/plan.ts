@@ -1,5 +1,6 @@
 import type { EntityData } from "@brokely/contracts";
 import {
+  addDays,
   checkCanApprove,
   checkNoOverlap,
   currentRevision,
@@ -26,6 +27,7 @@ import {
   type WriteScope,
 } from "./context";
 import { enqueueUpsert } from "./outbox";
+import { purchaseInput, recordTransactionIn } from "./transactions";
 
 /**
  * Plans: quick start (FR-PLN-19, D-23), revisions (FR-PLN-11, D-03), shortfall (FR-PLN-10),
@@ -134,7 +136,12 @@ export interface QuickStartInput {
   readonly endDateInclusive: string;
   /** First tracked day; defaults to the start date (R-12). */
   readonly trackingStartDate?: string;
+  /** Catch me up: what was spent before tracking starts, as one entry (FR-PLN-21, AC-59). */
+  readonly openingSpend?: { readonly amountSen: Sen; readonly categoryId: string };
 }
+
+/** The note on the catch-up entry (FR-PLN-21). */
+export const OPENING_SPEND_NOTE = "Spent before Brokely";
 
 /** Quick start: budget and dates only, approved on the same screen (FR-PLN-19, AC-53). */
 export function quickStartIn(scope: WriteScope, input: QuickStartInput) {
@@ -156,6 +163,22 @@ export function quickStartIn(scope: WriteScope, input: QuickStartInput) {
   enqueueUpsert(scope, "planning_cycle", cycle.id, null, cycleData(cycle));
   scope.tx.insert(planningCycles).values(cycle).run();
   const revisionId = insertApprovedRevision(scope, cycle.id, 1, input.budgetSen, [], false);
+
+  if (input.openingSpend) {
+    if (cycle.trackingStartDate <= cycle.startDate) {
+      throw new RepoError("VALIDATION_FAILED", "Nothing to catch up: tracking starts on day one");
+    }
+    // Dated the day before tracking starts: counts in N, outside the tracked days (R-12).
+    recordTransactionIn(
+      scope,
+      purchaseInput({
+        ...input.openingSpend,
+        localDate: addDays(localDate(cycle.trackingStartDate), -1),
+        occurredAt: scope.at,
+        note: OPENING_SPEND_NOTE,
+      }),
+    );
+  }
   return { cycleId: cycle.id, revisionId };
 }
 
