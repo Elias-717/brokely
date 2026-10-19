@@ -25,7 +25,7 @@ and reviewable, and prefer clarity over cleverness. Ask the user before making p
 
 | What | Where |
 |---|---|
-| Behaviour, formulas (BR-xx), data model, quality targets (NFR-xx), acceptance tests (AC-xx) | `docs/requirements/Brokely_Software_Requirements_Specification_v1.2.docx` |
+| Behaviour, formulas (BR-xx), data model, quality targets (NFR-xx), acceptance tests (AC-xx) | `docs/requirements/Brokely_Software_Requirements_Specification_v1.3.docx` |
 | Why, users, scope per release, success measures | `docs/requirements/Brokely_Product_Requirements_Document_v1.2.docx` |
 | Every decision with its consequences (D-xx, R-xx) | `docs/project/decision-log.md` |
 | Data model and sync API | `docs/design/erd.md`, `docs/design/sync-api.md` |
@@ -33,7 +33,7 @@ and reviewable, and prefer clarity over cleverness. Ask the user before making p
 | Student interview script | `docs/project/interview-guide.md` |
 
 To read a .docx: `pandoc -t markdown <file>`.
-SRS/PRD v1.2 include every decision up to D-21 and R-10. SRS section 15 is the change record: **whenever a requirement changes, add a row there** (ID, type, what changed, decision) so traceability is never lost. Requirement IDs are never reused.
+SRS v1.3 (PRD v1.2) includes every decision up to D-22 and R-10. SRS section 15 is the change record: **whenever a requirement changes, add a row there** (ID, type, what changed, decision) so traceability is never lost. Requirement IDs are never reused.
 
 ---
 
@@ -60,7 +60,7 @@ SRS/PRD v1.2 include every decision up to D-21 and R-10. SRS section 15 is the c
   - Student interviews: skipped for now because of time. Decisions that waited on them (full default category list, D-12 split, D-16 wallet check) stay provisional; ask the user when one becomes blocking.
   - TNG samples (QR payment, top-up, refund, notification extras): delayed until the author has testing access. 0.2 import design stays provisional.
 - **Next agent tasks:**
-  1. Wireframes in Figma (the author connects Figma), then the full default category list from the author
+  1. Wireframes in Figma (Figma connected 2026-10-19)
   2. Phase 3 setup: wire expo-sqlite + `@brokely/local-db` into the app (needs a lockfile update by the user); generate migrations with `pnpm --filter @brokely/local-db db:generate`; repositories that write record + outbox in one transaction
   3. Server database schema (Drizzle + PostgreSQL), before Phase 4
   4. Phase 1 remainder: wireframes in Figma after Phase 2 (the author will connect Figma); mascot art is being drawn by the author from `docs/design/mascot-brief.md`
@@ -164,7 +164,7 @@ Known TNG formats (no transaction ID in visible text; dedupe on Android notifica
 
 **Notifications (0.2).** Bill due, evening logging reminder, streak, pace, debt due, pending import. Max 3/day, quiet hours, per-type mute, ≥3 wording variants each. Example: `🧺 Laundry day! Your RM16.00 wash is due. Tap Mark paid once it's spinning.`
 
-**Default categories.** Decided: Meals (essential), Snacks & treats (optional), Groceries & toiletries (essential) — D-12, D-14. Proposed, not yet confirmed: Laundry, Transport, Phone & data (essential); Fun (optional); Emergency (set-aside). Confirm the full list with the user after interviews.
+**Default categories (D-22, FR-CAT-01).** Essential: Meals, Groceries & toiletries, Laundry, Transport, Phone & internet, Health. Optional: Snacks & treats, Fun & trips, Shopping, Gifts & charity, Other. Set-asides: Emergency, Savings.
 
 ---
 
@@ -187,7 +187,7 @@ apps/mobile          Expo app (template App.tsx for now); README with run steps 
 packages/domain/src  money, dates, cycle, bills, plan, transactions, spending, progress (forecast), debts, xp, result (+ tests)
 packages/contracts   Zod schemas (entities, sync envelopes, fixtures)
 packages/local-db    phone database schema (Drizzle sqlite-core); tested in Node, used with expo-sqlite
-docs/requirements    PRD, SRS v1.2 (.docx)
+docs/requirements    PRD v1.2, SRS v1.3 (.docx)
 docs/design          erd.md, sync-api.md, mascot-brief.md, domain-rules.md (BR → code → tests)
 docs/project         decision log, glossary, interview guide
 .github/workflows    ci.yml
@@ -210,7 +210,6 @@ pnpm --filter @brokely/api dev   # run the API locally
 | Before 0.2 import work | Full TNG notification formats (QR payment, top-up, refund) and whether a transaction ID exists in notification extras (delayed until testing access) |
 | Sync review | Open points in `docs/design/sync-api.md` section 12 |
 | Interviews deferred | Wallet check (D-16): add an optional manual balance check or keep "no balances" strict? Ask when it blocks. |
-| Interviews deferred | Keep Meals / Snacks & treats split (D-12)? Full default category list? Ask before the plan wizard is built. |
 | Phase 4 start | Sign-in provider (library inside our API, e.g. Better Auth, vs managed, e.g. Firebase Auth); hosting provider |
 | Before 0.1 testing | Reference test device (NFR-06) |
 | Before 0.2 mascot screen | XP thresholds for the 3 growth stages; priority between moods (e.g. proud vs worried on the same day) |
