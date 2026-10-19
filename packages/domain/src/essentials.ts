@@ -1,0 +1,50 @@
+import { sen, type Sen } from "./money";
+
+/**
+ * Essential cards: how often something happens and how much it adds up to in a plan
+ * (FR-PLN-05, FR-PLN-06, D-35, D-36).
+ */
+
+export type Period = "day" | "week" | "month";
+
+/** "2 a month", "1 a day", "1 a week". */
+export interface Frequency {
+  readonly times: number;
+  readonly per: Period;
+}
+
+const DAYS_PER: Record<Exclude<Period, "month">, number> = { day: 1, week: 7 };
+
+/**
+ * How many times it happens in a plan of `planDays` days: times per period × plan days ÷ period
+ * days, rounded up, never less than 1 (D-36). A month is the number of days in the month the
+ * plan starts (`monthDays`), so a whole October plan with "2 a month" gives exactly 2.
+ * Integer maths only.
+ */
+export function timesInPlan(frequency: Frequency, planDays: number, monthDays: number): number {
+  const { times, per } = frequency;
+  for (const [name, value] of [
+    ["times", times],
+    ["planDays", planDays],
+    ["monthDays", monthDays],
+  ] as const) {
+    if (!Number.isSafeInteger(value) || value <= 0) {
+      throw new RangeError(`${name} must be a whole number above zero, got ${value}`);
+    }
+  }
+  const periodDays = per === "month" ? monthDays : DAYS_PER[per];
+  const numerator = times * planDays;
+  const roundedUp = Math.floor((numerator + periodDays - 1) / periodDays);
+  return Math.max(1, roundedUp);
+}
+
+/** The card's suggestion and its working: "1 × RM16 = RM16" (FR-PLN-06). */
+export function essentialSuggestion(
+  amountEachSen: Sen,
+  frequency: Frequency,
+  planDays: number,
+  monthDays: number,
+): { times: number; totalSen: Sen } {
+  const times = timesInPlan(frequency, planDays, monthDays);
+  return { times, totalSen: sen(times * amountEachSen) };
+}

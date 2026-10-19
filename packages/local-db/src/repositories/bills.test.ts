@@ -1,5 +1,5 @@
 import { scheduledItemId } from "@brokely/contracts";
-import { sen } from "@brokely/domain";
+import { essentialSuggestion, sen } from "@brokely/domain";
 import { beforeEach, describe, expect, it } from "vitest";
 import { bills, outboxOperations, scheduledItems } from "../schema";
 import { createTestContext, NOW } from "../test-db";
@@ -242,32 +242,44 @@ describe("bill repository", () => {
     expect(items()).toHaveLength(9);
   });
 
-  describe("essential cards (FR-PLN-20, D-29)", () => {
-    it("accepting Laundry every 2 weeks from Sun 1 Nov at RM16 adds RM48 and a bill on 1, 15 and 29 Nov (AC-54)", () => {
+  describe("essential cards (FR-PLN-20, D-35, D-36)", () => {
+    it("Laundry, 2 washes a month at RM16, adds RM32 and no bill: washes have no dates (D-36)", () => {
+      const { totalSen } = essentialSuggestion(sen(1600), { times: 2, per: "month" }, 30, 30);
       const result = acceptEssentialCard(ctx, {
         cycleId,
         categoryId: category("Laundry"),
-        allocationSen: sen(4800),
+        allocationSen: totalSen,
+      });
+
+      expect(result.ok).toBe(true);
+      const plan = getPlan(ctx.db, cycleId)!;
+      expect(plan.revision.revisionNo).toBe(2); // new revision, original kept (FR-PLN-11)
+      expect(plan.totals.unallocatedSen).toBe(40000 - 3200);
+      expect(ctx.db.select().from(bills).all()).toHaveLength(0);
+      expect(items()).toEqual([]);
+    });
+
+    it("Phone as a monthly bill on the 5th at RM30 adds RM30 and one item on 5 Nov (D-36, AC-54)", () => {
+      const result = acceptEssentialCard(ctx, {
+        cycleId,
+        categoryId: category("Phone & internet"),
+        allocationSen: sen(3000),
         bill: {
-          name: "Laundry",
-          amountSen: sen(1600),
-          repeat: { kind: "every_n_weeks", n: 2 },
+          name: "Phone & internet",
+          amountSen: sen(3000),
+          repeat: { kind: "monthly", day: 5 },
           anchorDate: "2026-11-01",
         },
       });
 
       expect(result.ok).toBe(true);
-      const plan = getPlan(ctx.db, cycleId)!;
-      expect(plan.revision.revisionNo).toBe(2); // new revision, original kept
-      expect(plan.totals.unallocatedSen).toBe(35200);
-      expect(items().map((i) => [i.dueDate, i.amountSen])).toEqual([
-        ["2026-11-01", 1600],
-        ["2026-11-15", 1600],
-        ["2026-11-29", 1600],
+      expect(getPlan(ctx.db, cycleId)!.totals.unallocatedSen).toBe(37000);
+      expect(items().map((i) => [i.billName, i.dueDate, i.amountSen])).toEqual([
+        ["Phone & internet", "2026-11-05", 3000],
       ]);
     });
 
-    it("accepting Meals only sets the allocation, no bill (D-29)", () => {
+    it("Meals only sets the allocation, no bill (D-35)", () => {
       const result = acceptEssentialCard(ctx, {
         cycleId,
         categoryId: category("Meals"),
@@ -280,15 +292,15 @@ describe("bill repository", () => {
       ]);
     });
 
-    it("a card over budget needs the 'Approve anyway?' tap and then saves nothing half-way (FR-PLN-10, D-28)", () => {
+    it("a card over budget needs the 'Add it anyway?' tap and then saves nothing half-way (FR-PLN-10, D-28)", () => {
       const result = acceptEssentialCard(ctx, {
         cycleId,
-        categoryId: category("Laundry"),
+        categoryId: category("Phone & internet"),
         allocationSen: sen(50000),
         bill: {
-          name: "Laundry",
-          amountSen: sen(1600),
-          repeat: { kind: "every_n_weeks", n: 2 },
+          name: "Phone & internet",
+          amountSen: sen(50000),
+          repeat: { kind: "monthly", day: 5 },
           anchorDate: "2026-11-01",
         },
       });

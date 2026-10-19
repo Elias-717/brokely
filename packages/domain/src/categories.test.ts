@@ -17,9 +17,8 @@ describe("default categories (D-22, FR-CAT-01, AC-52)", () => {
     for (const c of DEFAULT_CATEGORIES) expect(/balance|uncategorized/i.test(c.name)).toBe(false);
   });
 
-  it("only Laundry and Phone & internet become bills from their essential card (D-29)", () => {
-    expect(DEFAULT_CATEGORIES.filter((c) => c.fixedBill).map((c) => c.name)).toEqual([
-      "Laundry",
+  it("only Phone & internet asks whether it is a monthly bill; Laundry never is (D-36)", () => {
+    expect(DEFAULT_CATEGORIES.filter((c) => c.mayBeBill).map((c) => c.name)).toEqual([
       "Phone & internet",
     ]);
   });
