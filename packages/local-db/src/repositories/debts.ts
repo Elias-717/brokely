@@ -6,10 +6,10 @@ import {
   type DebtSummary,
   type Sen,
 } from "@brokely/domain";
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNotNull, isNull } from "drizzle-orm";
 import { debtAdjustments, debts } from "../schema";
 import { RepoError, write, type Db, type RepoContext, type WriteScope } from "./context";
-import { enqueueDelete, enqueueUpsert, freshRow, touched } from "./outbox";
+import { cancelPendingDelete, enqueueDelete, enqueueUpsert, freshRow, touched } from "./outbox";
 import {
   debtAdjustmentsOf,
   recordTransactionIn,
@@ -251,6 +251,31 @@ export function deleteDebt(ctx: RepoContext, id: string) {
     scope.tx
       .update(debts)
       .set({ deletedAt: scope.at, ...touched(scope.at) })
+      .where(eq(debts.id, id))
+      .run();
+  });
+}
+
+/** Undo of deleteDebt: the same debt comes back (restore it before its transactions). */
+export function restoreDebt(ctx: RepoContext, id: string) {
+  return write(ctx, (scope) => {
+    const row = scope.tx
+      .select()
+      .from(debts)
+      .where(and(eq(debts.id, id), isNotNull(debts.deletedAt)))
+      .get();
+    if (!row) throw new RepoError("NOT_FOUND", "There is nothing to bring back");
+    if (!cancelPendingDelete(scope, "debt", id)) {
+      enqueueUpsert(scope, "debt", id, row.version, {
+        direction: row.direction,
+        counterparty: row.counterparty,
+        dueDate: row.dueDate,
+        notes: row.notes,
+      });
+    }
+    scope.tx
+      .update(debts)
+      .set({ deletedAt: null, ...touched(scope.at) })
       .where(eq(debts.id, id))
       .run();
   });

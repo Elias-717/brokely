@@ -12,7 +12,7 @@ import {
   type Transaction,
   type TransactionType,
 } from "@brokely/domain";
-import { and, desc, eq, gte, inArray, isNull, lt } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, lt } from "drizzle-orm";
 import {
   debtAdjustments,
   debts,
@@ -30,7 +30,7 @@ import {
   type RepoContext,
   type WriteScope,
 } from "./context";
-import { enqueueDelete, enqueueUpsert, touched } from "./outbox";
+import { cancelPendingDelete, enqueueDelete, enqueueUpsert, touched } from "./outbox";
 import { releaseScheduledItem } from "./scheduled-items";
 
 /**
@@ -516,4 +516,72 @@ export function deleteTransactionIn(scope: WriteScope, id: string) {
 
 export function deleteTransaction(ctx: RepoContext, id: string) {
   return write(ctx, (scope) => deleteTransactionIn(scope, id));
+}
+
+/**
+ * Undo of a delete (FR-TXN-10, D-38): brings back the same transaction with the lines deleted
+ * with it, after checking the rules again (things may have changed since). Before sync the
+ * pending delete is simply dropped; after sync an update is sent instead (S-04, S-07).
+ * A bill item released by the delete stays in still to come; mark it paid again if needed.
+ */
+export function restoreTransactionIn(scope: WriteScope, id: string) {
+  const row = scope.tx
+    .select()
+    .from(transactions)
+    .where(and(eq(transactions.id, id), isNotNull(transactions.deletedAt)))
+    .get();
+  if (!row?.deletedAt) throw new RepoError("NOT_FOUND", "There is nothing to bring back");
+  const lines = scope.tx
+    .select()
+    .from(transactionLines)
+    .where(
+      and(eq(transactionLines.transactionId, id), eq(transactionLines.deletedAt, row.deletedAt)),
+    )
+    .all();
+  const restored = toView(row, lines);
+  checkRules(scope, undefined, restored);
+  if (!cancelPendingDelete(scope, "transaction", id)) {
+    enqueueUpsert(scope, "transaction", id, row.version, payload(restored));
+  }
+  const revive = { deletedAt: null, ...touched(scope.at) };
+  scope.tx.update(transactions).set(revive).where(eq(transactions.id, id)).run();
+  if (lines.length > 0) {
+    scope.tx
+      .update(transactionLines)
+      .set(revive)
+      .where(
+        inArray(
+          transactionLines.id,
+          lines.map((l) => l.id),
+        ),
+      )
+      .run();
+  }
+}
+
+export function restoreTransaction(ctx: RepoContext, id: string) {
+  return write(ctx, (scope) => restoreTransactionIn(scope, id));
+}
+
+/** One edit of a transaction, oldest first (FR-TXN-07, AC-05). */
+export function listTransactionEdits(db: Db, transactionId: string) {
+  return db
+    .select()
+    .from(transactionEdits)
+    .where(
+      and(eq(transactionEdits.transactionId, transactionId), isNull(transactionEdits.deletedAt)),
+    )
+    .orderBy(asc(transactionEdits.changedAt))
+    .all()
+    .map((e) => {
+      const before = e.before as { amountSen?: number };
+      const after = e.after as { amountSen?: number };
+      return {
+        changedAt: e.changedAt,
+        beforeSen: sen(before.amountSen ?? 0),
+        afterSen: sen(after.amountSen ?? 0),
+        before: e.before,
+        after: e.after,
+      };
+    });
 }

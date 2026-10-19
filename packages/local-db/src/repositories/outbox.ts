@@ -1,4 +1,5 @@
 import { entityDataSchemas, type EntityData, type EntityName } from "@brokely/contracts";
+import { and, eq } from "drizzle-orm";
 import { outboxOperations } from "../schema";
 import { RepoError, type WriteScope } from "./context";
 
@@ -74,4 +75,30 @@ export function freshRow(scope: Pick<WriteScope, "at" | "newId">) {
     deletedAt: null,
     syncStatus: "pending" as const,
   };
+}
+
+/**
+ * Undo of a delete before it was sent: drops the pending delete, so the server never hears of
+ * it (FR-TXN-10). Returns false when there is none (the delete was already sent).
+ */
+export function cancelPendingDelete(
+  { tx }: WriteScope,
+  entity: EntityName,
+  entityId: string,
+): boolean {
+  const pending = tx
+    .select({ operationId: outboxOperations.operationId })
+    .from(outboxOperations)
+    .where(
+      and(
+        eq(outboxOperations.entity, entity),
+        eq(outboxOperations.entityId, entityId),
+        eq(outboxOperations.op, "delete"),
+        eq(outboxOperations.status, "pending"),
+      ),
+    )
+    .get();
+  if (!pending) return false;
+  tx.delete(outboxOperations).where(eq(outboxOperations.operationId, pending.operationId)).run();
+  return true;
 }
