@@ -13,6 +13,7 @@ import { useRead } from "../../src/db/use-read";
 import { essentialMeta } from "../../src/lib/essentials-meta";
 import { readHome } from "../../src/lib/home-model";
 import { dayMonth, today, weekdayName } from "../../src/lib/today";
+import { AnimatedAmount } from "../../src/ui/animated-amount";
 import { BrokelyAvatar } from "../../src/ui/chat";
 import { Button, Screen, Sticker } from "../../src/ui/components";
 import { fonts, space, type } from "../../src/ui/theme";
@@ -86,12 +87,11 @@ export default function HomeScreen() {
         style={{ padding: space.md, gap: space.sm }}
       >
         <Text style={[type.strong, { color: colors.onHero, fontSize: 14 }]}>Left in plan</Text>
-        <Text
+        <AnimatedAmount
+          value={home.leftInPlanSen}
           style={[type.amount, { color: colors.onHero }]}
           accessibilityLabel={`Left in plan: ${formatRM(home.leftInPlanSen)}`}
-        >
-          {formatRM(home.leftInPlanSen)}
-        </Text>
+        />
         <Text style={[type.body, { color: colors.onHero, fontSize: 14 }]}>
           of {formatRM(home.budgetSen)} · {formatRM(home.spentSen)} spent · {home.daysLeft}{" "}
           {home.daysLeft === 1 ? "day" : "days"} left
@@ -234,9 +234,10 @@ export default function HomeScreen() {
           home.spentByCategory.slice(0, 5).map((c) => (
             <View key={c.name} style={{ flexDirection: "row", justifyContent: "space-between" }}>
               <Text style={[type.strong, { color: colors.text }]}>{c.name}</Text>
-              <Text style={[type.strong, { color: colors.text, fontVariant: ["tabular-nums"] }]}>
-                {formatRM(c.amountSen)}
-              </Text>
+              <AnimatedAmount
+                value={c.amountSen}
+                style={[type.strong, { color: colors.text, fontVariant: ["tabular-nums"] }]}
+              />
             </View>
           ))
         )}
