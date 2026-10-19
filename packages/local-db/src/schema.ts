@@ -375,3 +375,13 @@ export const syncState = sqliteTable("sync_state", {
   key: text("key").primaryKey(),
   value: text("value").notNull(),
 });
+
+/**
+ * Phone-only preferences that never sync and never enter the outbox: the appearance choice
+ * (D-32) and the essential-card queue (D-30). Values are JSON.
+ */
+export const localPrefs = sqliteTable("local_prefs", {
+  key: text("key").primaryKey(),
+  value: text("value", { mode: "json" }).notNull(),
+  updatedAt: text("updated_at").notNull(),
+});

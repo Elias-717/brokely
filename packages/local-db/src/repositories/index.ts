@@ -9,3 +9,4 @@ export * from "./wallet";
 export * from "./scheduled-items";
 export * from "./bills";
 export * from "./essential-cards";
+export * from "./local-prefs";
