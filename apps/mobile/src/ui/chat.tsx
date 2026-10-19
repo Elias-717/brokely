@@ -37,15 +37,15 @@ export function BrokelyAvatar({ size }: { size: number }) {
         overflow: "hidden",
       }}
     >
-      {/* The picture is tall; zoom in on the head. */}
+      {/* The picture is tall (4:5): show the top part, head and face, only slightly zoomed. */}
       <Image
         source={MASCOT}
         accessibilityIgnoresInvertColors
         style={{
-          width: size * 2.2,
-          height: size * 2.75,
-          marginLeft: -size * 0.6,
-          marginTop: -size * 0.12,
+          width: size * 1.3,
+          height: size * 1.625,
+          marginLeft: -size * 0.15,
+          marginTop: size * 0.02,
         }}
         resizeMode="contain"
       />
