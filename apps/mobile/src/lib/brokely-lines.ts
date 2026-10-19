@@ -168,6 +168,13 @@ export const essentialLines = {
           ". I'll show it in Still to come.",
         ],
 
+  /** R-14: the catch-up spending in this category stays planned, the card adds on top. */
+  plusBefore: (before: Sen, name: string, total: Sen): Line => [
+    `Plus ${formatRM(before)} you spent on ${name.toLowerCase()} before Brokely, so ${name} is `,
+    { b: formatRM(total) },
+    " in your plan.",
+  ],
+
   leaves: (left: Sen, name: string): Line => [
     "That leaves ",
     { b: formatRM(left) },

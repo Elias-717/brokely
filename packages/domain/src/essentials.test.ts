@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { essentialSuggestion, nextEssentialCard, timesInPlan } from "./essentials";
+import {
+  essentialAllocation,
+  essentialSuggestion,
+  nextEssentialCard,
+  timesInPlan,
+  unplannedSen,
+} from "./essentials";
 import { sen } from "./money";
 
 describe("timesInPlan (D-36, FR-PLN-05/06)", () => {
@@ -104,5 +110,52 @@ describe("nextEssentialCard (FR-PLN-20, D-30)", () => {
         later: [],
       }),
     ).toBeNull();
+  });
+});
+
+describe("money not planned yet counts what is already spent (R-14)", () => {
+  const spent = (entries: [string, number][]) => new Map(entries.map(([id, n]) => [id, sen(n)]));
+  const plan = (entries: [string, number][]) =>
+    entries.map(([categoryId, n]) => ({ categoryId, amountSen: sen(n) }));
+
+  it("example 1: catch-up RM400 with RM360 spent on meals; meals for the rest adds on top: RM438, RM38 over", () => {
+    const before = spent([["meals", 36000]]);
+    expect(unplannedSen(sen(40000), plan([]), before)).toBe(4000);
+
+    const meals = essentialAllocation(sen(7800), sen(36000));
+    expect(meals).toBe(43800);
+    expect(unplannedSen(sen(40000), plan([["meals", meals]]), before)).toBe(-3800);
+  });
+
+  it("example 2: the RM360 went on Other; meals RM78 is RM38 over", () => {
+    const before = spent([["other", 36000]]);
+    const meals = essentialAllocation(sen(7800), sen(0));
+    expect(unplannedSen(sen(40000), plan([["meals", meals]]), before)).toBe(-3800);
+  });
+
+  it("example 3: a normal month, RM40 snacks and RM50 meals logged; meals RM300 for 30 days leaves RM60", () => {
+    const soFar = spent([
+      ["snacks", 4000],
+      ["meals", 5000],
+    ]);
+    // Meals spent inside the tracked days is covered by the card, not added again.
+    expect(unplannedSen(sen(40000), plan([["meals", 30000]]), soFar)).toBe(6000);
+  });
+
+  it("a plan amount bigger than the spending counts in full, and set-asides count too", () => {
+    expect(
+      unplannedSen(
+        sen(40000),
+        plan([
+          ["meals", 25000],
+          ["emergency", 3000],
+        ]),
+        spent([["meals", 1200]]),
+      ),
+    ).toBe(12000);
+  });
+
+  it("refunds can make a category's spending negative; it never adds money back beyond the plan", () => {
+    expect(unplannedSen(sen(40000), plan([]), spent([["meals", -500]]))).toBe(40000);
   });
 });

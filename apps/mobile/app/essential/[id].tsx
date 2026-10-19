@@ -1,6 +1,7 @@
 import {
   billSuggestion,
   dayOfMonth,
+  essentialAllocation,
   essentialSuggestion,
   formatRM,
   inclusiveEnd,
@@ -9,6 +10,8 @@ import {
   localDate,
   parseAmount,
   sen,
+  spendingByCategory,
+  unplannedSen,
   type LocalDate,
   type Period,
   type Sen,
@@ -19,6 +22,8 @@ import {
   findCycleOn,
   getPlan,
   listCategories,
+  listDebts,
+  listTransactions,
   postponeCard,
   type CategoryRow,
   type Plan,
@@ -73,7 +78,19 @@ export default function EssentialChat() {
     const cycle = findCycleOn(db, day);
     const plan = cycle ? getPlan(db, cycle.id) : undefined;
     const category = listCategories(db).find((c) => c.id === id);
-    return cycle && plan && category ? { cycle, plan, category } : null;
+    if (!cycle || !plan || !category) return null;
+    // What is already spent this cycle, per category, and in this category before tracking
+    // started (the catch-up entry), for R-14.
+    const transactions = listTransactions(db, {
+      start: cycle.startDate,
+      endExclusive: cycle.endDateExclusive,
+    });
+    const directions = new Map(listDebts(db).map((d) => [d.id, d.direction]));
+    const directionOf = (debtId: string) => directions.get(debtId);
+    const spentByCategory = spendingByCategory(transactions, directionOf);
+    const before = transactions.filter((t) => t.localDate < cycle.trackingStartDate);
+    const spentBeforeSen = spendingByCategory(before, directionOf).get(category.id) ?? sen(0);
+    return { cycle, plan, category, spentByCategory, spentBeforeSen };
   });
   if (!context) return <Redirect href="/" />;
   return <Chat {...context} day={day} />;
@@ -83,9 +100,18 @@ interface Context {
   cycle: PlanningCycleRow;
   plan: Plan;
   category: CategoryRow;
+  spentByCategory: ReadonlyMap<string, Sen>;
+  spentBeforeSen: Sen;
 }
 
-function Chat({ cycle, plan, category, day }: Context & { day: LocalDate }) {
+function Chat({
+  cycle,
+  plan,
+  category,
+  spentByCategory,
+  spentBeforeSen,
+  day,
+}: Context & { day: LocalDate }) {
   const meta = essentialMeta(category.name);
   const range = {
     start: localDate(cycle.startDate),
@@ -99,7 +125,6 @@ function Chat({ cycle, plan, category, day }: Context & { day: LocalDate }) {
   });
   const monthDays = lastDayOfMonth(range.start);
   const budget = sen(plan.revision.budgetSen);
-  const unplanned = plan.totals.unallocatedSen;
 
   const chat = useConversation<Step>("waiting");
   const [often, setOften] = useState<Period>(meta.likely);
@@ -107,6 +132,9 @@ function Chat({ cycle, plan, category, day }: Context & { day: LocalDate }) {
   const [billDate, setBillDate] = useState<LocalDate | null>(null);
   const [total, setTotal] = useState<Sen>(sen(0));
   const [bill, setBill] = useState<{ amountSen: Sen; due: LocalDate } | null>(null);
+
+  // With earlier spending the saved total differs from what was typed; Brokely explains it.
+  const addLabel = spentBeforeSen > 0 ? "Add to my plan" : `Add ${formatRM(total)} to my plan`;
 
   const firstQuestion = (): [Line, Step] =>
     meta.style === "often"
@@ -123,12 +151,19 @@ function Chat({ cycle, plan, category, day }: Context & { day: LocalDate }) {
 
   /** Brokely shows the working, then asks to add it (or, over budget, "Add it anyway?"). */
   const offer = (working: Line, amount: Sen) => {
-    setTotal(amount);
-    const left = sen(unplanned - amount);
-    chat.say(
-      [working, left >= 0 ? say.leaves(left, category.name) : say.over(sen(-left), budget)],
-      left >= 0 ? "confirm" : "over",
-    );
+    // The card covers the tracked days; spending from before them is added on top (R-14).
+    const allocation = essentialAllocation(amount, spentBeforeSen);
+    setTotal(allocation);
+    const after = [
+      ...plan.allocations.filter((a) => a.categoryId !== category.id),
+      { categoryId: category.id, amountSen: allocation },
+    ];
+    // Money already spent counts as spoken for (R-14).
+    const left = unplannedSen(budget, after, spentByCategory);
+    const lines: Line[] = [working];
+    if (spentBeforeSen > 0) lines.push(say.plusBefore(spentBeforeSen, category.name, allocation));
+    lines.push(left >= 0 ? say.leaves(left, category.name) : say.over(sen(-left), budget));
+    chat.say(lines, left >= 0 ? "confirm" : "over");
   };
 
   const readAmount = (text: string, again: Step): Sen | null => {
@@ -142,7 +177,7 @@ function Chat({ cycle, plan, category, day }: Context & { day: LocalDate }) {
   };
 
   const save = (acknowledged: boolean) => {
-    chat.answer(acknowledged ? "Add anyway" : `Add ${formatRM(total)} to my plan`);
+    chat.answer(acknowledged ? "Add anyway" : addLabel);
     const saved = acceptEssentialCard(repo, {
       cycleId: cycle.id,
       categoryId: category.id,
@@ -313,11 +348,7 @@ function Chat({ cycle, plan, category, day }: Context & { day: LocalDate }) {
         return (
           <>
             <ReplyButton title="Change the amount" onPress={changeAmount} />
-            <ReplyButton
-              primary
-              title={`Add ${formatRM(total)} to my plan`}
-              onPress={() => save(false)}
-            />
+            <ReplyButton primary title={addLabel} onPress={() => save(false)} />
           </>
         );
       case "over":

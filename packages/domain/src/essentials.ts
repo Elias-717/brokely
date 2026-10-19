@@ -77,3 +77,31 @@ export function nextEssentialCard(
     ? null
     : { id, position: essentials.indexOf(id) + 1, total: essentials.length };
 }
+
+/**
+ * Money not planned yet, counting what is already spent (R-14):
+ * B − Σ over categories of max(planned Cᵢ, spent Nᵢ). Spent money is spoken for even when no
+ * amount was planned for it; a plan amount bigger than the spending counts in full.
+ * Set-asides are categories too, so they count (D-04).
+ */
+export function unplannedSen(
+  budgetSen: Sen,
+  allocations: readonly { categoryId: string; amountSen: Sen }[],
+  spentByCategory: ReadonlyMap<string, Sen>,
+): Sen {
+  const planned = new Map(allocations.map((a) => [a.categoryId, a.amountSen as number]));
+  const ids = new Set([...planned.keys(), ...spentByCategory.keys()]);
+  let spokenFor = 0;
+  for (const id of ids) {
+    spokenFor += Math.max(planned.get(id) ?? 0, spentByCategory.get(id) ?? 0, 0);
+  }
+  return sen(budgetSen - spokenFor);
+}
+
+/**
+ * A card's amount covers the plan's tracked days (R-12); spending in that category from before
+ * tracking started (the catch-up "Spent before Brokely" entry) is added on top (R-14).
+ */
+export function essentialAllocation(cardTotalSen: Sen, spentBeforeTrackingSen: Sen): Sen {
+  return sen(cardTotalSen + Math.max(0, spentBeforeTrackingSen));
+}
