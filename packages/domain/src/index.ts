@@ -9,3 +9,4 @@ export * from "./spending";
 export * from "./progress";
 export * from "./debts";
 export * from "./xp";
+export * from "./categories";

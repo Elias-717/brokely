@@ -32,6 +32,7 @@ Phase 2 traceability: every business rule in SRS v1.2 section 5 (BR-01…BR-28) 
 | BR-25 | XP once per source event | `xp.ts` `awardXp` | `xp.test.ts` (AC-42) |
 | BR-26 | XP never depends on amounts or changes money | `xp.ts` (events carry no amounts) | `xp.test.ts` |
 | BR-27 | Cycle lifecycle; automatic completion; next cycle | `cycle.ts` `statusOn`, `nextCycleRange` | `cycle.test.ts` (AC-48) |
+| — | Default categories (FR-CAT-01, D-22) | `categories.ts` `DEFAULT_CATEGORIES` | `categories.test.ts` (AC-52) |
 | BR-28 | Used categories are archive-only | `plan.ts` `checkCanDeleteCategory` → `CATEGORY_IN_USE` | `plan.test.ts` (AC-27) |
 
 Also covered: FR-TXN-04 lines sum (`checkLinesSum`, AC-10), FR-TXN-06 refund limit (`checkRefund`, AC-09),
