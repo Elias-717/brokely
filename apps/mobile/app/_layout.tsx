@@ -63,7 +63,6 @@ function AppStack() {
       >
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="welcome" />
-        <Stack.Screen name="quick-start" />
         <Stack.Screen name="quick-add" options={{ presentation: "modal" }} />
       </Stack>
       <StatusBar style={scheme === "dark" ? "light" : "dark"} />

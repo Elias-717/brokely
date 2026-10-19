@@ -8,6 +8,7 @@
     "@brokely/local-db": "workspace:*",
     "@expo-google-fonts/lilita-one": "^0.4.1",
     "@expo-google-fonts/nunito": "^0.4.2",
+    "@react-native-community/datetimepicker": "9.2.1",
     "drizzle-orm": "^0.44.7",
     "expo": "~58.0.14",
     "expo-constants": "~58.0.12",
