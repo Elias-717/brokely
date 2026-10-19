@@ -48,3 +48,32 @@ export function essentialSuggestion(
   const times = timesInPlan(frequency, planDays, monthDays);
   return { times, totalSen: sen(times * amountEachSen) };
 }
+
+/** What the student has done with essential cards in this cycle (D-30). */
+export interface CardChoices {
+  /** Essentials that already have an amount in the current plan. */
+  readonly allocated: readonly string[];
+  /** "Not for me" in this cycle. */
+  readonly dismissed: readonly string[];
+  /** "Later", oldest first: these go to the back of the queue in this order. */
+  readonly later: readonly string[];
+}
+
+/**
+ * The next essential card to show on Home, one at a time (FR-PLN-20, D-23, D-24, D-30):
+ * essentials in their usual order, skipping covered and dismissed ones, with postponed ones
+ * at the back. `position` is its place among all essentials ("3 of 6"). Null when none is left.
+ */
+export function nextEssentialCard(
+  essentials: readonly string[],
+  choices: CardChoices,
+): { id: string; position: number; total: number } | null {
+  const skip = new Set([...choices.allocated, ...choices.dismissed]);
+  const later = new Set(choices.later);
+  const fresh = essentials.filter((id) => !skip.has(id) && !later.has(id));
+  const postponed = choices.later.filter((id) => essentials.includes(id) && !skip.has(id));
+  const id = fresh[0] ?? postponed[0];
+  return id === undefined
+    ? null
+    : { id, position: essentials.indexOf(id) + 1, total: essentials.length };
+}

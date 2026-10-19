@@ -7,6 +7,7 @@ import {
   percentHalfEven,
   type ProgressInput,
   type ScheduledItemLike,
+  forecastCanShow,
 } from "./progress";
 import { cat, purchase, spend, txn } from "./test-fixtures";
 import type { Transaction } from "./transactions";
@@ -220,5 +221,16 @@ describe("catch-up month: progress counts from the day the student joined (BR-29
     const fromFirst = progress({ today: day(28), transactions });
     expect(fromFirst.elapsedDays).toBe(28);
     expect(fromFirst.forecast).toBe(null); // 14 of 28 logged = 50%
+  });
+});
+
+describe("forecastCanShow (D-37)", () => {
+  it("a 12-day plan never reaches day 14, so no forecast line at all", () => {
+    expect(forecastCanShow(12)).toBe(false);
+  });
+
+  it("plans of 14 days or more keep the usual gate (BR-17)", () => {
+    expect(forecastCanShow(14)).toBe(true);
+    expect(forecastCanShow(30)).toBe(true);
   });
 });

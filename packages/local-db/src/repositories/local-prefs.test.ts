@@ -3,7 +3,15 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { outboxOperations } from "../schema";
 import { createTestContext } from "../test-db";
 import type { RepoContext } from "./context";
-import { getAppearance, getNickname, setAppearance, setNickname } from "./local-prefs";
+import {
+  dismissCard,
+  getAppearance,
+  getCardChoices,
+  getNickname,
+  postponeCard,
+  setAppearance,
+  setNickname,
+} from "./local-prefs";
 
 describe("phone-only preferences (D-30, D-32)", () => {
   let ctx: RepoContext;
@@ -53,6 +61,39 @@ describe("phone-only preferences (D-30, D-32)", () => {
 
     it("stays on this phone: no outbox entry", () => {
       setNickname(ctx, "Elias");
+      expect(ctx.db.select().from(outboxOperations).all()).toHaveLength(0);
+    });
+  });
+
+  describe("essential card choices, per cycle (D-30)", () => {
+    const NOV = "0192f3a5-0000-7000-8000-000000000010";
+    const DEC = "0192f3a5-0000-7000-8000-000000000011";
+
+    it("start empty", () => {
+      expect(getCardChoices(ctx.db, NOV)).toEqual({ dismissed: [], later: [] });
+    });
+
+    it("'Not for me' is remembered for this cycle only; a new cycle starts fresh", () => {
+      dismissCard(ctx, NOV, "transport");
+      expect(getCardChoices(ctx.db, NOV).dismissed).toEqual(["transport"]);
+      expect(getCardChoices(ctx.db, DEC)).toEqual({ dismissed: [], later: [] });
+    });
+
+    it("'Later' moves a card to the back, even when postponed twice", () => {
+      postponeCard(ctx, NOV, "meals");
+      postponeCard(ctx, NOV, "laundry");
+      postponeCard(ctx, NOV, "meals");
+      expect(getCardChoices(ctx.db, NOV).later).toEqual(["laundry", "meals"]);
+    });
+
+    it("dismissing a postponed card takes it out of Later", () => {
+      postponeCard(ctx, NOV, "meals");
+      dismissCard(ctx, NOV, "meals");
+      expect(getCardChoices(ctx.db, NOV)).toEqual({ dismissed: ["meals"], later: [] });
+    });
+
+    it("stays on this phone: no outbox entry", () => {
+      dismissCard(ctx, NOV, "meals");
       expect(ctx.db.select().from(outboxOperations).all()).toHaveLength(0);
     });
   });

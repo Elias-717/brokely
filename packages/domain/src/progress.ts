@@ -175,6 +175,14 @@ export function computeProgress(input: ProgressInput): Progress {
  * Exact integer maths throughout (BigInt), so no floating-point drift.
  */
 /**
+ * Whether a plan of this many tracked days can ever show a forecast: the gate opens on day 14
+ * (BR-17), so shorter plans show no forecast line at all (D-37).
+ */
+export function forecastCanShow(trackedDays: number): boolean {
+  return trackedDays >= FORECAST_MIN_DAYS;
+}
+
+/**
  * What pace compares the forecast with: planned spending P, or the budget B while no
  * spending category has an amount yet, e.g. right after a quick start (BR-21, R-11, D-23).
  */
