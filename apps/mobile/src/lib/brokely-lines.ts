@@ -1,4 +1,12 @@
-import { divideSen, formatRM, roundHalfEven, sen, type LocalDate, type Sen } from "@brokely/domain";
+import {
+  divideSen,
+  formatRM,
+  roundHalfEven,
+  sen,
+  type LocalDate,
+  type Period,
+  type Sen,
+} from "@brokely/domain";
 import { dayMonth, monthName } from "./today";
 
 /**
@@ -85,6 +93,98 @@ export const brokely = {
     { b: formatRM(leftInPlan) },
     ` for the next ${days === 1 ? "day" : `${days} days`}. Let's cover your essentials together, one at a time.`,
   ],
+};
+
+/** "1 wash", "2 washes", "2 top-ups". */
+const plural = (unit: string, n: number) =>
+  n === 1 ? unit : unit.endsWith("sh") ? `${unit}es` : `${unit}s`;
+
+const PER: Record<Period, string> = { day: "a day", week: "a week", month: "a month" };
+const PERIODS: Record<Period, [string, string]> = {
+  day: ["day", "days"],
+  week: ["week", "weeks"],
+  month: ["month", "months"],
+};
+
+/** What Brokely says in an essential-card chat (D-35, D-36). */
+export const essentialLines = {
+  intro: (intro: string, emoji: string): Line => [`${intro} ${emoji}`],
+
+  askHowOften: (name: string): Line => [`How often do you spend on ${name.toLowerCase()}?`],
+
+  askHowMuch: (per: Period): Line => [`About how much ${PER[per]}?`],
+
+  askCount: (unit: string): Line =>
+    unit === "wash"
+      ? ["About how many times do you wash a ", { b: "month" }, "? A guess is fine."]
+      : ["About how many ", { b: `${unit}s a month` }, "? A guess is fine."],
+
+  askEach: (unit: string): Line => [`About how much each ${unit}?`],
+
+  countedFour: (): Line => ["I'll count 4 a month. You can always change it later."],
+
+  workingOften: (each: Sen, per: Period, times: number, total: Sen, end: LocalDate): Line => {
+    const [one, many] = PERIODS[per];
+    return [
+      `${formatRM(each)} × ${times} ${times === 1 ? one : many} = `,
+      { b: formatRM(total) },
+      ` until ${dayMonth(end)}.`,
+    ];
+  },
+
+  workingCount: (
+    perMonth: number,
+    unit: string,
+    each: Sen,
+    times: number,
+    total: Sen,
+    end: LocalDate,
+  ): Line => [
+    `${perMonth} a month ≈ ${times} ${plural(unit, times)} until ${dayMonth(end)}: ${times} × ${formatRM(each)} = `,
+    { b: formatRM(total) },
+    ".",
+  ],
+
+  notSure: (unit: string): Line => [
+    `No problem! Log each ${unit} when it happens, and I'll suggest an amount once I've seen a few.`,
+  ],
+
+  askBillOrTopUp: (): Line => [
+    "Do you pay a monthly bill on a set day, or top up when it runs out?",
+  ],
+
+  askBillDate: (): Line => ["When is the next bill due?"],
+
+  askBillAmount: (): Line => ["How much is the bill?"],
+
+  workingBill: (count: number, each: Sen, total: Sen, end: LocalDate): Line =>
+    count === 0
+      ? [
+          `Your next bill is after ${dayMonth(end)}, so there's nothing to set aside in this plan. I'll still keep the bill for next time.`,
+        ]
+      : [
+          `${count} ${count === 1 ? "bill" : "bills"} until ${dayMonth(end)}: ${count} × ${formatRM(each)} = `,
+          { b: formatRM(total) },
+          ". I'll show it in Still to come.",
+        ],
+
+  leaves: (left: Sen, name: string): Line => [
+    "That leaves ",
+    { b: formatRM(left) },
+    ` not planned yet. Add ${name.toLowerCase()} to your plan?`,
+  ],
+
+  /** The D-28 acknowledgement, in Brokely's words (FR-PLN-10). */
+  over: (overBy: Sen, budget: Sen): Line => [
+    "That takes your plan ",
+    { b: `${formatRM(overBy)} over` },
+    ` your ${formatRM(budget)}. Add it anyway?`,
+  ],
+
+  added: (name: string, total: Sen): Line =>
+    total > 0
+      ? ["Done! ", { b: formatRM(total) }, ` for ${name.toLowerCase()} is in your plan.`]
+      : [`Done! ${name} is set up.`],
 };
 
 /** Plain text of a line, for screen readers. */

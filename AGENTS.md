@@ -41,7 +41,7 @@ SRS v1.6 (PRD v1.5) includes every decision up to D-27 and R-13; D-28 is layout 
 ## 3. Current state (update every session)
 
 - **Date of last update:** 2026-10-20 (Phase 3 session 2)
-- **Phase:** 3 — Offline app **in progress** (started 2026-10-19): repositories, migrations, app shell, theme with dark mode, S1 Welcome and quick start (S1c/S1b/S1d) done; next is S3a Home with essential cards
+- **Phase:** 3 — Offline app **in progress** (started 2026-10-19): repositories, migrations, app shell, theme with dark mode, S1 Welcome and quick start (S1c/S1b/S1d) done; next is S4/S4c quick add with Undo
 - **Done:**
   - PRD and SRS v1.1 written, then v1.2; decision log D-01…D-21, R-01…R-10
   - Interview guide written; research on the author's spending data done (kept private, not in repo)
@@ -66,6 +66,7 @@ SRS v1.6 (PRD v1.5) includes every decision up to D-27 and R-13; D-28 is layout 
   - **D-30** card choices remembered on the phone only; **D-31** visual style = "vintage cartoon" (cream, ink, broccoli green, mustard; Lilita One + Nunito); **D-32** dark mode in 0.1 ("vintage at night"), follows the phone setting. Mockups: claude.ai artifact "Brokely style directions". SRS/PRD need a dark-mode requirement in the next revision
   - First debug build runs on the emulator (Windows build setup in section 12)
   - Theme (D-31/D-32): light + dark tokens in `apps/mobile/src/ui/theme.ts`, `ThemeProvider` (Light / Dark / Same as phone under More, stored in phone-only `local_prefs`, migration 0001), bundled Lilita One + Nunito (3 weights), sticker cards, stroke tab icons (react-native-svg), expo-system-ui
+  - **S3a Home** (`app/(tabs)/index.tsx`, data from `src/lib/home-model.ts` via `computeProgress`): left in plan, forecast line (hidden on plans < 14 days, D-37), next essential card (domain `nextEssentialCard`, choices per cycle in `local_prefs`, D-30), still to come (list only; Mark paid comes with S6), spent so far. **Essential chats** `app/essential/[id].tsx` (D-35, D-36): often (day/week/month) or count (washes/top-ups a month, `timesInPlan`, rounded up) or Phone bill-or-top-up; over budget asks "Add it anyway?" (D-28). Card styles in `src/lib/essentials-meta.ts`
   - Quick start as a **chat with Brokely** (D-33): one conversation `app/quick-start/index.tsx` covers S1c/S1b/S1d (steps choose → fresh-amount/confirm or cu-money/gone/mostly/confirm), then `app/quick-start/done.tsx` ("Your plan is set"). Brokely's words are templates in `src/lib/brokely-lines.ts` (edit wording there); chat pieces in `src/ui/chat.tsx`, `src/ui/use-conversation.ts`; gentle motion in `src/ui/motion.tsx` (respects Reduce motion). Optional nickname on Welcome and in More (D-34, `local_prefs`). `parseAmount` in domain; Android date picker for Change dates
   - Contracts: `scheduledItemId(billId, dueDate)` = UUIDv5 under `BROKELY_ID_NAMESPACE` (S-05), value pinned by a test; uuid 11.1.0
   - App dependencies via `expo install` (expo-sqlite, expo-router + peers, expo-crypto), drizzle-orm, `@brokely/local-db`, uuid (v7 from expo-crypto bytes). Migration `packages/local-db/drizzle/0000_initial.sql` + `migrations.js` (export `@brokely/local-db/migrations`); a test fails if `schema.ts` changes without `db:generate`. Metro `.sql` + babel inline-import
@@ -79,7 +80,7 @@ SRS v1.6 (PRD v1.5) includes every decision up to D-27 and R-13; D-28 is layout 
   1. **Run on the author's phone** with a development build (`npx expo run:android` or `eas build --profile development --platform android`) to prove migrations + S1 on a real device before building many screens; name the reference device (NFR-06)
   2. **Screens in this order**, each from its Figma frame (`docs/design/wireframes.md`; S1 = node 9:288, S1b 9:306, S1c 16:330, S1d 16:349): S3a Home with essential cards (`acceptEssentialCard`; card queue Later/Not for me per cycle in `local_prefs`, D-30) → S4/S4c quick add with Undo (`recordPurchase`, `recordMoneyIn`, `deleteTransaction`) → S5 Records → S6/S6b Bills + Mark paid → S7/S7b Debts → S8 Insights (`computeProgress`) → S11 Wallet check → S9 More, settings (`user_settings` repo still missing), export/delete → S10 cycle finished. Guided setup S2a–S2d after the main flow.
   3. Repositories still missing: user settings, guided-setup draft revisions (D-20, AC-47), start next cycle (AC-48), export
-  4. Later: server database schema (Drizzle + PostgreSQL) before Phase 4; SRS v1.7 / PRD v1.6 (add D-29…D-32 to the change record; dark mode is new 0.1 scope) when interviews happen
+  4. Later: server database schema (Drizzle + PostgreSQL) before Phase 4; SRS v1.7 / PRD v1.6 (add D-29…D-37 to the change record; dark mode is new 0.1 scope; D-36 rewords AC-02 and AC-54: laundry is never a dated bill) when interviews happen
 - **Open questions:** see section 11
 
 ---

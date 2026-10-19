@@ -11,7 +11,6 @@ import {
   type Sen,
 } from "@brokely/domain";
 import { getNickname, listCategories, quickStart } from "@brokely/local-db";
-import { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
@@ -19,7 +18,7 @@ import { repo } from "../../src/db/client";
 import { useRead } from "../../src/db/use-read";
 import { brokely, type Line } from "../../src/lib/brokely-lines";
 import { refusalText } from "../../src/lib/messages";
-import { dayMonth, toDate, toLocalDate, today } from "../../src/lib/today";
+import { dayMonth, today } from "../../src/lib/today";
 import {
   AmountComposer,
   BrokelyBubble,
@@ -28,6 +27,7 @@ import {
   ReplyButton,
   TypingBubble,
 } from "../../src/ui/chat";
+import { pickDate } from "../../src/ui/date-picker";
 import { space } from "../../src/ui/theme";
 import { useConversation } from "../../src/ui/use-conversation";
 
@@ -42,18 +42,6 @@ type Step =
   | "cu-gone" // S1d: roughly how much is gone
   | "cu-mostly" // S1d: mostly on which category
   | "cu-confirm";
-
-/** Opens Android's date picker; null if the student cancels. */
-function pickDate(initial: LocalDate): Promise<LocalDate | null> {
-  return new Promise((resolve) =>
-    DateTimePickerAndroid.open({
-      value: toDate(initial),
-      mode: "date",
-      onChange: (event, picked) =>
-        resolve(event.type === "set" && picked ? toLocalDate(picked) : null),
-    }),
-  );
-}
 
 /**
  * Quick start as a chat with Brokely (D-33): S1c, S1b and S1d in one conversation.

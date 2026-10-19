@@ -1,4 +1,4 @@
-import { localDate, type LocalDate } from "@brokely/domain";
+import { localDate, weekday, type LocalDate } from "@brokely/domain";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -49,4 +49,11 @@ export function dayMonthYear(date: LocalDate): string {
 /** "November" */
 export function monthName(date: LocalDate): string {
   return MONTH_NAMES[parts(date)[1] - 1]!;
+}
+
+const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+/** "Tuesday" */
+export function weekdayName(date: LocalDate): string {
+  return WEEKDAYS[weekday(date)]!;
 }
