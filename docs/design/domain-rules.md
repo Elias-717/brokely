@@ -25,7 +25,7 @@ Phase 2 traceability: every business rule in SRS v1.2 section 5 (BR-01…BR-28) 
 | BR-18 | Daily average; everyday rate without bills and estimates | `progress.ts` `computeProgress` | `progress.test.ts` (AC-16, AC-51) |
 | BR-19 | Still to come = upcoming items in the cycle | `progress.ts` `computeProgress` | `progress.test.ts` (AC-19) |
 | BR-20 | Forecast middle and ±15% range rounded to RM10 | `progress.ts` `forecast` | `progress.test.ts` (AC-13) |
-| BR-21 | Pace from the unrounded middle | `progress.ts` `forecast` | `progress.test.ts` (AC-13) |
+| BR-21 | Pace from the unrounded middle; budget as target while P is 0 (R-11) | `progress.ts` `forecast`, `paceTarget` | `progress.test.ts` (AC-13, AC-56) |
 | BR-22 | Debt outstanding derived; can't go below zero | `debts.ts` `summarizeDebt`, `checkWithinOutstanding` → `DEBT_EXCEEDS_OUTSTANDING` | `debts.test.ts` (AC-08) |
 | BR-23 | Receivable write-off becomes spending | `spending.ts` `spendingByCategory`, `debts.ts` | `spending.test.ts`, `debts.test.ts` (AC-11) |
 | BR-24 | XP values and daily cap | `xp.ts` `XP_VALUES`, `awardXp` | `xp.test.ts` (AC-42) |

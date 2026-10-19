@@ -38,6 +38,8 @@ export interface ProgressInput {
   readonly scheduledItems: readonly ScheduledItemLike[];
   /** P from the current revision (BR-06). */
   readonly plannedSpendingSen: Sen;
+  /** B from the current revision; pace compares with it while P is 0 (R-11). */
+  readonly budgetSen: Sen;
   readonly debtDirectionOf: DebtDirectionOf;
 }
 
@@ -48,7 +50,7 @@ export interface Forecast {
   readonly lowSen: Sen;
   /** Rounded up to RM10 (R-10). */
   readonly highSen: Sen;
-  /** Compares the unrounded middle with planned spending (BR-21). */
+  /** Compares the unrounded middle with planned spending, or the budget while P is 0 (BR-21, R-11). */
   readonly pace: "on_track" | "over_pace";
 }
 
@@ -147,7 +149,7 @@ export function computeProgress(input: ProgressInput): Progress {
     everydayRate: hasElapsed ? divideSen(everydaySen, elapsed) : null,
     stillToComeSen,
     forecast: gateMet
-      ? forecast(spentSen, stillToComeSen, everydaySen, elapsed, daysLeft, input.plannedSpendingSen)
+      ? forecast(spentSen, stillToComeSen, everydaySen, elapsed, daysLeft, paceTarget(input))
       : null,
   };
 }
@@ -157,13 +159,21 @@ export function computeProgress(input: ProgressInput): Progress {
  * Low/high scale the everyday part by 0.85/1.15, then round down/up to RM10 (R-10).
  * Exact integer maths throughout (BigInt), so no floating-point drift.
  */
+/**
+ * What pace compares the forecast with: planned spending P, or the budget B while no
+ * spending category has an amount yet, e.g. right after a quick start (BR-21, R-11, D-23).
+ */
+export function paceTarget(input: Pick<ProgressInput, "plannedSpendingSen" | "budgetSen">): Sen {
+  return input.plannedSpendingSen > 0 ? input.plannedSpendingSen : input.budgetSen;
+}
+
 function forecast(
   spent: Sen,
   stillToCome: Sen,
   everyday: Sen,
   elapsed: number,
   daysLeft: number,
-  planned: Sen,
+  paceTargetSen: Sen,
 ): Forecast {
   const known = BigInt(spent + stillToCome);
   const e = BigInt(elapsed);
@@ -180,7 +190,7 @@ function forecast(
     middle: divideSen(sen(Number(middleNumerator)), elapsed),
     lowSen: sen(Number(low)),
     highSen: sen(Number(high)),
-    pace: middleNumerator > BigInt(planned) * e ? "over_pace" : "on_track",
+    pace: middleNumerator > BigInt(paceTargetSen) * e ? "over_pace" : "on_track",
   };
 }
 

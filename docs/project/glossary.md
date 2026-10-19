@@ -1,4 +1,4 @@
-# Brokely Glossary (v1.2)
+# Brokely Glossary (v1.3)
 
 Plain meanings only. The exact formulas live in the SRS business rules (section 5).
 
@@ -11,6 +11,7 @@ Plain meanings only. The exact formulas live in the SRS business rules (section 
 - **Unallocated**: budget you haven't given to anything yet.
 - **Shortfall**: when you've planned more than your budget.
 - **Revision**: a changed version of your plan. The first version is always kept.
+- **Quick start**: the fastest way to make a plan: just your budget and dates. You can add essentials later.
 
 ## Your money
 - **Transaction**: one thing you recorded, like "RM8 lunch".

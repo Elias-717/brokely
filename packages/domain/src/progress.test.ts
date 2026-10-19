@@ -24,6 +24,7 @@ function progress(over: Partial<ProgressInput>) {
     checkIns: [],
     scheduledItems: [],
     plannedSpendingSen: sen(33000),
+    budgetSen: sen(40000),
     debtDirectionOf: () => undefined,
     ...over,
   });
@@ -175,5 +176,19 @@ describe("forecast range and pace (BR-20, BR-21, R-10, AC-13)", () => {
       plannedSpendingSen: sen(38000),
     });
     expect(relaxed.forecast?.pace).toBe("on_track");
+  });
+
+  it("compares with the budget while no category has an amount yet (R-11, AC-56)", () => {
+    // Quick start (D-23): budget only, P = 0. Middle RM370.
+    const quick = (budget: number) =>
+      progress({
+        today: day(15),
+        transactions,
+        scheduledItems,
+        plannedSpendingSen: sen(0),
+        budgetSen: sen(budget),
+      });
+    expect(quick(40000).forecast?.pace).toBe("on_track");
+    expect(quick(35000).forecast?.pace).toBe("over_pace");
   });
 });

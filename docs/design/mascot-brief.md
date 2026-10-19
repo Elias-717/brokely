@@ -31,6 +31,16 @@ students feel broke, and Brokely helps their money grow by helping them plan.
 | Proud | 3+ day logging streak | Chest out, sparkles or a small flame |
 | Sleepy | No logged day for 3+ days | Half-closed eyes, "zzz" |
 
+## Needed first, for 0.1: the welcome picture (D-23, FR-MAS-08)
+
+One extra picture is needed **before** the 12 above, because it ships in 0.1 on the first-run welcome screen:
+
+| File | Look |
+|---|---|
+| `brokely_welcome.png` | Stage 2 young broccoli, happy, **waving hello**, maybe a coin tossed in the other hand. Friendly and confident, not smug |
+
+The greeting ("Hi, I'm Brokely! Broke is my name, not your future. Let's plan it together 🥦") is added by the app, not drawn in the picture.
+
 ## Guardrails (from the requirements)
 
 - **Never shame** (rule 9, BR-26): no crying, no angry, no wilted or starving Brokely, no frowning at food or laundry.
