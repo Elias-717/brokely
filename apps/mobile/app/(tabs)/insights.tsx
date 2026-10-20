@@ -303,20 +303,48 @@ function PlanLine({ line, onPress }: { line: CategoryLine; onPress: () => void }
       onPress={onPress}
       style={{ gap: 4, paddingVertical: 4 }}
     >
-      <View style={{ flexDirection: "row", justifyContent: "space-between", gap: space.sm }}>
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: space.sm,
+        }}
+      >
         <Text style={[type.strong, { color: colors.text, flex: 1 }]}>
           {line.name} {categoryEmoji(line.name)}
           {line.kind === "set_aside" ? (
             <Text style={[type.small, { color: colors.muted }]}> · set aside</Text>
           ) : null}
         </Text>
-        <Text style={[type.small, { color: over ? colors.warning : colors.muted }]}>
-          {line.allocationSen === 0
-            ? "not planned"
-            : over
+        {line.allocationSen === 0 ? (
+          // Not in the plan yet: offer to plan it right here (D-52).
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Add ${line.name} to your plan`}
+            onPress={() =>
+              router.push(line.kind === "set_aside" ? "/plan" : `/essential/${line.id}`)
+            }
+            hitSlop={8}
+            style={({ pressed }) => ({
+              minHeight: 32,
+              justifyContent: "center",
+              paddingHorizontal: space.sm,
+              borderRadius: 99,
+              borderWidth: 2,
+              borderColor: colors.primary,
+              opacity: pressed ? 0.6 : 1,
+            })}
+          >
+            <Text style={[type.small, { color: colors.primary }]}>+ Add to plan</Text>
+          </Pressable>
+        ) : (
+          <Text style={[type.small, { color: over ? colors.warning : colors.muted }]}>
+            {over
               ? `${formatRM(sen(-line.remainingSen))} over`
               : `${formatRM(line.remainingSen)} left`}
-        </Text>
+          </Text>
+        )}
       </View>
       {line.allocationSen > 0 ? (
         <View
