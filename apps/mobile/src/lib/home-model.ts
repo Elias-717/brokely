@@ -1,11 +1,14 @@
 import {
   addDays,
+  budgetUsed,
   computeProgress,
+  dailyGuide,
   daysBetween,
   forecastCanShow,
   lengthInDays,
   localDate,
   nextEssentialCard,
+  percentHalfEven,
   sen,
   spendingByCategory,
   type Forecast,
@@ -58,9 +61,28 @@ export type HomeModel =
         amountSen: Sen;
       }[];
       readonly stillToComeSen: Sen;
+      /** Money a day that keeps the plan, after bills and set-asides (D-58); null at the end. */
+      readonly perDaySen: Sen | null;
+      /** Left in plan minus bills still to come and unused set-asides (D-58). */
+      readonly freeSen: Sen;
+      /** % of the budget spent: the real figure for the label, capped 0…1 for the circle. */
+      readonly usedPercent: number;
+      readonly usedArc: number;
+      /** Brokely's one-line status under the greeting (D-58). */
+      readonly status: "fresh" | "on-plan" | "ahead" | "over";
+      /** The latest spending, newest first (D-58). */
+      readonly recent: readonly {
+        id: string;
+        title: string;
+        categoryName: string;
+        date: LocalDate;
+        amountSen: Sen;
+      }[];
       readonly spentByCategory: readonly {
         name: string;
         amountSen: Sen;
+        /** Share of all spending, 0…1, for the row's thin bar. */
+        share: number;
         /** What it was: the notes typed on its records, newest first, without repeats. */
         notes: readonly string[];
       }[];
@@ -123,8 +145,54 @@ export function readHome(db: Db, today: LocalDate): HomeModel {
     .map(([id, amountSen]) => ({
       name: nameOf.get(id) ?? "Other",
       amountSen,
+      share: progress.spentSen > 0 ? amountSen / progress.spentSen : 0,
       notes: notesFor(transactions, id),
     }));
+
+  // Daily guide (D-58): set-aside money not used yet is kept apart from everyday spending.
+  const byCategory = spendingByCategory(transactions, directionOf);
+  const setAsideLeftSen = sen(
+    plan.allocations
+      .filter((a) => a.kind === "set_aside")
+      .reduce((sum, a) => sum + Math.max(0, a.amountSen - (byCategory.get(a.categoryId) ?? 0)), 0),
+  );
+  const leftInPlanSen = sen(budgetSen - progress.spentSen);
+  const daysLeft = daysBetween(today, range.endExclusive);
+  const guide = dailyGuide({
+    leftInPlanSen,
+    stillToComeSen: progress.stillToComeSen,
+    setAsideLeftSen,
+    daysLeft,
+  });
+  const used = budgetUsed(progress.spentSen, budgetSen);
+  const status =
+    leftInPlanSen < 0
+      ? "over"
+      : progress.spentSen === 0
+        ? "fresh"
+        : progress.forecast?.pace === "over_pace"
+          ? "ahead"
+          : "on-plan";
+  const recent = [...transactions]
+    .filter((t) => t.type === "purchase")
+    .sort((a, b) =>
+      a.localDate === b.localDate
+        ? b.occurredAt.localeCompare(a.occurredAt)
+        : b.localDate.localeCompare(a.localDate),
+    )
+    .slice(0, 3)
+    .map((t) => {
+      const line = t.lines.find((l) => l.kind === "spending");
+      const categoryName =
+        line?.kind === "spending" ? (nameOf.get(line.categoryId) ?? "Other") : "Spent";
+      return {
+        id: t.id,
+        title: t.note.trim() || categoryName,
+        categoryName,
+        date: t.localDate,
+        amountSen: t.amountSen,
+      };
+    });
 
   const essentials = categories
     .filter((c) => c.kind === "essential" && !c.archivedAt)
@@ -137,10 +205,16 @@ export function readHome(db: Db, today: LocalDate): HomeModel {
     cycleId: cycle.id,
     budgetSen,
     spentSen: progress.spentSen,
-    leftInPlanSen: sen(budgetSen - progress.spentSen),
+    leftInPlanSen,
+    perDaySen: guide.perDaySen,
+    freeSen: guide.freeSen,
+    usedPercent: used ? percentHalfEven(used.label) : 0,
+    usedArc: used?.arc ?? 0,
+    status,
+    recent,
     dayOfPlan: Math.min(planDays, Math.max(1, daysBetween(trackingStart, today) + 1)),
     planDays,
-    daysLeft: daysBetween(today, range.endExclusive),
+    daysLeft,
     endExclusive: range.endExclusive,
     forecast: !forecastCanShow(planDays)
       ? { kind: "hidden" }

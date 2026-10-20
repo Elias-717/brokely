@@ -174,6 +174,17 @@ const PERIODS: Record<Period, [string, string]> = {
   month: ["month", "months"],
 };
 
+/**
+ * Brokely's one line under the greeting on Home (D-58): fact first, kind, never shaming
+ * (rule 9), never a balance (rule 6).
+ */
+export const homeStatus: Record<"fresh" | "on-plan" | "ahead" | "over", string> = {
+  fresh: "Fresh start! Log your first spending when it happens.",
+  "on-plan": "You're on plan. Nice going! 🥦",
+  ahead: "Spending is running a bit ahead of plan. Small days help.",
+  over: "The plan is used up. Keep logging, every record still helps.",
+};
+
 /** What Brokely says in an essential-card chat (D-35, D-36). */
 export const essentialLines = {
   intro: (intro: string, emoji: string): Line => [`${intro} ${emoji}`],

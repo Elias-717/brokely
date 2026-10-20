@@ -9,25 +9,31 @@ import {
 } from "@brokely/local-db";
 import { router } from "expo-router";
 import { useEffect } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, Text, useWindowDimensions, View } from "react-native";
 import { repo } from "../../src/db/client";
 import { useRead } from "../../src/db/use-read";
-import { essentialMeta } from "../../src/lib/essentials-meta";
+import { homeStatus } from "../../src/lib/brokely-lines";
+import { categoryEmoji, essentialMeta } from "../../src/lib/essentials-meta";
 import { readHome } from "../../src/lib/home-model";
 import { dayMonth, today, weekdayName } from "../../src/lib/today";
 import { AnimatedAmount } from "../../src/ui/animated-amount";
 import { BrokelyAvatar } from "../../src/ui/chat";
 import { Button, Screen, Sticker } from "../../src/ui/components";
-import { fonts, space, type } from "../../src/ui/theme";
+import { ProgressRing } from "../../src/ui/progress-ring";
+import { fonts, radius, space, type } from "../../src/ui/theme";
 import { useTheme } from "../../src/ui/theme-context";
 import { useUndo } from "../../src/ui/undo";
 
 /** A forecast bound is a whole RM10 step (R-10), so it reads best without sen. */
 const wholeRM = (amount: Sen) => `RM${Math.round(amount / 100)}`;
 
+/** A real minus sign (U+2212), read as "minus" by screen readers (D-54). */
+const MINUS = "−";
+
 /**
- * S3a Home (FR-INS-01, FR-INS-06, FR-INS-07, FR-PLN-20, D-24, D-28, D-30, D-35, D-37):
- * left in plan first, then the next essential card, still to come and spending so far.
+ * S3a Home (FR-INS-01, FR-INS-02, FR-INS-06, FR-INS-07, FR-PLN-20, D-24, D-28, D-30, D-35, D-37,
+ * D-58): Brokely and a status line, left in plan with a daily guide and a ring of the budget
+ * used, then spending so far, the next essential card, still to come and recent spending.
  */
 export default function HomeScreen() {
   const { colors } = useTheme();
@@ -39,9 +45,13 @@ export default function HomeScreen() {
   const home = useRead((db) => readHome(db, day), [day]);
   const nickname = useRead(getNickname);
   const showUndo = useUndo();
+  const { width } = useWindowDimensions();
+  // The ring stays smaller than the amount beside it, also on narrow phones (D-58).
+  const ringSize = Math.round(Math.min(104, Math.max(80, width * 0.24)));
 
   const header = (
-    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: space.md }}>
+      <BrokelyAvatar size={56} />
       <View style={{ gap: 2, flex: 1 }}>
         <Text
           style={[
@@ -52,18 +62,20 @@ export default function HomeScreen() {
           {weekdayName(day)}, {dayMonth(day)}
           {home.kind === "plan" ? ` · day ${home.dayOfPlan} of ${home.planDays}` : ""}
         </Text>
-        <Text style={[type.title, { color: colors.text }]}>
+        <Text style={[type.title, { color: colors.text }]} numberOfLines={1}>
           {nickname ? `Hi, ${nickname}` : "Hi there"}
         </Text>
+        {home.kind === "plan" ? (
+          <Text style={[type.small, { color: colors.muted }]}>{homeStatus[home.status]}</Text>
+        ) : null}
       </View>
-      <BrokelyAvatar size={56} />
     </View>
   );
 
   if (home.kind === "no-plan") {
     // Track-first is fine (FR-PLN-04); offer a plan without pushing.
     return (
-      <Screen>
+      <Screen gutter={20} bottom={96}>
         {header}
         {home.draftId ? (
           <Sticker background={colors.cardTint} style={{ padding: space.md, gap: space.sm }}>
@@ -103,64 +115,96 @@ export default function HomeScreen() {
   }
 
   const meta = home.card ? essentialMeta(home.card.name) : null;
-  const spentShare =
-    home.budgetSen > 0 ? Math.min(1, Math.max(0, home.spentSen / home.budgetSen)) : 0;
+  const forecastLine =
+    home.forecast.kind === "waiting"
+      ? "Forecast shows from day 14"
+      : home.forecast.kind === "shown"
+        ? `${home.forecast.value.pace === "on_track" ? "On pace" : "Over pace"} · forecast ${wholeRM(home.forecast.value.lowSen)} – ${wholeRM(home.forecast.value.highSen)}`
+        : "";
 
   return (
-    <Screen>
+    <Screen gutter={20} bottom={96}>
       {header}
 
-      {/* Left in plan (FR-INS-01) */}
+      {/* 1. Left in plan with the daily guide and how much is used (FR-INS-01, D-58) */}
       <Sticker
         offset={4}
         background={colors.hero}
         outline={colors.heroOutline}
         style={{ padding: space.md, gap: space.sm }}
       >
-        <Text style={[type.strong, { color: colors.onHero, fontSize: 14 }]}>Left in plan</Text>
-        <AnimatedAmount
-          value={home.leftInPlanSen}
-          style={[type.amount, { color: colors.onHero }]}
-          accessibilityLabel={`Left in plan: ${formatRM(home.leftInPlanSen)}`}
-        />
-        <Text style={[type.body, { color: colors.onHero, fontSize: 14 }]}>
-          of {formatRM(home.budgetSen)} · {formatRM(home.spentSen)} spent · {home.daysLeft}{" "}
-          {home.daysLeft === 1 ? "day" : "days"} left
-        </Text>
-        <View
-          style={{
-            height: 12,
-            borderRadius: 99,
-            borderWidth: 2,
-            borderColor: colors.shadow,
-            backgroundColor: colors.heroTrack,
-            overflow: "hidden",
-          }}
-        >
-          <View
-            style={{
-              width: `${spentShare * 100}%`,
-              height: "100%",
-              backgroundColor: colors.heroFill,
-            }}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: space.md }}>
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={[type.strong, { color: colors.onHero, fontSize: 14 }]}>Left in plan</Text>
+            <AnimatedAmount
+              value={home.leftInPlanSen}
+              style={[type.amount, { color: colors.onHero }]}
+              accessibilityLabel={`Left in plan: ${formatRM(home.leftInPlanSen)}`}
+            />
+            <Text style={[type.small, { color: colors.onHero, opacity: 0.9 }]}>
+              of {formatRM(home.budgetSen)} · {home.daysLeft} {home.daysLeft === 1 ? "day" : "days"}{" "}
+              left
+            </Text>
+          </View>
+          <ProgressRing
+            size={ringSize}
+            arc={home.usedArc}
+            label={`${home.usedPercent}%`}
+            caption="spent"
+            color={colors.heroFill}
+            track={colors.heroTrack}
+            textColor={colors.onHero}
+            mutedColor={colors.onHero}
+            accessibilityLabel={`${home.usedPercent} percent of your budget spent`}
           />
         </View>
-        {home.forecast.kind === "waiting" ? (
-          <Text style={[type.small, { color: colors.onHero, opacity: 0.9 }]}>
-            Forecast shows from day 14
-          </Text>
-        ) : home.forecast.kind === "shown" ? (
-          <Text style={[type.small, { color: colors.onHero }]}>
-            {home.forecast.value.pace === "on_track" ? "On pace" : "Over pace"} · forecast{" "}
-            {wholeRM(home.forecast.value.lowSen)} – {wholeRM(home.forecast.value.highSen)}
-          </Text>
-        ) : null}
-      </Sticker>
 
-      {/* Optional wallet check (FR-WAL-01, D-27) */}
-      <View style={{ flexDirection: "row", justifyContent: "flex-end", marginTop: -space.sm }}>
-        <Button label="Wallet check" variant="link" onPress={() => router.push("/wallet-check")} />
-      </View>
+        {/* About how much a day keeps the plan, after bills and set-asides (D-58) */}
+        {home.perDaySen !== null ? (
+          <View
+            style={{
+              borderRadius: radius.button,
+              backgroundColor: colors.heroTrack,
+              padding: space.sm,
+            }}
+          >
+            <Text style={[type.strong, { color: colors.onHero, fontSize: 15 }]}>
+              {home.freeSen > 0
+                ? `About ${formatRM(home.perDaySen)} a day keeps you on plan`
+                : "Bills to come and set-asides need what's left"}
+            </Text>
+            {home.stillToComeSen > 0 ? (
+              <Text style={[type.small, { color: colors.onHero, opacity: 0.85 }]}>
+                After {formatRM(home.stillToComeSen)} of bills still to come
+              </Text>
+            ) : null}
+          </View>
+        ) : null}
+
+        <View style={{ flexDirection: "row", gap: space.md }}>
+          <Stat label="Spent" value={formatRM(home.spentSen)} />
+          <Stat label="Remaining" value={formatRM(home.leftInPlanSen)} />
+        </View>
+
+        <View
+          style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}
+        >
+          <Text style={[type.small, { color: colors.onHero, opacity: 0.9, flex: 1 }]}>
+            {forecastLine}
+          </Text>
+          {/* Optional wallet check (FR-WAL-01, D-27) */}
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push("/wallet-check")}
+            hitSlop={8}
+            style={{ minHeight: 40, justifyContent: "center" }}
+          >
+            <Text style={[type.small, { color: colors.onHero, textDecorationLine: "underline" }]}>
+              Wallet check
+            </Text>
+          </Pressable>
+        </View>
+      </Sticker>
 
       {/* Nothing logged today: one tap marks a covered day (FR-TXN-08, R-01) */}
       {home.offerCheckIn ? (
@@ -172,7 +216,7 @@ export default function HomeScreen() {
             borderWidth: 2,
             borderStyle: "dashed",
             borderColor: colors.outline,
-            borderRadius: 14,
+            borderRadius: radius.card,
             backgroundColor: colors.card,
             paddingLeft: space.md,
             padding: 6,
@@ -191,9 +235,74 @@ export default function HomeScreen() {
         </View>
       ) : null}
 
+      {/* 2. Spending breakdown (FR-INS-02) */}
+      <Sticker style={{ padding: space.md, gap: space.sm }}>
+        <SectionHeader
+          title="Spent so far"
+          action={home.spentByCategory.length > 0 ? "View all" : undefined}
+          onAction={() => router.push("/records")}
+        />
+        {home.spentByCategory.length === 0 ? (
+          <CompactEmpty
+            text="Nothing logged yet."
+            action="+ Log spending"
+            onAction={() => router.push("/quick-add")}
+          />
+        ) : (
+          home.spentByCategory.slice(0, 5).map((c) => (
+            <View
+              key={c.name}
+              style={{ flexDirection: "row", gap: space.sm, alignItems: "center" }}
+            >
+              <IconBubble emoji={categoryEmoji(c.name) || "🏷️"} />
+              <View style={{ flex: 1, gap: 4 }}>
+                <View
+                  style={{ flexDirection: "row", justifyContent: "space-between", gap: space.sm }}
+                >
+                  <Text
+                    style={[type.strong, { color: colors.text, flexShrink: 1 }]}
+                    numberOfLines={1}
+                  >
+                    {c.name}
+                  </Text>
+                  <AnimatedAmount
+                    value={c.amountSen}
+                    style={[type.strong, { color: colors.text, fontVariant: ["tabular-nums"] }]}
+                  />
+                </View>
+                {/* What it was, from the notes typed in quick add */}
+                {c.notes.length > 0 ? (
+                  <Text style={[type.small, { color: colors.muted }]} numberOfLines={1}>
+                    {c.notes.slice(0, 3).join(", ")}
+                    {c.notes.length > 3 ? ` +${c.notes.length - 3} more` : ""}
+                  </Text>
+                ) : null}
+                {/* Its share of all spending */}
+                <View
+                  style={{
+                    height: 4,
+                    borderRadius: 99,
+                    backgroundColor: colors.cardTint,
+                    overflow: "hidden",
+                  }}
+                >
+                  <View
+                    style={{
+                      width: `${Math.round(c.share * 100)}%`,
+                      height: "100%",
+                      backgroundColor: colors.primary,
+                    }}
+                  />
+                </View>
+              </View>
+            </View>
+          ))
+        )}
+      </Sticker>
+
       {/* The next essential card, one at a time (FR-PLN-20, D-30, D-35) */}
       {home.card && meta ? (
-        <Sticker background={colors.cardTint} style={{ padding: space.md, gap: space.md }}>
+        <Sticker background={colors.cardTint} style={{ padding: space.md, gap: space.sm }}>
           <View style={{ flexDirection: "row", gap: space.sm, alignItems: "flex-start" }}>
             <BrokelyAvatar size={40} />
             <View style={{ flex: 1, gap: 2 }}>
@@ -227,23 +336,16 @@ export default function HomeScreen() {
         </Sticker>
       ) : null}
 
-      {/* Still to come, separate from spending (FR-INS-07) */}
+      {/* 3. Still to come, separate from spending (FR-INS-07) */}
       <Sticker style={{ padding: space.md, gap: space.sm }}>
-        <View
-          style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" }}
-        >
-          <Text style={[type.heading, { color: colors.text }]}>Still to come</Text>
-          {home.stillToCome.length > 0 ? (
-            <Text style={[type.strong, { color: colors.text }]}>
-              {formatRM(home.stillToComeSen)}
-            </Text>
-          ) : null}
-        </View>
+        <SectionHeader
+          title="Still to come"
+          detail={home.stillToCome.length > 0 ? formatRM(home.stillToComeSen) : undefined}
+          action={home.stillToCome.length > 3 ? `See all ${home.stillToCome.length}` : "+ Add"}
+          onAction={() => router.push(home.stillToCome.length > 3 ? "/bills" : "/bills/edit")}
+        />
         {home.stillToCome.length === 0 ? (
-          <Text style={[type.body, { color: colors.muted, fontSize: 14 }]}>
-            Nothing yet. Bills and subscriptions with a set date, like a phone plan or Spotify, show
-            up here.
-          </Text>
+          <Text style={[type.small, { color: colors.muted }]}>No bills or subscriptions due.</Text>
         ) : (
           home.stillToCome.slice(0, 3).map((item) => (
             <View
@@ -251,10 +353,11 @@ export default function HomeScreen() {
               style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}
             >
               <View style={{ flex: 1 }}>
-                <Text style={[type.body, { color: colors.text }]}>
-                  {item.name} · {item.dueDate === day ? "today" : dayMonth(item.dueDate)}
+                <Text style={[type.strong, { color: colors.text }]} numberOfLines={1}>
+                  {item.name}
                 </Text>
-                <Text style={[type.strong, { color: colors.text, fontVariant: ["tabular-nums"] }]}>
+                <Text style={[type.small, { color: colors.muted }]}>
+                  {item.dueDate === day ? "Due today" : `Due ${dayMonth(item.dueDate)}`} ·{" "}
                   {formatRM(item.amountSen)}
                 </Text>
               </View>
@@ -267,47 +370,136 @@ export default function HomeScreen() {
             </View>
           ))
         )}
-        <Button
-          label={
-            home.stillToCome.length > 3
-              ? `See all ${home.stillToCome.length}`
-              : "Bills & subscriptions"
-          }
-          variant="link"
-          onPress={() => router.push("/bills")}
-        />
       </Sticker>
 
-      {/* Spending so far (FR-INS-02) */}
-      <View style={{ gap: space.xs, paddingHorizontal: space.xs, paddingBottom: space.lg }}>
-        <Text style={[type.heading, { color: colors.text }]}>Spent so far</Text>
-        {home.spentByCategory.length === 0 ? (
-          <Pressable onPress={() => router.push("/quick-add")} accessibilityRole="button">
-            <Text style={[type.body, { color: colors.muted, fontSize: 14 }]}>
-              Nothing logged yet. Tap + when you spend.
-            </Text>
-          </Pressable>
+      {/* 4. Recent spending (D-58) */}
+      <Sticker style={{ padding: space.md, gap: space.sm }}>
+        <SectionHeader
+          title="Recent"
+          action={home.recent.length > 0 ? "View all" : undefined}
+          onAction={() => router.push("/records")}
+        />
+        {home.recent.length === 0 ? (
+          <Text style={[type.small, { color: colors.muted }]}>
+            Your latest spending shows here.
+          </Text>
         ) : (
-          home.spentByCategory.slice(0, 5).map((c) => (
-            <View key={c.name} style={{ gap: 2, paddingVertical: 2 }}>
-              <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                <Text style={[type.strong, { color: colors.text }]}>{c.name}</Text>
-                <AnimatedAmount
-                  value={c.amountSen}
-                  style={[type.strong, { color: colors.text, fontVariant: ["tabular-nums"] }]}
-                />
-              </View>
-              {/* What it was, from the notes typed in quick add */}
-              {c.notes.length > 0 ? (
-                <Text style={[type.small, { color: colors.muted }]} numberOfLines={1}>
-                  {c.notes.slice(0, 3).join(", ")}
-                  {c.notes.length > 3 ? ` +${c.notes.length - 3} more` : ""}
+          home.recent.map((r) => (
+            <Pressable
+              key={r.id}
+              accessibilityRole="button"
+              accessibilityLabel={`${r.title}, ${r.categoryName}, ${dayMonth(r.date)}, minus ${formatRM(r.amountSen)}. Edit`}
+              onPress={() => router.push(`/record/${r.id}`)}
+              style={{ flexDirection: "row", alignItems: "center", gap: space.sm, minHeight: 48 }}
+            >
+              <IconBubble emoji={categoryEmoji(r.categoryName) || "🧾"} />
+              <View style={{ flex: 1 }}>
+                <Text style={[type.strong, { color: colors.text }]} numberOfLines={1}>
+                  {r.title}
                 </Text>
-              ) : null}
-            </View>
+                <Text style={[type.small, { color: colors.muted }]} numberOfLines={1}>
+                  {r.categoryName} · {r.date === day ? "Today" : dayMonth(r.date)}
+                </Text>
+              </View>
+              <Text style={[type.strong, { color: colors.text, fontVariant: ["tabular-nums"] }]}>
+                {MINUS}
+                {formatRM(r.amountSen)}
+              </Text>
+            </Pressable>
           ))
         )}
-      </View>
+      </Sticker>
     </Screen>
+  );
+}
+
+/** A small label and value on the budget card ("Spent RM116.00"). */
+function Stat({ label, value }: { label: string; value: string }) {
+  const { colors } = useTheme();
+  return (
+    <View style={{ flex: 1 }}>
+      <Text style={[type.small, { color: colors.onHero, opacity: 0.85 }]}>{label}</Text>
+      <Text
+        style={[type.strong, { color: colors.onHero, fontVariant: ["tabular-nums"] }]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+      >
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+/** A card title in the text font, with an optional amount and a small action on the right. */
+function SectionHeader({
+  title,
+  detail,
+  action,
+  onAction,
+}: {
+  title: string;
+  detail?: string;
+  action?: string;
+  onAction?: () => void;
+}) {
+  const { colors } = useTheme();
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}>
+      <Text
+        style={{ fontFamily: fonts.heavy, fontSize: 17, color: colors.text, flex: 1 }}
+        accessibilityRole="header"
+      >
+        {title}
+        {detail ? <Text style={{ color: colors.muted }}> · {detail}</Text> : null}
+      </Text>
+      {action && onAction ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={onAction}
+          hitSlop={8}
+          style={{ minHeight: 40, justifyContent: "center" }}
+        >
+          <Text style={[type.small, { color: colors.primary }]}>{action}</Text>
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
+/** A round category picture for list rows. */
+function IconBubble({ emoji }: { emoji: string }) {
+  const { colors } = useTheme();
+  return (
+    <View
+      style={{
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: colors.cardTint,
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <Text style={{ fontSize: 18 }}>{emoji}</Text>
+    </View>
+  );
+}
+
+/** A one-line empty state with a small action. */
+function CompactEmpty({
+  text,
+  action,
+  onAction,
+}: {
+  text: string;
+  action: string;
+  onAction: () => void;
+}) {
+  const { colors } = useTheme();
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}>
+      <Text style={[type.small, { color: colors.muted, flex: 1 }]}>{text}</Text>
+      <Button label={action} variant="secondary" onPress={onAction} />
+    </View>
   );
 }

@@ -13,3 +13,4 @@ export * from "./categories";
 export * from "./wallet";
 export * from "./essentials";
 export * from "./suggestions";
+export * from "./guide";

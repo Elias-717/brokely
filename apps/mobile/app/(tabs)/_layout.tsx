@@ -114,24 +114,24 @@ function AddButton() {
         accessibilityRole="button"
         accessibilityLabel="Add a record"
         onPress={() => router.push("/quick-add")}
-        style={({ pressed }) => ({ marginTop: -22, opacity: pressed ? 0.7 : 1 })}
+        style={({ pressed }) => ({ marginTop: -14, opacity: pressed ? 0.7 : 1 })}
       >
         <View
           style={{
             position: "absolute",
             top: 3,
             left: 3,
-            width: 56,
-            height: 56,
-            borderRadius: 28,
+            width: 52,
+            height: 52,
+            borderRadius: 26,
             backgroundColor: colors.shadow,
           }}
         />
         <View
           style={{
-            width: 56,
-            height: 56,
-            borderRadius: 28,
+            width: 52,
+            height: 52,
+            borderRadius: 26,
             borderWidth: 2,
             borderColor: colors.outline,
             backgroundColor: colors.primary,

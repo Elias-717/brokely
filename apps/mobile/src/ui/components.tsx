@@ -6,9 +6,28 @@ import Svg, { Path } from "react-native-svg";
 import { MIN_TOUCH, radius, space, type } from "./theme";
 import { useTheme } from "./theme-context";
 
-export function Screen({ children, scroll = true }: { children: ReactNode; scroll?: boolean }) {
+export function Screen({
+  children,
+  scroll = true,
+  gutter = space.md,
+  bottom = space.md,
+  gap = space.md,
+}: {
+  children: ReactNode;
+  scroll?: boolean;
+  /** Side padding; Home uses 20 (D-58). */
+  gutter?: number;
+  /** Space after the last card, e.g. room for the Undo bar above the tab bar. */
+  bottom?: number;
+  gap?: number;
+}) {
   const { colors } = useTheme();
-  const content = { padding: space.md, gap: space.md };
+  const content = {
+    paddingHorizontal: gutter,
+    paddingTop: space.md,
+    paddingBottom: bottom,
+    gap,
+  };
   return (
     <SafeAreaView
       style={{ flex: 1, backgroundColor: colors.background }}
