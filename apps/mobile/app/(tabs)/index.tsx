@@ -284,12 +284,21 @@ export default function HomeScreen() {
           </Pressable>
         ) : (
           home.spentByCategory.slice(0, 5).map((c) => (
-            <View key={c.name} style={{ flexDirection: "row", justifyContent: "space-between" }}>
-              <Text style={[type.strong, { color: colors.text }]}>{c.name}</Text>
-              <AnimatedAmount
-                value={c.amountSen}
-                style={[type.strong, { color: colors.text, fontVariant: ["tabular-nums"] }]}
-              />
+            <View key={c.name} style={{ gap: 2, paddingVertical: 2 }}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                <Text style={[type.strong, { color: colors.text }]}>{c.name}</Text>
+                <AnimatedAmount
+                  value={c.amountSen}
+                  style={[type.strong, { color: colors.text, fontVariant: ["tabular-nums"] }]}
+                />
+              </View>
+              {/* What it was, from the notes typed in quick add */}
+              {c.notes.length > 0 ? (
+                <Text style={[type.small, { color: colors.muted }]} numberOfLines={1}>
+                  {c.notes.slice(0, 3).join(", ")}
+                  {c.notes.length > 3 ? ` +${c.notes.length - 3} more` : ""}
+                </Text>
+              ) : null}
             </View>
           ))
         )}

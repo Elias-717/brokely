@@ -23,7 +23,9 @@ import {
   listDebts,
   listScheduledItems,
   listTransactions,
+  OPENING_SPEND_NOTE,
   type Db,
+  type TransactionView,
 } from "@brokely/local-db";
 
 /** Everything Home shows, worked out from the phone database with the domain rules. */
@@ -56,7 +58,12 @@ export type HomeModel =
         amountSen: Sen;
       }[];
       readonly stillToComeSen: Sen;
-      readonly spentByCategory: readonly { name: string; amountSen: Sen }[];
+      readonly spentByCategory: readonly {
+        name: string;
+        amountSen: Sen;
+        /** What it was: the notes typed on its records, newest first, without repeats. */
+        notes: readonly string[];
+      }[];
       readonly card: { categoryId: string; name: string; position: number; total: number } | null;
       /** Nothing logged today yet: offer "No spending today" (FR-TXN-08, R-01). */
       readonly offerCheckIn: boolean;
@@ -113,7 +120,11 @@ export function readHome(db: Db, today: LocalDate): HomeModel {
   const spentByCategory = [...spendingByCategory(transactions, directionOf)]
     .filter(([, amount]) => amount > 0)
     .sort((a, b) => b[1] - a[1])
-    .map(([id, amountSen]) => ({ name: nameOf.get(id) ?? "Other", amountSen }));
+    .map(([id, amountSen]) => ({
+      name: nameOf.get(id) ?? "Other",
+      amountSen,
+      notes: notesFor(transactions, id),
+    }));
 
   const essentials = categories
     .filter((c) => c.kind === "essential" && !c.archivedAt)
@@ -156,4 +167,27 @@ export function readHome(db: Db, today: LocalDate): HomeModel {
         }
       : null,
   };
+}
+
+/**
+ * The notes on a category's spending records ("nasi lemak", "teh tarik"), newest first, each
+ * once (case-insensitive). The catch-up entry's built-in note is left out.
+ */
+function notesFor(transactions: readonly TransactionView[], categoryId: string): string[] {
+  const seen = new Set<string>();
+  const notes: string[] = [];
+  const newestFirst = [...transactions].sort((a, b) =>
+    a.localDate === b.localDate
+      ? b.occurredAt.localeCompare(a.occurredAt)
+      : b.localDate.localeCompare(a.localDate),
+  );
+  for (const t of newestFirst) {
+    if (t.type !== "purchase" || !t.note.trim() || t.note === OPENING_SPEND_NOTE) continue;
+    if (!t.lines.some((l) => l.kind === "spending" && l.categoryId === categoryId)) continue;
+    const key = t.note.trim().toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    notes.push(t.note.trim());
+  }
+  return notes;
 }
