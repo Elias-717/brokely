@@ -30,6 +30,11 @@ const CHOICES: { value: Appearance; label: string }[] = [
 const PLACES: { label: string; detail: string; href: Href }[] = [
   { label: "Your plan", detail: "Budget and amounts per category", href: "/plan" },
   {
+    label: "Plan step by step",
+    detail: "Go through your whole plan with Brokely",
+    href: "/guided",
+  },
+  {
     label: "Bills & subscriptions",
     detail: "Phone plan, Spotify, bus pass…",
     href: "/bills",

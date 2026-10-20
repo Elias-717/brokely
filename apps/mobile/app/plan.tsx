@@ -150,6 +150,12 @@ function PlanForm({
           : ""}
       </Text>
 
+      <Button
+        label="Plan step by step instead"
+        variant="link"
+        onPress={() => router.push("/guided")}
+      />
+
       <Labelled label="Budget for this plan (RM)">
         <Field
           value={budgetText}

@@ -24,7 +24,7 @@ export default function WelcomeScreen() {
   // While typing a name, Brokely steps aside so the box and "Let's go" fit above the keyboard.
   const typing = useKeyboardOpen();
 
-  const start = (next: "/quick-start" | "/") => {
+  const start = (next: "/quick-start" | "/guided" | "/") => {
     setNickname(repo, name); // blank stays blank (D-34)
     // Both paths offer the default categories (AC-52); this also ends the first run.
     const seeded = seedDefaultCategories(repo);
@@ -112,6 +112,7 @@ export default function WelcomeScreen() {
         </ScrollView>
         <View style={{ paddingHorizontal: space.lg, paddingBottom: space.lg, gap: space.sm }}>
           <Button label="Let's go" onPress={() => start("/quick-start")} />
+          <Button label="Plan it step by step" variant="link" onPress={() => start("/guided")} />
           <Button
             label="Just track my spending for now"
             variant="link"

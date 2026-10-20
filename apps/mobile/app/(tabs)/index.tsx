@@ -108,6 +108,11 @@ export default function HomeScreen() {
               in a minute.
             </Text>
             <Button label="Make a plan" onPress={() => router.push("/quick-start")} />
+            <Button
+              label="Plan step by step"
+              variant="link"
+              onPress={() => router.push("/guided")}
+            />
           </Sticker>
         )}
       </Screen>
