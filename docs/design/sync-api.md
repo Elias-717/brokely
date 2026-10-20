@@ -185,6 +185,14 @@ trigger ─▶ push (outbox, oldest first, batches of 100) ─▶ pull (until ha
 1. Student signs up while having local data (all rows have `user_id = NULL`).
 2. The phone, in one SQLite transaction, sets `user_id` on every row and adds one `upsert` (`baseVersion: null`) per aggregate to the outbox, parents before children (categories → cycles → revisions → bills → scheduled items → debts → transactions → check-ins).
 3. The normal sync loop pushes them. IDs never change, so a retry is a `duplicate`, never a copy (AC-22).
+
+**As built (Phase 4):** the phone already writes an outbox operation for every change from the first day, in local-only
+mode too, so linking does not re-queue snapshots: `linkAccount` stamps `user_id` and the normal push replays the outbox
+in order. The phone side (`packages/local-db/src/sync/engine.ts`, `syncNow`) sends **one operation per record per round**;
+after an `applied` result it moves the record's later operations onto the new version (they were all queued against the
+last version the server confirmed). Pull fetches every page, then applies them in one SQLite transaction with foreign
+keys checked at commit, because a record can arrive before a parent that was edited later. A create of a scheduled item
+whose server copy is a delete marker brings it back (S-05) instead of answering `duplicate`.
 4. If the account already has data from another phone, pull brings it down; S-05/S-06 merge generated rows.
 
 ## 9. Security
