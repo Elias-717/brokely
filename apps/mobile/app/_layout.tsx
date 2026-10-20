@@ -13,6 +13,7 @@ import { ActivityIndicator, Text, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { db, repo } from "../src/db/client";
 import { ThemeProvider, useTheme } from "../src/ui/theme-context";
+import { SyncProvider } from "../src/sync/sync-provider";
 import { MoneyTipProvider } from "../src/ui/money-tip";
 import { UndoProvider } from "../src/ui/undo";
 
@@ -52,11 +53,13 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <UndoProvider>
-          <MoneyTipProvider>
-            <AppStack />
-          </MoneyTipProvider>
-        </UndoProvider>
+        <SyncProvider>
+          <UndoProvider>
+            <MoneyTipProvider>
+              <AppStack />
+            </MoneyTipProvider>
+          </UndoProvider>
+        </SyncProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );
@@ -78,6 +81,8 @@ function AppStack() {
       >
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="welcome" />
+        <Stack.Screen name="sign-in" />
+        <Stack.Screen name="reset-password" />
         <Stack.Screen
           name="quick-add"
           options={{ presentation: "transparentModal", animation: "slide_from_bottom" }}

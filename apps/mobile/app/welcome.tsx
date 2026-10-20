@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Image, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { repo } from "../src/db/client";
+import { useSync } from "../src/sync/sync-provider";
 import { Button, Sticker } from "../src/ui/components";
 import { KeyboardSafe } from "../src/ui/keyboard-safe";
 import { Appear, Float, TypeText } from "../src/ui/motion";
@@ -19,6 +20,7 @@ import { useTheme } from "../src/ui/theme-context";
  */
 export default function WelcomeScreen() {
   const { colors } = useTheme();
+  const { canSignIn } = useSync();
   const [name, setName] = useState("");
   const [greeted, setGreeted] = useState(false);
   // While typing a name, Brokely steps aside so the box and "Let's go" fit above the keyboard.
@@ -118,9 +120,17 @@ export default function WelcomeScreen() {
             variant="link"
             onPress={() => start("/")}
           />
+          {typing || !canSignIn ? null : (
+            // Optional, for a returning student who doesn't want to plan again (D-72).
+            <Button
+              label="Already used Brokely? Sign in"
+              variant="link"
+              onPress={() => router.push({ pathname: "/sign-in", params: { from: "welcome" } })}
+            />
+          )}
           {typing ? null : (
             <Text style={[type.small, { color: colors.muted, textAlign: "center" }]}>
-              No account, no bank login. Everything stays on this phone.
+              No account needed, no bank login. Everything stays on this phone.
             </Text>
           )}
         </View>

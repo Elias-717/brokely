@@ -15,6 +15,9 @@ import { router, type Href } from "expo-router";
 import { useState } from "react";
 import { Pressable, Switch, Text, TextInput, View } from "react-native";
 import { db, repo } from "../../src/db/client";
+import { AccountRows } from "../../src/sync/account-rows";
+import { signOutHere } from "../../src/sync/auth";
+import { useSync } from "../../src/sync/sync-provider";
 import { useRead } from "../../src/db/use-read";
 import { shareExportFile } from "../../src/lib/export-file";
 import { today } from "../../src/lib/today";
@@ -65,6 +68,7 @@ export default function MoreScreen() {
   const settings = useRead(getSettings);
   const tips = useRead(getMoneyTips);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const { session } = useSync();
   const tz = phoneTimeZone();
 
   // A file through Android's share sheet: save to Drive or Files, email it to yourself…
@@ -142,6 +146,8 @@ export default function MoreScreen() {
       </Card>
       <Card>
         <Heading>Settings</Heading>
+        {/* Sign-in comes first in Settings (D-72). */}
+        <AccountRows />
         {/* Money tips after saving an expense (D-39, D-67); on by default. */}
         <View style={{ flexDirection: "row", alignItems: "center", gap: space.sm, minHeight: 48 }}>
           <View style={{ flex: 1 }}>
@@ -183,7 +189,9 @@ export default function MoreScreen() {
       <Card style={{ marginBottom: space.lg }}>
         <Heading>Your data</Heading>
         <Text style={[type.small, { color: colors.muted }]}>
-          Everything stays on this phone. Take a copy any time.
+          {session
+            ? "Your records are on this phone and backed up to your account. Take a copy any time."
+            : "Everything stays on this phone. Take a copy any time."}
         </Text>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
           <Button
@@ -210,12 +218,15 @@ export default function MoreScreen() {
             <Text style={[type.strong, { color: colors.text }]}>
               Delete everything on this phone? Plans, records, debts, bills and settings go, and
               this can't be undone. Export first if you want a copy.
+              {session ? " You'll also be signed out; the backup in your account stays." : ""}
             </Text>
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
               <Button
                 label="Delete everything"
-                onPress={() => {
+                onPress={async () => {
                   deleteAllData(db);
+                  // Signed in, the next sync would bring everything back (D-73 c).
+                  if (session) await signOutHere();
                   router.replace("/welcome");
                 }}
               />
