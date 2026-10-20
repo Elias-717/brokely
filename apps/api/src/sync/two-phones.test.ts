@@ -182,6 +182,38 @@ describe("two phones on one account", () => {
     expect(JSON.parse(op!.lastError!)).toMatchObject({ data: { name: "Laundry & ironing" } });
   });
 
+  it("adds a phone that started on its own: its default categories merge into the account's (D-73 b)", async () => {
+    const acct = await account();
+    const a = await phone(acct);
+    useTheApp(a);
+    await a.sync();
+
+    // B was set up without signing in: its own "Laundry" and the rest, and a purchase in it.
+    const b = await phone(acct);
+    unwrap(seedDefaultCategories(b.ctx));
+    const bLaundry = listCategories(b.ctx.db).find((c) => c.name === "Laundry")!.id;
+    const bought = unwrap(
+      recordPurchase(b.ctx, {
+        amountSen: sen(700),
+        categoryId: bLaundry,
+        occurredAt: NOW,
+        localDate: "2026-11-04",
+      }),
+    ).id;
+
+    // "Add this phone's records to my account".
+    expect(await b.sync()).toMatchObject({ conflicts: 0, failed: 0 });
+    expect(b.ctx.db.select().from(outboxOperations).all()).toEqual([]);
+    const names = listCategories(b.ctx.db).map((c) => c.name);
+    expect(names).toEqual([...new Set(names)]); // one of each, the account's
+    const aLaundry = listCategories(a.ctx.db).find((c) => c.name === "Laundry")!.id;
+    expect(listCategories(b.ctx.db).find((c) => c.name === "Laundry")!.id).toBe(aLaundry);
+
+    await a.sync();
+    const onA = listTransactions(a.ctx.db).find((t) => t.id === bought);
+    expect(onA?.lines).toMatchObject([{ kind: "spending", categoryId: aLaundry, amountSen: 700 }]);
+  });
+
   it("merges the same day's check-in made on both phones (S-06)", async () => {
     const acct = await account();
     const a = await phone(acct);
