@@ -91,7 +91,7 @@ SRS v1.6 (PRD v1.5) includes every decision up to D-27 and R-13; D-28 is layout 
   2. **Export as files** is done in code (`src/lib/export-file.ts`, expo-file-system + expo-sharing; falls back to text on builds without them) but **needs a new development build** on the phone (`npx expo run:android` from `apps/mobile`). The expo-sharing config plugin is deliberately not in `app.json` (it only adds share-into intent filters)
   3. **Guided setup S2a–S2d** (optional path, needs draft revisions D-20 / AC-47). Done screens, for reference, each from its Figma frame (`docs/design/wireframes.md`; S1 = node 9:288, S1b 9:306, S1c 16:330, S1d 16:349): S3a Home with essential cards (`acceptEssentialCard`; card queue Later/Not for me per cycle in `local_prefs`, D-30) → S4/S4c quick add with Undo (`recordPurchase`, `recordMoneyIn`, `deleteTransaction`) → S5 Records → S6/S6b Bills + Mark paid → S7/S7b Debts → S8 Insights (`computeProgress`) → S11 Wallet check → S9 More, settings (`user_settings` repo still missing), export/delete → S10 cycle finished. Guided setup S2a–S2d after the main flow.
   4. Repositories still missing: guided-setup draft revisions on an active cycle (D-20, AC-47)
-  4. Later: server database schema (Drizzle + PostgreSQL) before Phase 4; SRS v1.7 / PRD v1.6 (add D-29…D-41 and R-14 to the change record; D-41 needs an FR/AC for debts in quick start; D-40 needs NFR-20 reworded; D-39 needs a new FR/AC for in-app money tips; dark mode is new 0.1 scope; D-36 rewords AC-02 and AC-54: laundry is never a dated bill) when interviews happen
+  4. Later: server database schema (Drizzle + PostgreSQL) before Phase 4; SRS v1.7 / PRD v1.6 (add D-29…D-45 and R-14 to the change record (D-43 renames a default category); D-41 needs an FR/AC for debts in quick start; D-40 needs NFR-20 reworded; D-39 needs a new FR/AC for in-app money tips; dark mode is new 0.1 scope; D-36 rewords AC-02 and AC-54: laundry is never a dated bill) when interviews happen
 - **Open questions:** see section 11
 
 ---
@@ -200,9 +200,9 @@ Known TNG formats (no transaction ID in visible text; dedupe on Android notifica
 
 **Money tips (0.2, D-39).** Fun financial-literacy tips slide in from the side inside the app as a reward after recording; tap to dismiss; Settings switch (on by default); daily cap; local reviewed templates only. Brief: `docs/design/money-tips.md`.
 
-**Notifications (0.2).** Bill due, evening logging reminder, streak, pace, debt due, pending import. Max 3/day, quiet hours, per-type mute, ≥3 wording variants each. Example: `🧺 Laundry day! Your RM16.00 wash is due. Tap Mark paid once it's spinning.`
+**Notifications (0.2).** Bill due (on its due date: pay it, then Mark paid; D-45), evening logging reminder, streak, pace, debt due, pending import. Max 3/day, quiet hours, per-type mute, ≥3 wording variants each. Example: `🧺 Laundry day! Your RM16.00 wash is due. Tap Mark paid once it's spinning.`
 
-**Default categories (D-22, FR-CAT-01).** Essential: Meals, Groceries & toiletries, Laundry, Transport, Phone & internet, Health. Optional: Snacks & treats, Fun & trips, Shopping, Gifts & charity, Other. Set-asides: Emergency, Savings.
+**Default categories (D-22, D-43, FR-CAT-01).** Essential: Meals, Home necessities, Laundry, Transport, Phone & internet, Health. Optional: Snacks & treats, Fun & trips, Shopping, Gifts & charity, Other. Set-asides: Emergency, Savings.
 
 ---
 

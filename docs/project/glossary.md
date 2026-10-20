@@ -1,4 +1,4 @@
-# Brokely Glossary (v1.4)
+# Brokely Glossary (v1.5)
 
 Plain meanings only. The exact formulas live in the SRS business rules (section 5).
 
@@ -6,6 +6,8 @@ Plain meanings only. The exact formulas live in the SRS business rules (section 
 - **Budget**: how much you plan to spend this cycle. Not your bank balance.
 - **Cycle**: the dates your plan covers, e.g. 1–30 Nov.
 - **Category**: a group of spending, like Meals or Laundry. It's either essential or optional.
+- **Home necessities**: groceries, toiletries and cleaning things for your room or home (replaces "Groceries & toiletries", D-43).
+- **Your own category**: a category you name yourself, by typing under Other; it's offered again next time (D-44).
 - **Allocation**: how much of your budget you give a category.
 - **Set-aside**: money in your plan you don't mean to spend, like "Emergency".
 - **Unallocated**: budget you haven't given to anything yet.
