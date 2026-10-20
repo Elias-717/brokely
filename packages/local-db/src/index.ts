@@ -18,3 +18,4 @@ export type OutboxOperationRow = InferSelectModel<typeof schema.outboxOperations
 export type NewOutboxOperation = InferInsertModel<typeof schema.outboxOperations>;
 
 export * from "./repositories";
+export * from "./sync/engine";
