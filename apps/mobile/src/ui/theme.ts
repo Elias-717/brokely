@@ -23,6 +23,9 @@ export interface Colors {
   heroOutline: string;
   heroTrack: string;
   heroFill: string;
+  /** Home budget card (D-59): the ring's arc, and the darker track under it. */
+  heroRing: string;
+  heroTile: string;
   tabBar: string;
   tabActive: string;
   tabInactive: string;
@@ -53,6 +56,8 @@ export const lightColors: Colors = {
   heroOutline: "#1A1D17",
   heroTrack: "#3F4E1F",
   heroFill: "#FAFBF4",
+  heroRing: "#DCEBBE",
+  heroTile: "#4A5C26",
   tabBar: "#FAFBF4",
   tabActive: "#4E6127",
   tabInactive: "#5F665A",
@@ -77,6 +82,8 @@ export const darkColors: Colors = {
   heroOutline: "#7E9450",
   heroTrack: "#2F3B15",
   heroFill: "#ECEEE8",
+  heroRing: "#D3E6AE",
+  heroTile: "#36451A",
   tabBar: "#1A1C1A",
   tabActive: "#9DBF5E",
   tabInactive: "#9AA196",

@@ -36,7 +36,7 @@ const MINUS = "−";
  * used, then spending so far, the next essential card, still to come and recent spending.
  */
 export default function HomeScreen() {
-  const { colors } = useTheme();
+  const { colors, scheme } = useTheme();
   const day = today();
   // A plan whose end date has passed completes by itself (FR-PLN-17, D-18).
   useEffect(() => {
@@ -126,24 +126,36 @@ export default function HomeScreen() {
     <Screen gutter={20} bottom={96}>
       {header}
 
-      {/* 1. Left in plan with the daily guide and how much is used (FR-INS-01, D-58) */}
-      <Sticker
-        offset={4}
-        background={colors.hero}
-        outline={colors.heroOutline}
-        style={{ padding: space.md, gap: space.sm }}
+      {/* 1. Left in plan, the ring of the budget used and the daily guide (FR-INS-01, D-58, D-59) */}
+      <View
+        style={{
+          backgroundColor: colors.hero,
+          borderRadius: 24,
+          borderWidth: scheme === "dark" ? 1 : 2,
+          borderColor: colors.heroOutline,
+          paddingHorizontal: 20,
+          paddingVertical: 20,
+          gap: space.md,
+        }}
       >
         <View style={{ flexDirection: "row", alignItems: "center", gap: space.md }}>
-          <View style={{ flex: 1, gap: 2 }}>
-            <Text style={[type.strong, { color: colors.onHero, fontSize: 14 }]}>Left in plan</Text>
+          <View style={{ flex: 1, gap: space.xs }}>
+            <Text style={[type.strong, { color: colors.onHero, fontSize: 15, opacity: 0.9 }]}>
+              Left in plan
+            </Text>
             <AnimatedAmount
               value={home.leftInPlanSen}
-              style={[type.amount, { color: colors.onHero }]}
+              style={{
+                fontFamily: fonts.heavy,
+                fontSize: 36,
+                lineHeight: 42,
+                color: colors.onHero,
+                fontVariant: ["tabular-nums"],
+              }}
               accessibilityLabel={`Left in plan: ${formatRM(home.leftInPlanSen)}`}
             />
-            <Text style={[type.small, { color: colors.onHero, opacity: 0.9 }]}>
-              of {formatRM(home.budgetSen)} · {home.daysLeft} {home.daysLeft === 1 ? "day" : "days"}{" "}
-              left
+            <Text style={[type.body, { color: colors.onHero, fontSize: 14, opacity: 0.85 }]}>
+              of {formatRM(home.budgetSen)} planned
             </Text>
           </View>
           <ProgressRing
@@ -151,60 +163,67 @@ export default function HomeScreen() {
             arc={home.usedArc}
             label={`${home.usedPercent}%`}
             caption="spent"
-            color={colors.heroFill}
-            track={colors.heroTrack}
+            color={colors.heroRing}
+            track={colors.heroTile}
             textColor={colors.onHero}
             mutedColor={colors.onHero}
             accessibilityLabel={`${home.usedPercent} percent of your budget spent`}
           />
         </View>
 
+        <View style={{ height: 1, backgroundColor: colors.onHero, opacity: 0.18 }} />
+
         {/* About how much a day keeps the plan, after bills and set-asides (D-58) */}
         {home.perDaySen !== null ? (
-          <View
-            style={{
-              borderRadius: radius.button,
-              backgroundColor: colors.heroTrack,
-              padding: space.sm,
-            }}
-          >
-            <Text style={[type.strong, { color: colors.onHero, fontSize: 15 }]}>
-              {home.freeSen > 0
-                ? `About ${formatRM(home.perDaySen)} a day keeps you on plan`
-                : "Bills to come and set-asides need what's left"}
-            </Text>
-            {home.stillToComeSen > 0 ? (
-              <Text style={[type.small, { color: colors.onHero, opacity: 0.85 }]}>
-                After {formatRM(home.stillToComeSen)} of bills still to come
+          <View style={{ flexDirection: "row", alignItems: "center", gap: space.md }}>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={{ color: colors.onHero }} numberOfLines={1} adjustsFontSizeToFit>
+                <Text style={{ fontFamily: fonts.heavy, fontSize: 24 }}>
+                  {formatRM(home.freeSen > 0 ? home.perDaySen : (0 as Sen))}
+                </Text>
+                <Text style={{ fontFamily: fonts.body, fontSize: 16 }}> / day</Text>
               </Text>
-            ) : null}
+              <Text style={[type.small, { color: colors.onHero, opacity: 0.85 }]}>
+                {home.freeSen > 0
+                  ? `Suggested for the next ${home.daysLeft} ${home.daysLeft === 1 ? "day" : "days"}`
+                  : "Bills to come and set-asides need what's left"}
+                {home.stillToComeSen > 0 && home.freeSen > 0
+                  ? `, after ${formatRM(home.stillToComeSen)} of bills`
+                  : ""}
+              </Text>
+              {forecastLine ? (
+                <Text style={[type.small, { color: colors.onHero, opacity: 0.7 }]}>
+                  {forecastLine}
+                </Text>
+              ) : null}
+            </View>
           </View>
         ) : null}
-
-        <View style={{ flexDirection: "row", gap: space.md }}>
-          <Stat label="Spent" value={formatRM(home.spentSen)} />
-          <Stat label="Remaining" value={formatRM(home.leftInPlanSen)} />
-        </View>
 
         <View
           style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}
         >
-          <Text style={[type.small, { color: colors.onHero, opacity: 0.9, flex: 1 }]}>
-            {forecastLine}
+          <Text style={[type.body, { color: colors.onHero, fontSize: 14, opacity: 0.85 }]}>
+            {formatRM(home.spentSen)} spent so far
           </Text>
           {/* Optional wallet check (FR-WAL-01, D-27) */}
           <Pressable
             accessibilityRole="button"
+            accessibilityLabel="Wallet check"
             onPress={() => router.push("/wallet-check")}
-            hitSlop={8}
-            style={{ minHeight: 40, justifyContent: "center" }}
+            hitSlop={10}
+            style={({ pressed }) => ({
+              minHeight: 44,
+              justifyContent: "center",
+              opacity: pressed ? 0.6 : 1,
+            })}
           >
-            <Text style={[type.small, { color: colors.onHero, textDecorationLine: "underline" }]}>
-              Wallet check
+            <Text style={{ fontFamily: fonts.heavy, fontSize: 15, color: colors.onHero }}>
+              Wallet check ↗
             </Text>
           </Pressable>
         </View>
-      </Sticker>
+      </View>
 
       {/* Nothing logged today: one tap marks a covered day (FR-TXN-08, R-01) */}
       {home.offerCheckIn ? (
@@ -410,23 +429,6 @@ export default function HomeScreen() {
         )}
       </Sticker>
     </Screen>
-  );
-}
-
-/** A small label and value on the budget card ("Spent RM116.00"). */
-function Stat({ label, value }: { label: string; value: string }) {
-  const { colors } = useTheme();
-  return (
-    <View style={{ flex: 1 }}>
-      <Text style={[type.small, { color: colors.onHero, opacity: 0.85 }]}>{label}</Text>
-      <Text
-        style={[type.strong, { color: colors.onHero, fontVariant: ["tabular-nums"] }]}
-        numberOfLines={1}
-        adjustsFontSizeToFit
-      >
-        {value}
-      </Text>
-    </View>
   );
 }
 
