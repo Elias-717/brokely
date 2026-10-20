@@ -56,3 +56,39 @@ jobs:
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
           docker push "$IMAGE:${{ github.sha }}"
           docker push "$IMAGE:latest"
+
+  # Rolls the new image out to Azure Container Apps (D-71). GitHub signs in to Azure with
+  # OpenID Connect: no password is stored, Azure trusts only this repo's main branch.
+  # Off until the repository variables AZURE_CLIENT_ID, AZURE_TENANT_ID and
+  # AZURE_SUBSCRIPTION_ID exist (setup: apps/api/README.md).
+  api-deploy:
+    needs: api-image
+    if: vars.AZURE_CLIENT_ID != ''
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      # The commit tag, not :latest, so every deploy is a new revision that says which commit runs.
+      - name: Deploy
+        run: |
+          az config set extension.use_dynamic_install=yes_without_prompt
+          az containerapp update --name brokely-api --resource-group brokely-rg \
+            --image "ghcr.io/elias-717/brokely-api:${{ github.sha }}" --output none
+          az containerapp show --name brokely-api --resource-group brokely-rg \
+            --query "properties.latestRevisionName" --output tsv
+
+      - name: Check it answers
+        run: |
+          for i in $(seq 1 30); do
+            curl -fs https://brokely-api.ashyglacier-36b03c11.eastasia.azurecontainerapps.io/health && exit 0
+            sleep 5
+          done
+          exit 1
