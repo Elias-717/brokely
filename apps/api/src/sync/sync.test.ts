@@ -258,6 +258,16 @@ describe("idempotency, versions and delete markers", () => {
     };
     expect(statuses(await s.push(item))).toEqual(["applied"]);
     expect(statuses(await s.push(item))).toEqual(["duplicate"]); // the other phone's copy
+
+    // A phone that never saw this date deleted brings it back by creating it again.
+    const itemRef = { entity: item.entity, entityId: item.entityId };
+    expect(statuses(await s.push({ ...itemRef, op: "delete", baseVersion: 1 }))).toEqual([
+      "applied",
+    ]);
+    expect(await s.push(item)).toMatchObject([{ status: "applied", version: 3 }]);
+    expect(
+      (await s.pull()).changes.find((c) => c.entity === "scheduled_item")?.deletedAt,
+    ).toBeNull();
     const pulled = (await s.pull()).changes;
     expect(pulled.filter((c) => c.entity === "scheduled_item")).toHaveLength(1);
     expect(pulled.find((c) => c.entity === "bill")?.data).toMatchObject({

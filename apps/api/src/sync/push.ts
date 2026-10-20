@@ -98,10 +98,12 @@ async function apply(tx: Db, userId: string, op: PushOperation): Promise<PushRes
 
   // Step 4: versions (S-04), and merges of the same thing made on two phones (S-05, S-06).
   if (op.baseVersion === null) {
-    if (row) {
-      return op.entity === "scheduled_item"
-        ? seen(operationId, row) // same bill and date, same ID (S-05)
-        : conflict(tx, op.entity, operationId, row);
+    if (row && op.entity === "scheduled_item") {
+      // Same bill and date, same ID (S-05): another phone made it. If that copy was deleted,
+      // this create brings the date back (written below as an update).
+      if (!row.deletedAt) return seen(operationId, row);
+    } else if (row) {
+      return conflict(tx, op.entity, operationId, row);
     }
     const twin = await handler.mergeTarget?.(tx, userId, entityId, op.data as never);
     if (twin) return { ...seen(operationId, twin), entityId: twin.id };
