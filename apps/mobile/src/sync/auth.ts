@@ -26,8 +26,12 @@ export const MIN_PASSWORD = 8; // D-74; also set in the Supabase dashboard
 
 export type AuthResult = { ok: true; session: Session | null } | { ok: false; message: string };
 
-/** Supabase's messages in Brokely's words; never shows a raw error code. */
+/**
+ * Supabase's messages in Brokely's words. The full error goes to the developer console (Metro),
+ * never to the screen; unknown ones show a short reference so a report can be traced.
+ */
 function explain(error: AuthError | Error): string {
+  console.warn("[sign-in]", error.name, error.message);
   const text = error.message.toLowerCase();
   if (text.includes("invalid login credentials")) return "That email and password don't match.";
   if (text.includes("email not confirmed"))
@@ -38,8 +42,13 @@ function explain(error: AuthError | Error): string {
   if (text.includes("rate limit") || text.includes("too many"))
     return "Too many tries for now. Please wait a few minutes.";
   if (text.includes("network") || text.includes("fetch"))
-    return "No internet connection. Try again when you're online.";
-  return "Something went wrong. Please try again.";
+    return "Brokely couldn't reach the sign-in server. Check your internet connection and try again.";
+  if (text.includes("signups not allowed") || text.includes("signup is disabled"))
+    return "New accounts are switched off at the moment.";
+  if (text.includes("email address") && text.includes("invalid"))
+    return "That email address doesn't look right.";
+  const status = "status" in error && error.status ? ` ${error.status}` : "";
+  return `Something went wrong (${error.name}${status}). Please try again.`;
 }
 
 const tidy = (email: string) => email.trim().toLowerCase();

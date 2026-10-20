@@ -45,11 +45,17 @@ export async function signInWithGoogle(): Promise<AuthResult | { ok: false; canc
       provider: "google",
       token: idToken,
     });
-    if (error)
-      return { ok: false, message: "Brokely couldn't sign you in with Google. Please try again." };
+    if (error) {
+      console.warn("[google sign-in] supabase", error.status, error.message);
+      return {
+        ok: false,
+        message: `Brokely couldn't sign you in with Google (${error.status ?? error.name}). Please try again.`,
+      };
+    }
     return { ok: true, session: data.session };
   } catch (error) {
-    const code = (error as { code?: string }).code;
+    const code = String((error as { code?: string | number }).code ?? "");
+    console.warn("[google sign-in]", code, (error as Error).message);
     if (code === m.statusCodes.SIGN_IN_CANCELLED) return { ok: false, cancelled: true };
     if (code === m.statusCodes.IN_PROGRESS) return { ok: false, cancelled: true };
     if (code === m.statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
@@ -58,9 +64,19 @@ export async function signInWithGoogle(): Promise<AuthResult | { ok: false; canc
         message: "Google sign-in needs Google Play services. Use email instead.",
       };
     }
+    if (code === "10" || code === "DEVELOPER_ERROR") {
+      // Google refused this app: the Android OAuth client's package or SHA-1 doesn't match.
+      return {
+        ok: false,
+        message: "Google sign-in isn't set up for this version of the app yet (code 10).",
+      };
+    }
+    if (code === "7" || code === "NETWORK_ERROR") {
+      return { ok: false, message: "No internet connection. Try again when you're online." };
+    }
     return {
       ok: false,
-      message: "No internet connection, or Google sign-in failed. Please try again.",
+      message: `Google sign-in failed (code ${code || "unknown"}). Please try again.`,
     };
   }
 }
