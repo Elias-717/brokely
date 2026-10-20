@@ -147,7 +147,7 @@ export default function MoreScreen() {
           <View style={{ flex: 1 }}>
             <Text style={[type.strong, { color: colors.text }]}>Money tips</Text>
             <Text style={[type.small, { color: colors.muted }]}>
-              A short tip from Brokely each time you log spending
+              A short tip from Brokely when you log spending, up to 10 a day
             </Text>
           </View>
           <Switch

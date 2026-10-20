@@ -44,7 +44,7 @@ Example tone (draft, to be reviewed):
 
 ## Answers (D-67, 21 Oct)
 
-1. **Cap:** none since D-69: a tip after every expense (it was 3 a day; `TIPS_PER_DAY` can bring a cap back). Shown only after logging **spending** (author: "after the user adds an expense").
+1. **Cap:** 10 a day (D-70; it was 3, then unlimited for a moment). Shown only after logging **spending** (author: "after the user adds an expense").
 2. **Writers:** the author's 30 tips (reworded for the glossary: "money in", not "allowance"/"payday") plus 20 by Brokely, some inspired by *Rich Dad Poor Dad* ideas (pay yourself first, assets vs liabilities, learning that earns) in our own words. **The author reviews them all.**
 3. **Related to the record:** mostly (about 3 in 4 times) a tip matching the category just logged, otherwise a general one.
 4. **XP:** none for now (0.2).
