@@ -1,19 +1,11 @@
 import { useEffect, useRef, useState, type ComponentRef, type ReactNode } from "react";
-import {
-  Animated,
-  Image,
-  KeyboardAvoidingView,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { Animated, Image, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import { plain, type Line } from "../lib/brokely-lines";
 import { Appear, useReduceMotion } from "./motion";
 import { fonts, MIN_TOUCH, space, type } from "./theme";
+import { KeyboardSafe } from "./keyboard-safe";
 import { useTheme } from "./theme-context";
 
 /**
@@ -72,7 +64,7 @@ export function ChatScreen({
   const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior="height">
+      <KeyboardSafe>
         <View
           style={{
             flexDirection: "row",
@@ -159,7 +151,7 @@ export function ChatScreen({
         >
           {footer}
         </View>
-      </KeyboardAvoidingView>
+      </KeyboardSafe>
     </SafeAreaView>
   );
 }

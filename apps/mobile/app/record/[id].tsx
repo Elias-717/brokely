@@ -24,7 +24,7 @@ import {
 } from "@brokely/local-db";
 import { Redirect, router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
-import { KeyboardAvoidingView, Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { repo } from "../../src/db/client";
 import { useRead } from "../../src/db/use-read";
 import { categoryEmoji } from "../../src/lib/essentials-meta";
@@ -36,6 +36,7 @@ import { Keypad } from "../../src/ui/keypad";
 import { SheetPanel } from "../../src/ui/sheet";
 import { Chip, Field } from "../../src/ui/sheet-parts";
 import { fonts, MIN_TOUCH, radius, space, type } from "../../src/ui/theme";
+import { KeyboardSafe } from "../../src/ui/keyboard-safe";
 import { useTheme } from "../../src/ui/theme-context";
 import { useUndo } from "../../src/ui/undo";
 import { useKeyboardOpen } from "../../src/ui/use-keyboard";
@@ -207,7 +208,7 @@ function Sheet({
       : `${t.type === "income" ? "Money in" : t.type === "purchase" ? "Spent" : "Record"} · ${dayMonth(t.localDate)}`;
 
   return (
-    <View style={{ flex: 1, justifyContent: "flex-end" }}>
+    <KeyboardSafe style={{ justifyContent: "flex-end" }}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Close"
@@ -221,200 +222,195 @@ function Sheet({
           backgroundColor: "rgba(5,6,5,0.55)",
         }}
       />
-      <KeyboardAvoidingView behavior="padding">
-        <SheetPanel
-          top={
-            <>
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <Text style={[type.heading, { color: colors.text }]} accessibilityRole="header">
-                  {title}
-                </Text>
-                <Text
-                  style={[type.small, { color: colors.muted, flexShrink: 1, textAlign: "right" }]}
-                >
-                  {subtitle}
-                </Text>
-              </View>
-
+      <SheetPanel
+        top={
+          <>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <Text style={[type.heading, { color: colors.text }]} accessibilityRole="header">
+                {title}
+              </Text>
               <Text
-                style={{
-                  textAlign: "center",
-                  fontFamily: fonts.heading,
-                  fontSize: 48,
-                  lineHeight: 54,
-                  color: colors.text,
-                  fontVariant: ["tabular-nums"],
-                }}
+                style={[type.small, { color: colors.muted, flexShrink: 1, textAlign: "right" }]}
               >
-                {formatRM(mode === "edit" && split ? t.amountSen : (amount ?? sen(0)))}
+                {subtitle}
               </Text>
-            </>
-          }
-        >
-          <ScrollView
-            // Shrinks (and scrolls) when space is short, instead of pushing fields off screen.
-            style={{ flexGrow: 0, flexShrink: 1 }}
-            contentContainerStyle={{ gap: space.sm }}
-            keyboardShouldPersistTaps="handled"
-          >
-            {mode === "refund" ? (
-              <View
-                style={{
-                  borderRadius: radius.button,
-                  borderWidth: 2,
-                  borderColor: colors.outline,
-                  backgroundColor: colors.cardTint,
-                  padding: space.sm,
-                  gap: 2,
-                }}
-              >
-                <Text style={[type.strong, { color: colors.text }]}>
-                  Up to {formatRM(refundable)} can be refunded
-                </Text>
-                <Text style={[type.small, { color: colors.muted }]}>
-                  It goes back to {categoryName ?? "its category"}{" "}
-                  {categoryName ? categoryEmoji(categoryName) : ""}, so that spending drops by the
-                  refund.
-                </Text>
-              </View>
-            ) : canPickCategory ? (
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
-                {categories.map((c) => (
-                  <Chip
-                    key={c.id}
-                    label={`${c.name} ${categoryEmoji(c.name)}`.trim()}
-                    selected={c.id === categoryId}
-                    onPress={() => setCategoryId(c.id)}
-                  />
-                ))}
-              </View>
-            ) : split ? (
-              <Text style={[type.small, { color: colors.muted }]}>
-                This was split with a friend, so its amounts are locked. To change them, delete it
-                and add it again.
-              </Text>
-            ) : null}
-
-            <View style={{ flexDirection: "row", gap: space.sm }}>
-              {/* While typing the note it gets the whole row. */}
-              {noteFocused ? null : (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Date: ${dayMonth(date)}. Change`}
-                  onPress={async () => {
-                    const chosen = await pickDate(date);
-                    if (chosen) setDate(chosen);
-                  }}
-                  style={{
-                    flex: 1,
-                    minHeight: MIN_TOUCH,
-                    justifyContent: "center",
-                    paddingHorizontal: space.sm,
-                    borderRadius: radius.button,
-                    borderWidth: 2,
-                    borderColor: colors.outline,
-                    backgroundColor: colors.card,
-                  }}
-                >
-                  <Text style={[type.strong, { color: colors.text, fontSize: 15 }]}>
-                    📅 {date === day ? `Today, ${dayMonth(day)}` : dayMonth(date)}
-                  </Text>
-                </Pressable>
-              )}
-              <View style={{ flex: 1 }}>
-                <Field
-                  value={note}
-                  onChange={setNote}
-                  placeholder="Note (optional)"
-                  expanded
-                  onFocus={() => setNoteFocused(true)}
-                  onBlur={() => setNoteFocused(false)}
-                />
-              </View>
             </View>
 
-            {mode === "edit" && edits.length > 0 ? (
-              <View
-                style={{
-                  borderRadius: radius.button,
-                  borderWidth: 2,
-                  borderStyle: "dashed",
-                  borderColor: colors.outline,
-                  padding: space.sm,
-                  gap: 2,
-                }}
-              >
-                <Text style={[type.small, { color: colors.muted, textTransform: "uppercase" }]}>
-                  Edit history
-                </Text>
-                {edits.map((e) => (
-                  <Text
-                    key={e.changedAt}
-                    style={[type.strong, { color: colors.text, fontSize: 14 }]}
-                  >
-                    {when(e.changedAt)} ·{" "}
-                    {e.beforeSen === e.afterSen
-                      ? "details changed"
-                      : `${formatRM(e.beforeSen)} → ${formatRM(e.afterSen)}`}
-                  </Text>
-                ))}
-              </View>
-            ) : null}
-          </ScrollView>
-
-          {/* No keypad for a split, or while typing a note (it stays visible then). */}
-          {(mode === "edit" && split) || keyboardOpen ? null : (
-            <Keypad
-              value={mode === "edit" ? amountText : refundText}
-              onChange={(next) => {
-                if (mode === "edit") setAmountText(next);
-                else setRefundText(next);
-                setProblem(null);
+            <Text
+              style={{
+                textAlign: "center",
+                fontFamily: fonts.heading,
+                fontSize: 48,
+                lineHeight: 54,
+                color: colors.text,
+                fontVariant: ["tabular-nums"],
               }}
-            />
-          )}
-          {problem ? (
-            <Text accessibilityRole="alert" style={[type.strong, { color: colors.warning }]}>
-              {problem}
+            >
+              {formatRM(mode === "edit" && split ? t.amountSen : (amount ?? sen(0)))}
+            </Text>
+          </>
+        }
+      >
+        <ScrollView
+          // Shrinks (and scrolls) when space is short, instead of pushing fields off screen.
+          style={{ flexGrow: 0, flexShrink: 1 }}
+          contentContainerStyle={{ gap: space.sm }}
+          keyboardShouldPersistTaps="handled"
+        >
+          {mode === "refund" ? (
+            <View
+              style={{
+                borderRadius: radius.button,
+                borderWidth: 2,
+                borderColor: colors.outline,
+                backgroundColor: colors.cardTint,
+                padding: space.sm,
+                gap: 2,
+              }}
+            >
+              <Text style={[type.strong, { color: colors.text }]}>
+                Up to {formatRM(refundable)} can be refunded
+              </Text>
+              <Text style={[type.small, { color: colors.muted }]}>
+                It goes back to {categoryName ?? "its category"}{" "}
+                {categoryName ? categoryEmoji(categoryName) : ""}, so that spending drops by the
+                refund.
+              </Text>
+            </View>
+          ) : canPickCategory ? (
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
+              {categories.map((c) => (
+                <Chip
+                  key={c.id}
+                  label={`${c.name} ${categoryEmoji(c.name)}`.trim()}
+                  selected={c.id === categoryId}
+                  onPress={() => setCategoryId(c.id)}
+                />
+              ))}
+            </View>
+          ) : split ? (
+            <Text style={[type.small, { color: colors.muted }]}>
+              This was split with a friend, so its amounts are locked. To change them, delete it and
+              add it again.
             </Text>
           ) : null}
 
-          {mode === "edit" ? (
-            <>
-              <View style={{ flexDirection: "row", gap: space.sm }}>
-                {t.type === "purchase" && refundable > 0 ? (
-                  <View style={{ flex: 1 }}>
-                    <Button
-                      label="Refund"
-                      variant="secondary"
-                      onPress={() => {
-                        setMode("refund");
-                        setProblem(null);
-                      }}
-                    />
-                  </View>
-                ) : null}
+          <View style={{ flexDirection: "row", gap: space.sm }}>
+            {/* While typing the note it gets the whole row. */}
+            {noteFocused ? null : (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Date: ${dayMonth(date)}. Change`}
+                onPress={async () => {
+                  const chosen = await pickDate(date);
+                  if (chosen) setDate(chosen);
+                }}
+                style={{
+                  flex: 1,
+                  minHeight: MIN_TOUCH,
+                  justifyContent: "center",
+                  paddingHorizontal: space.sm,
+                  borderRadius: radius.button,
+                  borderWidth: 2,
+                  borderColor: colors.outline,
+                  backgroundColor: colors.card,
+                }}
+              >
+                <Text style={[type.strong, { color: colors.text, fontSize: 15 }]}>
+                  📅 {date === day ? `Today, ${dayMonth(day)}` : dayMonth(date)}
+                </Text>
+              </Pressable>
+            )}
+            <View style={{ flex: 1 }}>
+              <Field
+                value={note}
+                onChange={setNote}
+                placeholder="Note (optional)"
+                expanded
+                onFocus={() => setNoteFocused(true)}
+                onBlur={() => setNoteFocused(false)}
+              />
+            </View>
+          </View>
+
+          {mode === "edit" && edits.length > 0 ? (
+            <View
+              style={{
+                borderRadius: radius.button,
+                borderWidth: 2,
+                borderStyle: "dashed",
+                borderColor: colors.outline,
+                padding: space.sm,
+                gap: 2,
+              }}
+            >
+              <Text style={[type.small, { color: colors.muted, textTransform: "uppercase" }]}>
+                Edit history
+              </Text>
+              {edits.map((e) => (
+                <Text key={e.changedAt} style={[type.strong, { color: colors.text, fontSize: 14 }]}>
+                  {when(e.changedAt)} ·{" "}
+                  {e.beforeSen === e.afterSen
+                    ? "details changed"
+                    : `${formatRM(e.beforeSen)} → ${formatRM(e.afterSen)}`}
+                </Text>
+              ))}
+            </View>
+          ) : null}
+        </ScrollView>
+
+        {/* No keypad for a split, or while typing a note (it stays visible then). */}
+        {(mode === "edit" && split) || keyboardOpen ? null : (
+          <Keypad
+            value={mode === "edit" ? amountText : refundText}
+            onChange={(next) => {
+              if (mode === "edit") setAmountText(next);
+              else setRefundText(next);
+              setProblem(null);
+            }}
+          />
+        )}
+        {problem ? (
+          <Text accessibilityRole="alert" style={[type.strong, { color: colors.warning }]}>
+            {problem}
+          </Text>
+        ) : null}
+
+        {mode === "edit" ? (
+          <>
+            <View style={{ flexDirection: "row", gap: space.sm }}>
+              {t.type === "purchase" && refundable > 0 ? (
                 <View style={{ flex: 1 }}>
-                  <Button label="Delete" variant="secondary" onPress={remove} />
+                  <Button
+                    label="Refund"
+                    variant="secondary"
+                    onPress={() => {
+                      setMode("refund");
+                      setProblem(null);
+                    }}
+                  />
                 </View>
+              ) : null}
+              <View style={{ flex: 1 }}>
+                <Button label="Delete" variant="secondary" onPress={remove} />
               </View>
-              <Button label="Save changes" onPress={saveChanges} />
-            </>
-          ) : (
-            <Button
-              label={amount ? `Save refund · ${formatRM(amount)}` : "Save refund"}
-              onPress={saveRefund}
-              disabled={!amount}
-            />
-          )}
-        </SheetPanel>
-      </KeyboardAvoidingView>
-    </View>
+            </View>
+            <Button label="Save changes" onPress={saveChanges} />
+          </>
+        ) : (
+          <Button
+            label={amount ? `Save refund · ${formatRM(amount)}` : "Save refund"}
+            onPress={saveRefund}
+            disabled={!amount}
+          />
+        )}
+      </SheetPanel>
+    </KeyboardSafe>
   );
 }

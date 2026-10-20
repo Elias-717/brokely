@@ -12,7 +12,7 @@ import {
 } from "@brokely/local-db";
 import { router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
-import { KeyboardAvoidingView, Pressable, ScrollView, Switch, Text, View } from "react-native";
+import { Pressable, ScrollView, Switch, Text, View } from "react-native";
 import { repo } from "../src/db/client";
 import { useRead } from "../src/db/use-read";
 import { categoriesByUse } from "../src/lib/category-order";
@@ -25,6 +25,7 @@ import { Keypad } from "../src/ui/keypad";
 import { SheetPanel } from "../src/ui/sheet";
 import { Chip, Field, Labelled } from "../src/ui/sheet-parts";
 import { fonts, MIN_TOUCH, radius, space, type } from "../src/ui/theme";
+import { KeyboardSafe } from "../src/ui/keyboard-safe";
 import { useTheme } from "../src/ui/theme-context";
 import { useUndo } from "../src/ui/undo";
 import { useKeyboardOpen } from "../src/ui/use-keyboard";
@@ -226,7 +227,7 @@ export default function QuickAdd() {
   const chips = showAll ? categories : categories.slice(0, 4);
 
   return (
-    <View style={{ flex: 1, justifyContent: "flex-end" }}>
+    <KeyboardSafe style={{ justifyContent: "flex-end" }}>
       {/* Tapping the dimmed Home closes the sheet. */}
       <Pressable
         accessibilityRole="button"
@@ -241,267 +242,265 @@ export default function QuickAdd() {
           backgroundColor: "rgba(5,6,5,0.55)",
         }}
       />
-      <KeyboardAvoidingView behavior="padding">
-        <SheetPanel
-          top={
-            <>
-              <Segmented
-                value={mode}
-                onChange={(m) => {
-                  setMode(m);
-                  setProblem(null);
-                }}
-              />
+      <SheetPanel
+        top={
+          <>
+            <Segmented
+              value={mode}
+              onChange={(m) => {
+                setMode(m);
+                setProblem(null);
+              }}
+            />
 
-              <Text
-                accessibilityLabel={`Amount ${formatRM(amount ?? sen(0))}`}
-                style={{
-                  textAlign: "center",
-                  fontFamily: fonts.heading,
-                  fontSize: 48,
-                  lineHeight: 54,
-                  color: colors.text,
-                  fontVariant: ["tabular-nums"],
-                }}
-              >
-                {formatRM(amount ?? sen(0))}
-              </Text>
-            </>
-          }
+            <Text
+              accessibilityLabel={`Amount ${formatRM(amount ?? sen(0))}`}
+              style={{
+                textAlign: "center",
+                fontFamily: fonts.heading,
+                fontSize: 48,
+                lineHeight: 54,
+                color: colors.text,
+                fontVariant: ["tabular-nums"],
+              }}
+            >
+              {formatRM(amount ?? sen(0))}
+            </Text>
+          </>
+        }
+      >
+        <ScrollView
+          // Shrinks (and scrolls) when space is short, instead of pushing fields off screen.
+          style={{ flexGrow: 0, flexShrink: 1 }}
+          contentContainerStyle={{ gap: space.sm }}
+          keyboardShouldPersistTaps="handled"
         >
-          <ScrollView
-            // Shrinks (and scrolls) when space is short, instead of pushing fields off screen.
-            style={{ flexGrow: 0, flexShrink: 1 }}
-            contentContainerStyle={{ gap: space.sm }}
-            keyboardShouldPersistTaps="handled"
-          >
-            {mode === "spent" ? (
+          {mode === "spent" ? (
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
+              {chips.map((c) => (
+                <Chip
+                  key={c.id}
+                  label={`${c.name} ${categoryEmoji(c.name)}`.trim()}
+                  selected={c.id === picked?.id}
+                  onPress={() => setCategoryId(c.id)}
+                />
+              ))}
+              {!showAll && categories.length > 4 ? (
+                <Chip label="All categories" dashed onPress={() => setShowAll(true)} />
+              ) : null}
+            </View>
+          ) : null}
+          {showOwn ? (
+            <View style={{ gap: space.sm }}>
+              {picked?.name === "Other" ? (
+                <Field
+                  value={customName}
+                  onChange={setCustomName}
+                  expanded
+                  placeholder="Name it (optional), e.g. Haircut"
+                  label="Name your own category, optional"
+                />
+              ) : null}
+              {ownCategories.length > 0 ? (
+                <Labelled label="Your own categories">
+                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
+                    {ownCategories.map((c) => (
+                      <Chip
+                        key={c.id}
+                        label={c.name}
+                        selected={c.id === picked?.id}
+                        onPress={() => {
+                          setCategoryId(c.id);
+                          setCustomName("");
+                        }}
+                      />
+                    ))}
+                  </View>
+                </Labelled>
+              ) : null}
+            </View>
+          ) : null}
+          {mode === "in" ? (
+            <Labelled label="From">
               <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
-                {chips.map((c) => (
-                  <Chip
-                    key={c.id}
-                    label={`${c.name} ${categoryEmoji(c.name)}`.trim()}
-                    selected={c.id === picked?.id}
-                    onPress={() => setCategoryId(c.id)}
-                  />
+                {FROM.map((f) => (
+                  <Chip key={f} label={f} selected={f === from} onPress={() => setFrom(f)} />
                 ))}
-                {!showAll && categories.length > 4 ? (
-                  <Chip label="All categories" dashed onPress={() => setShowAll(true)} />
-                ) : null}
               </View>
-            ) : null}
-            {showOwn ? (
-              <View style={{ gap: space.sm }}>
-                {picked?.name === "Other" ? (
-                  <Field
-                    value={customName}
-                    onChange={setCustomName}
-                    expanded
-                    placeholder="Name it (optional), e.g. Haircut"
-                    label="Name your own category, optional"
-                  />
-                ) : null}
-                {ownCategories.length > 0 ? (
-                  <Labelled label="Your own categories">
-                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
-                      {ownCategories.map((c) => (
-                        <Chip
-                          key={c.id}
-                          label={c.name}
-                          selected={c.id === picked?.id}
-                          onPress={() => {
-                            setCategoryId(c.id);
-                            setCustomName("");
-                          }}
-                        />
-                      ))}
-                    </View>
-                  </Labelled>
-                ) : null}
-              </View>
-            ) : null}
-            {mode === "in" ? (
-              <Labelled label="From">
-                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
-                  {FROM.map((f) => (
-                    <Chip key={f} label={f} selected={f === from} onPress={() => setFrom(f)} />
-                  ))}
-                </View>
-                {from === FRIEND ? (
-                  <View style={{ gap: space.xs, marginTop: space.sm }}>
-                    <Field
-                      value={person}
-                      onChange={setPerson}
-                      expanded
-                      placeholder="Friend's name (optional)"
-                    />
-                    <Text style={[type.small, { color: colors.muted }]}>
-                      Need to pay it back? Pick {BORROWED}.
-                    </Text>
-                  </View>
-                ) : null}
-                {from === BORROWED ? (
-                  <View style={{ gap: space.xs, marginTop: space.sm }}>
-                    <Field
-                      value={person}
-                      onChange={setPerson}
-                      expanded
-                      placeholder="Who did you borrow from?"
-                    />
-                    <Text style={[type.small, { color: colors.muted }]}>
-                      Saved as a debt you'll pay back: not money in and not spending. It shows in
-                      Debts.
-                    </Text>
-                  </View>
-                ) : null}
-              </Labelled>
-            ) : mode === "more" ? (
-              <View style={{ gap: space.sm }}>
-                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
-                  {MORE.map((m) => (
-                    <Chip
-                      key={m.kind}
-                      label={m.label}
-                      selected={m.kind === moreKind}
-                      onPress={() => setMoreKind(m.kind)}
-                    />
-                  ))}
-                </View>
-                {moreKind !== "transfer" ? (
+              {from === FRIEND ? (
+                <View style={{ gap: space.xs, marginTop: space.sm }}>
                   <Field
                     value={person}
                     onChange={setPerson}
                     expanded
-                    placeholder={
-                      moreKind === "lent" ? "Who did you lend to?" : "Who did you borrow from?"
-                    }
+                    placeholder="Friend's name (optional)"
                   />
-                ) : (
                   <Text style={[type.small, { color: colors.muted }]}>
-                    Moving money between your own wallets (e.g. bank to TNG) is never spending.
+                    Need to pay it back? Pick {BORROWED}.
                   </Text>
-                )}
+                </View>
+              ) : null}
+              {from === BORROWED ? (
+                <View style={{ gap: space.xs, marginTop: space.sm }}>
+                  <Field
+                    value={person}
+                    onChange={setPerson}
+                    expanded
+                    placeholder="Who did you borrow from?"
+                  />
+                  <Text style={[type.small, { color: colors.muted }]}>
+                    Saved as a debt you'll pay back: not money in and not spending. It shows in
+                    Debts.
+                  </Text>
+                </View>
+              ) : null}
+            </Labelled>
+          ) : mode === "more" ? (
+            <View style={{ gap: space.sm }}>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
+                {MORE.map((m) => (
+                  <Chip
+                    key={m.kind}
+                    label={m.label}
+                    selected={m.kind === moreKind}
+                    onPress={() => setMoreKind(m.kind)}
+                  />
+                ))}
               </View>
-            ) : null}
-
-            <View style={{ flexDirection: "row", gap: space.sm }}>
-              {/* While typing the note it gets the whole row. */}
-              {noteFocused ? null : (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Date: ${date === day ? "today" : dayMonth(date)}. Change`}
-                  onPress={async () => {
-                    const chosen = await pickDate(date);
-                    if (chosen) setDate(chosen);
-                  }}
-                  style={{
-                    flex: 1,
-                    minHeight: MIN_TOUCH,
-                    justifyContent: "center",
-                    paddingHorizontal: space.sm,
-                    borderRadius: radius.button,
-                    borderWidth: 2,
-                    borderColor: colors.outline,
-                    backgroundColor: colors.card,
-                  }}
-                >
-                  <Text style={[type.strong, { color: colors.text, fontSize: 15 }]}>
-                    📅 {date === day ? `Today, ${dayMonth(day)}` : dayMonth(date)}
-                  </Text>
-                </Pressable>
-              )}
-              <View style={{ flex: 1 }}>
+              {moreKind !== "transfer" ? (
                 <Field
-                  value={note}
-                  onChange={setNote}
+                  value={person}
+                  onChange={setPerson}
                   expanded
-                  onFocus={() => setNoteFocused(true)}
-                  onBlur={() => setNoteFocused(false)}
-                  placeholder="Note (optional)"
-                  label="Note, optional. What was it? For example nasi lemak"
+                  placeholder={
+                    moreKind === "lent" ? "Who did you lend to?" : "Who did you borrow from?"
+                  }
                 />
-              </View>
+              ) : (
+                <Text style={[type.small, { color: colors.muted }]}>
+                  Moving money between your own wallets (e.g. bank to TNG) is never spending.
+                </Text>
+              )}
             </View>
+          ) : null}
 
-            {mode === "spent" ? (
-              <View
+          <View style={{ flexDirection: "row", gap: space.sm }}>
+            {/* While typing the note it gets the whole row. */}
+            {noteFocused ? null : (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Date: ${date === day ? "today" : dayMonth(date)}. Change`}
+                onPress={async () => {
+                  const chosen = await pickDate(date);
+                  if (chosen) setDate(chosen);
+                }}
                 style={{
+                  flex: 1,
+                  minHeight: MIN_TOUCH,
+                  justifyContent: "center",
+                  paddingHorizontal: space.sm,
                   borderRadius: radius.button,
                   borderWidth: 2,
                   borderColor: colors.outline,
                   backgroundColor: colors.card,
-                  paddingHorizontal: space.sm,
-                  gap: space.sm,
-                  paddingBottom: split ? space.sm : 0,
                 }}
               >
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    minHeight: MIN_TOUCH,
-                  }}
-                >
-                  <Text style={[type.strong, { color: colors.text, fontSize: 15 }]}>
-                    Split with a friend
-                  </Text>
-                  <Switch
-                    value={split}
-                    onValueChange={setSplit}
-                    accessibilityLabel="Split with a friend"
-                    trackColor={{ true: colors.primary, false: colors.outline }}
-                  />
-                </View>
-                {split ? (
-                  <View style={{ flexDirection: "row", gap: space.sm }}>
-                    <View style={{ flex: 3 }}>
-                      <Field
-                        value={friend}
-                        onChange={setFriend}
-                        placeholder="Friend's name"
-                        expanded
-                      />
-                    </View>
-                    <View style={{ flex: 2 }}>
-                      <Field
-                        value={shareText}
-                        onChange={setShareText}
-                        placeholder="Their share"
-                        numeric
-                      />
-                    </View>
-                  </View>
-                ) : null}
-                {split && amount !== null && share !== null && share > 0 && share < amount ? (
-                  <Text style={[type.small, { color: colors.muted }]}>
-                    Your share {formatRM(sen(amount - share))} counts as spending;{" "}
-                    {friend.trim() || "your friend"} owes you {formatRM(share)}.
-                  </Text>
-                ) : null}
-              </View>
-            ) : null}
-          </ScrollView>
+                <Text style={[type.strong, { color: colors.text, fontSize: 15 }]}>
+                  📅 {date === day ? `Today, ${dayMonth(day)}` : dayMonth(date)}
+                </Text>
+              </Pressable>
+            )}
+            <View style={{ flex: 1 }}>
+              <Field
+                value={note}
+                onChange={setNote}
+                expanded
+                onFocus={() => setNoteFocused(true)}
+                onBlur={() => setNoteFocused(false)}
+                placeholder="Note (optional)"
+                label="Note, optional. What was it? For example nasi lemak"
+              />
+            </View>
+          </View>
 
-          {/* Hidden while typing a note or name, so that field stays visible. */}
-          {keyboardOpen ? null : (
-            <Keypad
-              value={amountText}
-              onChange={(next) => {
-                setAmountText(next);
-                setProblem(null);
+          {mode === "spent" ? (
+            <View
+              style={{
+                borderRadius: radius.button,
+                borderWidth: 2,
+                borderColor: colors.outline,
+                backgroundColor: colors.card,
+                paddingHorizontal: space.sm,
+                gap: space.sm,
+                paddingBottom: split ? space.sm : 0,
               }}
-            />
-          )}
-          {problem ? (
-            <Text accessibilityRole="alert" style={[type.strong, { color: colors.warning }]}>
-              {problem}
-            </Text>
+            >
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  minHeight: MIN_TOUCH,
+                }}
+              >
+                <Text style={[type.strong, { color: colors.text, fontSize: 15 }]}>
+                  Split with a friend
+                </Text>
+                <Switch
+                  value={split}
+                  onValueChange={setSplit}
+                  accessibilityLabel="Split with a friend"
+                  trackColor={{ true: colors.primary, false: colors.outline }}
+                />
+              </View>
+              {split ? (
+                <View style={{ flexDirection: "row", gap: space.sm }}>
+                  <View style={{ flex: 3 }}>
+                    <Field
+                      value={friend}
+                      onChange={setFriend}
+                      placeholder="Friend's name"
+                      expanded
+                    />
+                  </View>
+                  <View style={{ flex: 2 }}>
+                    <Field
+                      value={shareText}
+                      onChange={setShareText}
+                      placeholder="Their share"
+                      numeric
+                    />
+                  </View>
+                </View>
+              ) : null}
+              {split && amount !== null && share !== null && share > 0 && share < amount ? (
+                <Text style={[type.small, { color: colors.muted }]}>
+                  Your share {formatRM(sen(amount - share))} counts as spending;{" "}
+                  {friend.trim() || "your friend"} owes you {formatRM(share)}.
+                </Text>
+              ) : null}
+            </View>
           ) : null}
-          <Button label={saveLabel} onPress={save} disabled={amount === null || amount <= 0} />
-        </SheetPanel>
-      </KeyboardAvoidingView>
-    </View>
+        </ScrollView>
+
+        {/* Hidden while typing a note or name, so that field stays visible. */}
+        {keyboardOpen ? null : (
+          <Keypad
+            value={amountText}
+            onChange={(next) => {
+              setAmountText(next);
+              setProblem(null);
+            }}
+          />
+        )}
+        {problem ? (
+          <Text accessibilityRole="alert" style={[type.strong, { color: colors.warning }]}>
+            {problem}
+          </Text>
+        ) : null}
+        <Button label={saveLabel} onPress={save} disabled={amount === null || amount <= 0} />
+      </SheetPanel>
+    </KeyboardSafe>
   );
 }
 

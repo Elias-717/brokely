@@ -1,11 +1,13 @@
 import { NICKNAME_MAX, seedDefaultCategories, setNickname } from "@brokely/local-db";
 import { router } from "expo-router";
 import { useState } from "react";
-import { Image, KeyboardAvoidingView, ScrollView, Text, TextInput, View } from "react-native";
+import { Image, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { repo } from "../src/db/client";
 import { Button, Sticker } from "../src/ui/components";
+import { KeyboardSafe } from "../src/ui/keyboard-safe";
 import { Appear, Float, TypeText } from "../src/ui/motion";
+import { useKeyboardOpen } from "../src/ui/use-keyboard";
 import { fonts, radius, space, type } from "../src/ui/theme";
 import { useTheme } from "../src/ui/theme-context";
 
@@ -19,6 +21,8 @@ export default function WelcomeScreen() {
   const { colors } = useTheme();
   const [name, setName] = useState("");
   const [greeted, setGreeted] = useState(false);
+  // While typing a name, Brokely steps aside so the box and "Let's go" fit above the keyboard.
+  const typing = useKeyboardOpen();
 
   const start = (next: "/quick-start" | "/") => {
     setNickname(repo, name); // blank stays blank (D-34)
@@ -30,7 +34,7 @@ export default function WelcomeScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior="height">
+      <KeyboardSafe>
         <ScrollView
           contentContainerStyle={{
             flexGrow: 1,
@@ -68,14 +72,16 @@ export default function WelcomeScreen() {
               )}
             </Sticker>
           </Appear>
-          <Float>
-            <Image
-              source={require("../assets/mascot/main_design.png")}
-              style={{ width: "100%", height: 260 }}
-              resizeMode="contain"
-              accessibilityLabel="Brokely, a broccoli that grows money instead of leaves"
-            />
-          </Float>
+          {typing ? null : (
+            <Float>
+              <Image
+                source={require("../assets/mascot/main_design.png")}
+                style={{ width: "100%", height: 260 }}
+                resizeMode="contain"
+                accessibilityLabel="Brokely, a broccoli that grows money instead of leaves"
+              />
+            </Float>
+          )}
           <View style={{ gap: space.xs }}>
             <Text style={[type.small, { color: colors.muted }]}>
               What should I call you? <Text style={{ fontFamily: fonts.body }}>(optional)</Text>
@@ -111,11 +117,13 @@ export default function WelcomeScreen() {
             variant="link"
             onPress={() => start("/")}
           />
-          <Text style={[type.small, { color: colors.muted, textAlign: "center" }]}>
-            No account, no bank login. Everything stays on this phone.
-          </Text>
+          {typing ? null : (
+            <Text style={[type.small, { color: colors.muted, textAlign: "center" }]}>
+              No account, no bank login. Everything stays on this phone.
+            </Text>
+          )}
         </View>
-      </KeyboardAvoidingView>
+      </KeyboardSafe>
     </SafeAreaView>
   );
 }

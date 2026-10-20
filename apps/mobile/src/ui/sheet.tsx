@@ -3,7 +3,6 @@ import { useMemo, useRef, type ReactNode } from "react";
 import {
   Animated,
   Keyboard,
-  KeyboardAvoidingView,
   PanResponder,
   Pressable,
   ScrollView,
@@ -15,6 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useReduceMotion } from "./motion";
 import { useKeyboardHeight } from "./use-keyboard";
 import { fonts, radius, space, type } from "./theme";
+import { KeyboardSafe, useAvailableHeight } from "./keyboard-safe";
 import { useTheme } from "./theme-context";
 
 /**
@@ -34,7 +34,7 @@ export function SheetShell({
 }) {
   const { colors } = useTheme();
   return (
-    <View style={{ flex: 1, justifyContent: "flex-end" }}>
+    <KeyboardSafe style={{ justifyContent: "flex-end" }}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Close"
@@ -48,42 +48,40 @@ export function SheetShell({
           backgroundColor: "rgba(5,6,5,0.55)",
         }}
       />
-      <KeyboardAvoidingView behavior="padding">
-        <SheetPanel
-          top={
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <Text style={[type.heading, { color: colors.text }]} accessibilityRole="header">
-                {title}
+      <SheetPanel
+        top={
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <Text style={[type.heading, { color: colors.text }]} accessibilityRole="header">
+              {title}
+            </Text>
+            {subtitle ? (
+              <Text
+                style={[type.small, { color: colors.muted, flexShrink: 1, textAlign: "right" }]}
+              >
+                {subtitle}
               </Text>
-              {subtitle ? (
-                <Text
-                  style={[type.small, { color: colors.muted, flexShrink: 1, textAlign: "right" }]}
-                >
-                  {subtitle}
-                </Text>
-              ) : null}
-            </View>
-          }
-        >
-          {children ? (
-            <ScrollView
-              style={{ flexGrow: 0, flexShrink: 1 }}
-              contentContainerStyle={{ gap: space.sm }}
-              keyboardShouldPersistTaps="handled"
-            >
-              {children}
-            </ScrollView>
-          ) : null}
-          {footer}
-        </SheetPanel>
-      </KeyboardAvoidingView>
-    </View>
+            ) : null}
+          </View>
+        }
+      >
+        {children ? (
+          <ScrollView
+            style={{ flexGrow: 0, flexShrink: 1 }}
+            contentContainerStyle={{ gap: space.sm }}
+            keyboardShouldPersistTaps="handled"
+          >
+            {children}
+          </ScrollView>
+        ) : null}
+        {footer}
+      </SheetPanel>
+    </KeyboardSafe>
   );
 }
 
@@ -102,11 +100,12 @@ export function SheetPanel({ top, children }: { top?: ReactNode; children?: Reac
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const reduce = useReduceMotion();
-  // A real number, not "94%": the sheet's parent has no fixed height, so a percentage never
-  // limited it and tall sheets ran off the top with the keypad drawn over them.
+  // A real number, not "94%": a percentage never limited the sheet, and tall sheets ran off the
+  // top with the keypad drawn over them. KeyboardSafe measures the room above the keyboard.
   const { height: screenHeight } = useWindowDimensions();
   const keyboard = useKeyboardHeight();
-  const maxHeight = screenHeight - insets.top - space.md - keyboard;
+  const available = useAvailableHeight();
+  const maxHeight = (available > 0 ? available : screenHeight - keyboard) - insets.top - space.md;
   const offset = useRef(new Animated.Value(0)).current;
 
   const drag = useMemo(
@@ -142,7 +141,8 @@ export function SheetPanel({ top, children }: { top?: ReactNode; children?: Reac
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
         paddingHorizontal: space.md,
-        paddingBottom: insets.bottom + space.md,
+        // The keyboard covers the gesture bar, so its inset is only needed while it's closed.
+        paddingBottom: (keyboard > 0 ? 0 : insets.bottom) + space.md,
         gap: space.sm,
         transform: [{ translateY: offset }],
       }}
