@@ -15,7 +15,9 @@ COPY apps/mobile/package.json apps/mobile/
 COPY packages/contracts/package.json packages/contracts/
 COPY packages/domain/package.json packages/domain/
 COPY packages/local-db/package.json packages/local-db/
-RUN pnpm install --frozen-lockfile --filter @brokely/api...
+# No install scripts: the bundle needs none, and test-only native modules (better-sqlite3)
+# would otherwise compile here for nothing.
+RUN pnpm install --frozen-lockfile --ignore-scripts --filter @brokely/api...
 
 COPY packages/contracts packages/contracts
 COPY packages/domain packages/domain
