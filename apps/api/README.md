@@ -37,9 +37,11 @@ environment, so no password or key is stored. It is skipped until this one-time 
 2. In that registration: **Certificates & secrets → Federated credentials → Add credential** →
    scenario **GitHub Actions deploying Azure resources**: organization `Elias-717`, repository `brokely`,
    entity type **Environment**, environment name `production`, credential name `brokely-main`.
-3. **Resource groups → `brokely-rg` → Access control (IAM) → Add role assignment** → role **Contributor** →
-   members: *User, group, or service principal* → select `brokely-github-deploy`. (Scoped to this resource group
-   only, so the workflow can't touch anything else.)
+3. **Resource groups → `brokely-rg` → Access control (IAM) → Add role assignment** → role
+   **Container Apps Contributor** (Job function roles; only Container Apps, not the whole group like Contributor) →
+   members: *User, group, or service principal* → select `brokely-github-deploy`. Scoped to this resource group.
+   Subject identifier of the federated credential (step 2): `repo:Elias-717/brokely:environment:production`
+   (GitHub's default token subject; Azure's generated `…@{id}` form only matches if the repo opted into ID-based subjects).
 4. **Subscriptions** → note the **Subscription ID** of the subscription that holds `brokely-rg`.
 5. **GitHub → repo Settings → Secrets and variables → Actions → Variables tab** → add three repository
    variables: `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`. These IDs are not secrets (they grant
