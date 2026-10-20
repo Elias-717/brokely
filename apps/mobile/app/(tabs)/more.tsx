@@ -18,6 +18,7 @@ const CHOICES: { value: Appearance; label: string }[] = [
 const PLACES: { label: string; detail: string; href: Href }[] = [
   { label: "Bills", detail: "Upcoming, paid, add a bill", href: "/bills" },
   { label: "Debts", detail: "Who owes you, who you owe", href: "/debts" },
+  { label: "Wallet check", detail: "Compare your money with your records", href: "/wallet-check" },
 ];
 
 /** S9 More: places (Bills…), what Brokely calls you (D-34) and Appearance (D-32). */
@@ -94,7 +95,7 @@ export default function MoreScreen() {
           ))}
         </View>
       </Card>
-      <Body muted>Plan, wallet check and your data — coming next.</Body>
+      <Body muted>Plan and your data — coming next.</Body>
     </Screen>
   );
 }

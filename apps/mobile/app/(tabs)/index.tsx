@@ -126,6 +126,11 @@ export default function HomeScreen() {
         ) : null}
       </Sticker>
 
+      {/* Optional wallet check (FR-WAL-01, D-27) */}
+      <View style={{ flexDirection: "row", justifyContent: "flex-end", marginTop: -space.sm }}>
+        <Button label="Wallet check" variant="link" onPress={() => router.push("/wallet-check")} />
+      </View>
+
       {/* Nothing logged today: one tap marks a covered day (FR-TXN-08, R-01) */}
       {home.offerCheckIn ? (
         <View

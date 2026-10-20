@@ -58,7 +58,7 @@ export default function RootLayout() {
 }
 
 /** Bottom sheets that slide up over the current screen (U-10). */
-const SHEETS = ["bills/pay/[id]", "debts/repay/[id]", "debts/write-off/[id]"];
+const SHEETS = ["bills/pay/[id]", "debts/repay/[id]", "debts/write-off/[id]", "wallet-check"];
 
 function AppStack() {
   const { colors, scheme } = useTheme();
