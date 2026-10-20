@@ -11,9 +11,9 @@ import { Doughnut, type Slice } from "../../src/ui/doughnut";
 import { space, type } from "../../src/ui/theme";
 import { useTheme } from "../../src/ui/theme-context";
 
-/** Named slices before the rest fold into "Everything else". */
-const MAX_SLICES = 5;
 const OTHER = "other";
+/** Meals always gets its own red slice, first from 12 o'clock (D-48). */
+const MEALS = "Meals";
 
 /** A forecast bound is a whole RM10 step (R-10), so it reads best without sen. */
 const wholeRM = (amount: Sen) => `RM${Math.round(amount / 100)}`;
@@ -46,20 +46,25 @@ export default function InsightsScreen() {
     );
   }
 
-  // Biggest five get their own slice; colours follow the categories' fixed order (dataviz).
-  const top = new Set(model.slices.slice(0, MAX_SLICES).map((s) => s.id));
+  // Meals is always its own red slice; the biggest others get one colour each (in the
+  // categories' fixed order, so a colour follows its category); the rest fold together.
+  const meals = model.slices.find((s) => s.name === MEALS);
+  const others = model.slices.filter((s) => s.name !== MEALS);
+  const top = new Set(others.slice(0, colors.chart.length).map((s) => s.id));
   const named = model.lines.filter((l) => top.has(l.id));
-  const rest = model.slices.filter((s) => !top.has(s.id));
+  const rest = others.filter((s) => !top.has(s.id));
   const restSen = sen(rest.reduce((sum, s) => sum + s.spentSen, 0));
+  const slice = (l: CategoryLine, color: string) => ({
+    key: l.id,
+    value: l.spentSen,
+    color,
+    label: l.name,
+    percent: l.percent,
+    amountSen: l.spentSen,
+  });
   const slices: (Slice & { percent: number; amountSen: Sen })[] = [
-    ...named.map((l, i) => ({
-      key: l.id,
-      value: l.spentSen,
-      color: colors.chart[i]!,
-      label: l.name,
-      percent: l.percent,
-      amountSen: l.spentSen,
-    })),
+    ...(meals ? [slice(meals, colors.chartMeals)] : []),
+    ...named.map((l, i) => slice(l, colors.chart[i]!)),
     ...(rest.length > 0
       ? [
           {

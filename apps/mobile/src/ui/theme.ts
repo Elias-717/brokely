@@ -34,6 +34,8 @@ export interface Colors {
    */
   chart: readonly string[];
   chartOther: string;
+  /** Meals is always red in charts (author's choice, D-48), whatever its size. */
+  chartMeals: string;
 }
 
 export const lightColors: Colors = {
@@ -55,8 +57,9 @@ export const lightColors: Colors = {
   tabActive: "#4E6127",
   tabInactive: "#5F665A",
   warning: "#8A5A00",
-  chart: ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#6250d6"],
+  chart: ["#2a78d6", "#eda100", "#1baf7a", "#6250d6"],
   chartOther: "#898781",
+  chartMeals: "#e34948",
 };
 
 export const darkColors: Colors = {
@@ -78,8 +81,9 @@ export const darkColors: Colors = {
   tabActive: "#9DBF5E",
   tabInactive: "#9AA196",
   warning: "#E0B460",
-  chart: ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#9085e9"],
+  chart: ["#3987e5", "#c98500", "#199e70", "#9085e9"],
   chartOther: "#898781",
+  chartMeals: "#e66767",
 };
 
 /** Bundled fonts (loaded in app/_layout.tsx): Lilita One for headings, Nunito for text. */
