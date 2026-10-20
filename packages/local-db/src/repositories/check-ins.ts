@@ -1,6 +1,7 @@
 import { and, asc, eq, gte, isNull, lt } from "drizzle-orm";
 import { dayCheckIns } from "../schema";
-import { asLocalDate, RepoError, write, type Db, type RepoContext } from "./context";
+import { checkCheckInDate } from "@brokely/domain";
+import { asLocalDate, ensure, RepoError, write, type Db, type RepoContext } from "./context";
 import { enqueueDelete, enqueueUpsert, freshRow, touched } from "./outbox";
 
 /** "No spending today" check-ins: a covered day without a purchase (FR-TXN-08, R-01, AC-30). */
@@ -37,10 +38,14 @@ export function listCheckInDates(
     .map((r) => r.localDate);
 }
 
-/** One check-in per day: tapping twice keeps the first (S-06). */
-export function checkInNoSpending(ctx: RepoContext, localDate: string) {
+/**
+ * One check-in per day: tapping twice keeps the first (S-06). With `today`, a day still to come
+ * is refused (D-60: earlier days can be marked from Records).
+ */
+export function checkInNoSpending(ctx: RepoContext, localDate: string, today?: string) {
   return write(ctx, (scope) => {
     const date = asLocalDate(localDate);
+    if (today) ensure(checkCheckInDate(date, asLocalDate(today)));
     const existing = liveOn(scope.tx, date);
     if (existing) return { id: existing.id };
     const row = { ...freshRow(scope), localDate: date };

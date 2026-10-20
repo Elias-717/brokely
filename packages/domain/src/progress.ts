@@ -1,6 +1,7 @@
 import { contains, lengthInDays, type DateRange } from "./cycle";
 import { daysBetween, type LocalDate } from "./dates";
 import { divideSen, sen, sumSen, type Sen, type SenRatio } from "./money";
+import { fail, OK, type RuleResult } from "./result";
 import { spendingByCategory, totalSpending } from "./spending";
 import type { DebtDirectionOf, Transaction } from "./transactions";
 
@@ -232,4 +233,14 @@ function roundDiv(a: bigint, b: bigint): bigint {
   const twiceRemainder = 2n * (a - q * b);
   if (twiceRemainder > b || (twiceRemainder === b && q % 2n !== 0n)) return q + 1n;
   return q;
+}
+
+/**
+ * A "No spending" check-in may be for today or any earlier day, never a day still to come
+ * (R-01, D-60): the student confirms a day they have lived.
+ */
+export function checkCheckInDate(date: LocalDate, today: LocalDate): RuleResult {
+  return date <= today
+    ? OK
+    : fail("VALIDATION_FAILED", "You can only mark today or an earlier day");
 }

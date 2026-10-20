@@ -1,4 +1,4 @@
-import type { LocalDate } from "@brokely/domain";
+import { addDays, type LocalDate } from "@brokely/domain";
 import { checkInNoSpending, undoCheckIn } from "@brokely/local-db";
 import { router } from "expo-router";
 import { useState } from "react";
@@ -11,6 +11,7 @@ import { dayMonth, today, weekdayName } from "../../src/lib/today";
 import { fonts, MIN_TOUCH, space, type } from "../../src/ui/theme";
 import { useTheme } from "../../src/ui/theme-context";
 import { useUndo } from "../../src/ui/undo";
+import { pickDate } from "../../src/ui/date-picker";
 import { BrokelyAvatar } from "../../src/ui/chat";
 import { Button } from "../../src/ui/components";
 import { Float } from "../../src/ui/motion";
@@ -33,6 +34,17 @@ export default function RecordsScreen() {
   const day = today();
   const [filter, setFilter] = useState<RecordFilter>("all");
   const days = useRead((db) => readRecords(db, filter), [filter]);
+  const [problem, setProblem] = useState<string | null>(null);
+
+  /** Pick a day (yesterday first) and mark it "No spending"; Undo for 5 seconds (D-60). */
+  const markNoSpendDay = async () => {
+    setProblem(null);
+    const chosen = await pickDate(addDays(day, -1));
+    if (!chosen) return;
+    const saved = checkInNoSpending(repo, chosen, day);
+    if (!saved.ok) return setProblem(saved.message);
+    showUndo(`Marked ${dayMonth(chosen)} as no spending`, () => undoCheckIn(repo, chosen));
+  };
 
   const dayTitle = (date: LocalDate) =>
     date === day
@@ -45,9 +57,35 @@ export default function RecordsScreen() {
       edges={["top", "left", "right"]}
     >
       <View style={{ paddingHorizontal: space.md, paddingTop: space.md, gap: space.sm }}>
-        <Text style={[type.title, { color: colors.text }]} accessibilityRole="header">
-          Records
-        </Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}>
+          <Text style={[type.title, { color: colors.text, flex: 1 }]} accessibilityRole="header">
+            Records
+          </Text>
+          {/* Mark an earlier day you spent nothing on (D-60); tap a check-in to remove it. */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Mark a day with no spending"
+            onPress={markNoSpendDay}
+            hitSlop={6}
+            style={({ pressed }) => ({
+              minHeight: 40,
+              justifyContent: "center",
+              paddingHorizontal: space.md,
+              borderRadius: 99,
+              borderWidth: 2,
+              borderColor: colors.outline,
+              backgroundColor: colors.card,
+              opacity: pressed ? 0.6 : 1,
+            })}
+          >
+            <Text style={[type.small, { color: colors.text }]}>+ No-spend day</Text>
+          </Pressable>
+        </View>
+        {problem ? (
+          <Text accessibilityRole="alert" style={[type.small, { color: colors.warning }]}>
+            {problem}
+          </Text>
+        ) : null}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}

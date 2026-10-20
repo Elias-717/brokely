@@ -247,7 +247,7 @@ export default function HomeScreen() {
           <Button
             label="No spending today"
             onPress={() => {
-              checkInNoSpending(repo, day);
+              checkInNoSpending(repo, day, day);
               showUndo("Marked today as no spending", () => undoCheckIn(repo, day));
             }}
           />

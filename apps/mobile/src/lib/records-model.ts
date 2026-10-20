@@ -1,4 +1,4 @@
-import { formatRM, localDate, type LocalDate } from "@brokely/domain";
+import { formatRM, localDate, sen, type LocalDate } from "@brokely/domain";
 import {
   listCategories,
   listCheckInDates,
@@ -65,7 +65,14 @@ export function readRecords(db: Db, filter: RecordFilter): RecordDay[] {
       spendingLine?.kind === "spending" ? categories.get(spendingLine.categoryId) : undefined;
     const debt = debtLine?.kind === "debt" ? debts.get(debtLine.debtId) : undefined;
     const isBill = billPaid.has(t.id);
-    const friendShare = t.type === "purchase" && debt ? ` · split with ${debt.counterparty}` : "";
+    // A split shows the student's own share as the amount; the total stays in the detail (D-61).
+    const mineSen = t.lines
+      .filter((l) => l.kind === "spending")
+      .reduce((sum, l) => sum + l.amountSen, 0);
+    const isSplit = t.type === "purchase" && !!debt;
+    const friendShare = isSplit
+      ? ` · split with ${debt!.counterparty}, total ${formatRM(t.amountSen)}`
+      : "";
 
     let title = t.note || categoryName || TYPE_LABEL[t.type];
     let detail: string;
@@ -128,7 +135,7 @@ export function readRecords(db: Db, filter: RecordFilter): RecordDay[] {
             : "🔁",
       title,
       detail,
-      amount: `${sign}${formatRM(t.amountSen)}`,
+      amount: `${sign}${formatRM(isSplit ? sen(mineSen) : t.amountSen)}`,
       style,
       groups,
     };

@@ -190,7 +190,10 @@ export function readHome(db: Db, today: LocalDate): HomeModel {
         title: t.note.trim() || categoryName,
         categoryName,
         date: t.localDate,
-        amountSen: t.amountSen,
+        // A split counts only the student's own share (D-61).
+        amountSen: sen(
+          t.lines.filter((l) => l.kind === "spending").reduce((sum, l) => sum + l.amountSen, 0),
+        ),
       };
     });
 

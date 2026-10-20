@@ -16,6 +16,15 @@ describe("check-in repository", () => {
     ({ ctx } = await createTestContext());
   });
 
+  it("an earlier day can be marked no-spend from Records; a day still to come can't (D-60)", () => {
+    expect(checkInNoSpending(ctx, "2026-11-01", "2026-11-03").ok).toBe(true);
+    expect(checkInNoSpending(ctx, "2026-11-04", "2026-11-03")).toMatchObject({
+      ok: false,
+      code: "VALIDATION_FAILED",
+    });
+    expect(listCheckInDates(ctx.db)).toEqual(["2026-11-01"]);
+  });
+
   it("'No spending today' covers the day, and Undo removes it (AC-30, FR-TXN-08, R-01)", () => {
     expect(checkInNoSpending(ctx, "2026-11-02").ok).toBe(true);
     expect(listCheckInDates(ctx.db)).toEqual(["2026-11-02"]);

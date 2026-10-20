@@ -3,6 +3,7 @@ import { cycleFromInclusive } from "./cycle";
 import { addDays, localDate, type LocalDate } from "./dates";
 import { formatRM, roundHalfEven, sen } from "./money";
 import {
+  checkCheckInDate,
   computeProgress,
   percentHalfEven,
   type ProgressInput,
@@ -232,5 +233,17 @@ describe("forecastCanShow (D-37)", () => {
   it("plans of 14 days or more keep the usual gate (BR-17)", () => {
     expect(forecastCanShow(14)).toBe(true);
     expect(forecastCanShow(30)).toBe(true);
+  });
+});
+
+describe("no-spend days for earlier dates (R-01, D-60)", () => {
+  it("accepts today and earlier days, refuses tomorrow", () => {
+    const today = localDate("2026-10-21");
+    expect(checkCheckInDate(localDate("2026-10-21"), today).ok).toBe(true);
+    expect(checkCheckInDate(localDate("2026-10-19"), today).ok).toBe(true);
+    expect(checkCheckInDate(localDate("2026-10-22"), today)).toMatchObject({
+      ok: false,
+      code: "VALIDATION_FAILED",
+    });
   });
 });
