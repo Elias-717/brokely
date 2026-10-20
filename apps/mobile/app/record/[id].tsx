@@ -25,7 +25,6 @@ import {
 import { Redirect, router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
 import { KeyboardAvoidingView, Pressable, ScrollView, Text, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { repo } from "../../src/db/client";
 import { useRead } from "../../src/db/use-read";
 import { categoryEmoji } from "../../src/lib/essentials-meta";
@@ -34,6 +33,7 @@ import { dayMonth, occurredAtFor, today } from "../../src/lib/today";
 import { Button } from "../../src/ui/components";
 import { pickDate } from "../../src/ui/date-picker";
 import { Keypad } from "../../src/ui/keypad";
+import { SheetPanel } from "../../src/ui/sheet";
 import { Chip, Field } from "../../src/ui/sheet-parts";
 import { fonts, MIN_TOUCH, radius, space, type } from "../../src/ui/theme";
 import { useTheme } from "../../src/ui/theme-context";
@@ -85,7 +85,6 @@ function Sheet({
   categories: ReturnType<typeof listCategories>;
 }) {
   const { colors } = useTheme();
-  const insets = useSafeAreaInsets();
   const showUndo = useUndo();
   const day = useMemo(() => today(), []);
   const keyboardOpen = useKeyboardOpen();
@@ -223,54 +222,41 @@ function Sheet({
         }}
       />
       <KeyboardAvoidingView behavior="padding">
-        <View
-          style={{
-            maxHeight: "94%",
-            backgroundColor: colors.background,
-            borderTopWidth: 2,
-            borderColor: colors.outline,
-            borderTopLeftRadius: 24,
-            borderTopRightRadius: 24,
-            paddingHorizontal: space.md,
-            paddingTop: space.sm,
-            paddingBottom: insets.bottom + space.md,
-            gap: space.sm,
-          }}
+        <SheetPanel
+          top={
+            <>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <Text style={[type.heading, { color: colors.text }]} accessibilityRole="header">
+                  {title}
+                </Text>
+                <Text
+                  style={[type.small, { color: colors.muted, flexShrink: 1, textAlign: "right" }]}
+                >
+                  {subtitle}
+                </Text>
+              </View>
+
+              <Text
+                style={{
+                  textAlign: "center",
+                  fontFamily: fonts.heading,
+                  fontSize: 48,
+                  lineHeight: 54,
+                  color: colors.text,
+                  fontVariant: ["tabular-nums"],
+                }}
+              >
+                {formatRM(mode === "edit" && split ? t.amountSen : (amount ?? sen(0)))}
+              </Text>
+            </>
+          }
         >
-          <View
-            style={{
-              alignSelf: "center",
-              width: 44,
-              height: 5,
-              borderRadius: 99,
-              backgroundColor: colors.muted,
-              opacity: 0.5,
-            }}
-          />
-          <View
-            style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}
-          >
-            <Text style={[type.heading, { color: colors.text }]} accessibilityRole="header">
-              {title}
-            </Text>
-            <Text style={[type.small, { color: colors.muted, flexShrink: 1, textAlign: "right" }]}>
-              {subtitle}
-            </Text>
-          </View>
-
-          <Text
-            style={{
-              textAlign: "center",
-              fontFamily: fonts.heading,
-              fontSize: 48,
-              lineHeight: 54,
-              color: colors.text,
-              fontVariant: ["tabular-nums"],
-            }}
-          >
-            {formatRM(mode === "edit" && split ? t.amountSen : (amount ?? sen(0)))}
-          </Text>
-
           <ScrollView
             // Shrinks (and scrolls) when space is short, instead of pushing fields off screen.
             style={{ flexGrow: 0, flexShrink: 1 }}
@@ -427,7 +413,7 @@ function Sheet({
               disabled={!amount}
             />
           )}
-        </View>
+        </SheetPanel>
       </KeyboardAvoidingView>
     </View>
   );

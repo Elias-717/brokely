@@ -1,13 +1,23 @@
 import { router } from "expo-router";
-import type { ReactNode } from "react";
-import { KeyboardAvoidingView, Pressable, ScrollView, Text, View } from "react-native";
+import { useMemo, useRef, type ReactNode } from "react";
+import {
+  Animated,
+  Keyboard,
+  KeyboardAvoidingView,
+  PanResponder,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useReduceMotion } from "./motion";
 import { fonts, radius, space, type } from "./theme";
 import { useTheme } from "./theme-context";
 
 /**
  * A bottom sheet over the current screen (U-10: Mark paid, Write off, Wallet check). Tapping the
- * dimmed area closes it. `footer` stays below the scrolling part, e.g. the keypad and Save.
+ * dimmed area or sliding the top down closes it. `footer` stays below the scrolling part, e.g. the keypad and Save.
  */
 export function SheetShell({
   title,
@@ -21,7 +31,6 @@ export function SheetShell({
   footer?: ReactNode;
 }) {
   const { colors } = useTheme();
-  const insets = useSafeAreaInsets();
   return (
     <View style={{ flex: 1, justifyContent: "flex-end" }}>
       <Pressable
@@ -38,44 +47,28 @@ export function SheetShell({
         }}
       />
       <KeyboardAvoidingView behavior="padding">
-        <View
-          style={{
-            maxHeight: "94%",
-            backgroundColor: colors.background,
-            borderTopWidth: 2,
-            borderColor: colors.outline,
-            borderTopLeftRadius: 24,
-            borderTopRightRadius: 24,
-            paddingHorizontal: space.md,
-            paddingTop: space.sm,
-            paddingBottom: insets.bottom + space.md,
-            gap: space.sm,
-          }}
-        >
-          <View
-            style={{
-              alignSelf: "center",
-              width: 44,
-              height: 5,
-              borderRadius: 99,
-              backgroundColor: colors.muted,
-              opacity: 0.5,
-            }}
-          />
-          <View
-            style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}
-          >
-            <Text style={[type.heading, { color: colors.text }]} accessibilityRole="header">
-              {title}
-            </Text>
-            {subtitle ? (
-              <Text
-                style={[type.small, { color: colors.muted, flexShrink: 1, textAlign: "right" }]}
-              >
-                {subtitle}
+        <SheetPanel
+          top={
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <Text style={[type.heading, { color: colors.text }]} accessibilityRole="header">
+                {title}
               </Text>
-            ) : null}
-          </View>
+              {subtitle ? (
+                <Text
+                  style={[type.small, { color: colors.muted, flexShrink: 1, textAlign: "right" }]}
+                >
+                  {subtitle}
+                </Text>
+              ) : null}
+            </View>
+          }
+        >
           {children ? (
             <ScrollView
               style={{ flexGrow: 0, flexShrink: 1 }}
@@ -86,9 +79,89 @@ export function SheetShell({
             </ScrollView>
           ) : null}
           {footer}
-        </View>
+        </SheetPanel>
       </KeyboardAvoidingView>
     </View>
+  );
+}
+
+/** How far down (dp) or how fast (dp/ms) a drag must go to close the sheet. */
+const CLOSE_DISTANCE = 120;
+const CLOSE_VELOCITY = 0.8;
+
+/**
+ * The sliding part of every bottom sheet. Dragging down on its top part (the handle bar and
+ * whatever `top` holds, e.g. the title or amount) moves the sheet with the finger; past a
+ * threshold, or with a quick flick, it slides away and closes; otherwise it springs back.
+ * Taps still reach buttons in `top`: the drag only starts once the finger moves down.
+ * The handle is also a "Close" button for screen readers.
+ */
+export function SheetPanel({ top, children }: { top?: ReactNode; children?: ReactNode }) {
+  const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
+  const reduce = useReduceMotion();
+  const offset = useRef(new Animated.Value(0)).current;
+
+  const drag = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_, g) => g.dy > 6 && Math.abs(g.dy) > Math.abs(g.dx),
+        onPanResponderGrant: () => Keyboard.dismiss(),
+        onPanResponderMove: (_, g) => offset.setValue(Math.max(0, g.dy)),
+        onPanResponderRelease: (_, g) => {
+          if (g.dy > CLOSE_DISTANCE || g.vy > CLOSE_VELOCITY) {
+            Animated.timing(offset, {
+              toValue: 1000,
+              duration: reduce ? 0 : 180,
+              useNativeDriver: true,
+            }).start(() => router.back());
+          } else {
+            Animated.spring(offset, { toValue: 0, useNativeDriver: true }).start();
+          }
+        },
+        onPanResponderTerminate: () =>
+          Animated.spring(offset, { toValue: 0, useNativeDriver: true }).start(),
+      }),
+    [offset, reduce],
+  );
+
+  return (
+    <Animated.View
+      style={{
+        maxHeight: "94%",
+        backgroundColor: colors.background,
+        borderTopWidth: 2,
+        borderColor: colors.outline,
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        paddingHorizontal: space.md,
+        paddingBottom: insets.bottom + space.md,
+        gap: space.sm,
+        transform: [{ translateY: offset }],
+      }}
+    >
+      <View {...drag.panHandlers} style={{ gap: space.sm }}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Close"
+          accessibilityHint="Or slide the top of the sheet down"
+          onPress={() => router.back()}
+          style={{ alignItems: "center", justifyContent: "center", height: 24 }}
+        >
+          <View
+            style={{
+              width: 44,
+              height: 5,
+              borderRadius: 99,
+              backgroundColor: colors.muted,
+              opacity: 0.5,
+            }}
+          />
+        </Pressable>
+        {top}
+      </View>
+      {children}
+    </Animated.View>
   );
 }
 
