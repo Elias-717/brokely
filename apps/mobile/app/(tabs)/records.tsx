@@ -2,7 +2,7 @@ import { addDays, type LocalDate } from "@brokely/domain";
 import { checkInNoSpending, undoCheckIn } from "@brokely/local-db";
 import { router } from "expo-router";
 import { useState } from "react";
-import { Pressable, ScrollView, SectionList, Text, View } from "react-native";
+import { Image, Pressable, ScrollView, SectionList, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { repo } from "../../src/db/client";
 import { useRead } from "../../src/db/use-read";
@@ -12,7 +12,6 @@ import { fonts, MIN_TOUCH, space, type } from "../../src/ui/theme";
 import { useTheme } from "../../src/ui/theme-context";
 import { useUndo } from "../../src/ui/undo";
 import { pickDate } from "../../src/ui/date-picker";
-import { BrokelyAvatar } from "../../src/ui/chat";
 import { Button } from "../../src/ui/components";
 import { Float } from "../../src/ui/motion";
 
@@ -272,7 +271,14 @@ function EmptyRecords({ filter }: { filter: RecordFilter }) {
       }}
     >
       <Float>
-        <BrokelyAvatar size={96} />
+        {/* The full Brokely picture, no circle (D-65). */}
+        <Image
+          source={require("../../assets/mascot/main_design.png")}
+          style={{ width: 120, height: 150 }}
+          resizeMode="contain"
+          accessibilityIgnoresInvertColors
+          accessibilityLabel="Brokely"
+        />
       </Float>
       <Text style={[type.heading, { color: colors.text, textAlign: "center" }]}>
         {all ? "Nothing logged yet?" : "Nothing here yet"}
