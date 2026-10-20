@@ -11,6 +11,7 @@ import {
   sen,
   type AllocationInput,
   type CycleLike,
+  type DebtDirection,
   type PlanTotals,
   type Sen,
 } from "@brokely/domain";
@@ -18,6 +19,7 @@ import { and, eq, gt, inArray, isNull, lte, sql } from "drizzle-orm";
 import { allocations, planningCycles, planRevisions } from "../schema";
 import { syncAllBillItems } from "./bills";
 import { liveCategory } from "./categories";
+import { createDebtIn } from "./debts";
 import {
   asLocalDate,
   ensure,
@@ -129,7 +131,24 @@ export interface QuickStartInput {
   readonly trackingStartDate?: string;
   /** Catch me up: what was spent before tracking starts, as one entry (FR-PLN-21, AC-59). */
   readonly openingSpend?: { readonly amountSen: Sen; readonly categoryId: string };
+  /**
+   * Debts from before the plan (D-41), recorded in Debts and dated the day before the cycle.
+   * The paybacks are already taken out of `budgetSen` (`budgetAfterPayback`); a debt with a
+   * payback is due on the plan's last day.
+   */
+  readonly openingDebts?: readonly OpeningDebt[];
 }
+
+export interface OpeningDebt {
+  readonly direction: DebtDirection;
+  readonly counterparty: string;
+  readonly amountSen: Sen;
+  /** What the student pays back during this plan; only for money they owe. */
+  readonly paybackSen?: Sen;
+}
+
+/** The note on a debt from before the plan (D-41). */
+export const OPENING_DEBT_NOTE = "From before Brokely";
 
 /** The note on the catch-up entry (FR-PLN-21). */
 export const OPENING_SPEND_NOTE = "Spent before Brokely";
@@ -170,6 +189,21 @@ export function quickStartIn(scope: WriteScope, input: QuickStartInput) {
         note: OPENING_SPEND_NOTE,
       }),
     );
+  }
+  for (const debt of input.openingDebts ?? []) {
+    if (debt.paybackSen && debt.direction !== "owed_by_me") {
+      throw new RepoError("VALIDATION_FAILED", "Only money you owe is paid back from the plan");
+    }
+    createDebtIn(scope, {
+      direction: debt.direction,
+      counterparty: debt.counterparty,
+      amountSen: debt.amountSen,
+      dueDate: debt.paybackSen ? end : null,
+      notes: OPENING_DEBT_NOTE,
+      // Before the cycle: borrowing and lending are never spending, and it isn't new money in.
+      localDate: addDays(localDate(cycle.startDate), -1),
+      occurredAt: scope.at,
+    });
   }
   return { cycleId: cycle.id, revisionId };
 }

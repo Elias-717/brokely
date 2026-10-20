@@ -80,6 +80,57 @@ export const brokely = {
 
   askSetUp: (): Line => ["Shall I set it up?"],
 
+  // Debts from before the plan (D-41). Paying back is never spending; it comes off the budget.
+  askOwe: (): Line => [
+    "Before we plan: do you owe anyone money from before? A friend, family, anyone.",
+  ],
+
+  askOweWho: (): Line => ["Who do you owe?"],
+
+  askOweHowMuch: (name: string): Line => [`How much do you owe ${name} in total?`],
+
+  askPayBack: (end: LocalDate): Line => [`Will you pay it back by ${dayMonth(end)}?`],
+
+  askPayBackHowMuch: (end: LocalDate): Line => [`How much will you pay back by ${dayMonth(end)}?`],
+
+  paybackNoted: (payback: Sen, name: string): Line => [
+    "Got it: ",
+    { b: formatRM(payback) },
+    ` for ${name} comes out of your plan, so it's ready when you pay it back.`,
+  ],
+
+  paybackLater: (name: string): Line => [
+    `Okay! I've saved what you owe ${name} in Debts. Nothing comes out of this plan.`,
+  ],
+
+  paybackMoreThanOwed: (owed: Sen, name: string): Line => [
+    `That's more than the ${formatRM(owed)} you owe ${name}. How much will you pay back?`,
+  ],
+
+  paybackLeavesNothing: (room: Sen): Line => [
+    `That would leave nothing to plan with. Try less than ${formatRM(room)}.`,
+  ],
+
+  askOweMore: (): Line => ["Anyone else you owe?"],
+
+  askOwedToYou: (): Line => ["And does anyone owe you money?"],
+
+  askOwedWho: (): Line => ["Who owes you?"],
+
+  askOwedHowMuch: (name: string): Line => [`How much does ${name} owe you?`],
+
+  owedNoted: (name: string): Line => [
+    `Saved in Debts so you don't forget. Your plan doesn't count on it until ${name} pays you back.`,
+  ],
+
+  askOwedMore: (): Line => ["Anyone else?"],
+
+  paybackSummary: (money: Sen, payback: Sen, budget: Sen): Line => [
+    `${formatRM(money)} − ${formatRM(payback)} to pay back = `,
+    { b: formatRM(budget) },
+    " for your plan.",
+  ],
+
   couldNotRead: (): Line => ["Hmm, I couldn't read that. Try something like 250 or 250.50."],
 
   needMoreThanZero: (): Line => ["I need an amount above zero to plan with."],

@@ -72,6 +72,8 @@ SRS v1.6 (PRD v1.5) includes every decision up to D-27 and R-13; D-28 is layout 
   - Quick start as a **chat with Brokely** (D-33): one conversation `app/quick-start/index.tsx` covers S1c/S1b/S1d (steps choose → fresh-amount/confirm or cu-money/gone/mostly/confirm), then `app/quick-start/done.tsx` ("Your plan is set"). Brokely's words are templates in `src/lib/brokely-lines.ts` (edit wording there); chat pieces in `src/ui/chat.tsx`, `src/ui/use-conversation.ts`; gentle motion in `src/ui/motion.tsx` (respects Reduce motion). Optional nickname on Welcome and in More (D-34, `local_prefs`). `parseAmount` in domain; Android date picker for Change dates
   - Contracts: `scheduledItemId(billId, dueDate)` = UUIDv5 under `BROKELY_ID_NAMESPACE` (S-05), value pinned by a test; uuid 11.1.0
   - App dependencies via `expo install` (expo-sqlite, expo-router + peers, expo-crypto), drizzle-orm, `@brokely/local-db`, uuid (v7 from expo-crypto bytes). Migration `packages/local-db/drizzle/0000_initial.sql` + `migrations.js` (export `@brokely/local-db/migrations`); a test fails if `schema.ts` changes without `db:generate`. Metro `.sql` + babel inline-import
+  - **D-41 debts at launch**: quick start asks "Do you owe anyone money from before?" (All / Part / Not this month) and "Does anyone owe you money?" right after the money; paybacks come off the budget (domain `budgetAfterPayback`, `checkPayback`), every debt saved in Debts (`QuickStartInput.openingDebts`, note `OPENING_DEBT_NOTE`). `TextComposer` in `src/ui/chat.tsx`
+  - **D-40** (author): AI broccoli-from-photo profile mascot planned for **0.3** (needs NFR-20 change, Phase 4 server, consent; not built)
   - App shell: `app/_layout.tsx` runs migrations first; tabs Home · Records · (+) · Insights · More; + opens `quick-add` modal; first run (no categories) → **S1 Welcome** with `main_design.png`. `CI=1 npx expo export --platform android` bundles (3.2 MB). Not yet run on a phone
 - **Deferred (user decision, 2026-10-19):**
   - Student interviews: skipped for now because of time. Decisions that waited on them (D-12 Meals / Snacks split) stay provisional; categories (D-22) and wallet check (D-27) were decided early by the author; ask the user when one becomes blocking.
@@ -82,7 +84,7 @@ SRS v1.6 (PRD v1.5) includes every decision up to D-27 and R-13; D-28 is layout 
   1. **Run on the author's phone** with a development build (`npx expo run:android` or `eas build --profile development --platform android`) to prove migrations + S1 on a real device before building many screens; name the reference device (NFR-06)
   2. **Screens in this order**, each from its Figma frame (`docs/design/wireframes.md`; S1 = node 9:288, S1b 9:306, S1c 16:330, S1d 16:349): S3a Home with essential cards (`acceptEssentialCard`; card queue Later/Not for me per cycle in `local_prefs`, D-30) → S4/S4c quick add with Undo (`recordPurchase`, `recordMoneyIn`, `deleteTransaction`) → S5 Records → S6/S6b Bills + Mark paid → S7/S7b Debts → S8 Insights (`computeProgress`) → S11 Wallet check → S9 More, settings (`user_settings` repo still missing), export/delete → S10 cycle finished. Guided setup S2a–S2d after the main flow.
   3. Repositories still missing: user settings, guided-setup draft revisions (D-20, AC-47), start next cycle (AC-48), export
-  4. Later: server database schema (Drizzle + PostgreSQL) before Phase 4; SRS v1.7 / PRD v1.6 (add D-29…D-39 and R-14 to the change record; D-39 needs a new FR/AC for in-app money tips; dark mode is new 0.1 scope; D-36 rewords AC-02 and AC-54: laundry is never a dated bill) when interviews happen
+  4. Later: server database schema (Drizzle + PostgreSQL) before Phase 4; SRS v1.7 / PRD v1.6 (add D-29…D-41 and R-14 to the change record; D-41 needs an FR/AC for debts in quick start; D-40 needs NFR-20 reworded; D-39 needs a new FR/AC for in-app money tips; dark mode is new 0.1 scope; D-36 rewords AC-02 and AC-54: laundry is never a dated bill) when interviews happen
 - **Open questions:** see section 11
 
 ---
@@ -156,7 +158,7 @@ Workspace packages export TypeScript source directly (`"exports": "./src/index.t
 
 ## 8. Domain quick reference (full rules: SRS section 5 + decision log)
 
-**First run (D-23).** Welcome (one Brokely picture, fixed greeting, never promise "you won't go broke") → Quick start (budget + dates, approve) → Home suggests essentials one card at a time (Add / Not for me / Later); each accepted card = new revision. Guided setup optional.
+**First run (D-23).** Welcome (one Brokely picture, fixed greeting, never promise "you won't go broke") → Quick start (money → debts from before (D-41: payback comes off the budget) → dates, approve) → Home suggests essentials one card at a time (Add / Not for me / Later); each accepted card = new revision. Guided setup optional.
 **Navigation (D-24).** Tabs: Home · Records · (+) · Insights · More. Quick add from every tab; Undo after save, no confirm dialogs. Touch targets ≥ 48 dp (NFR-07).
 
 **Plan.** B = budget, Cᵢ = category allocations, Sⱼ = set-asides (a category of kind `set_aside`).
@@ -202,6 +204,7 @@ Known TNG formats (no transaction ID in visible text; dedupe on Android notifica
 - **0.1 Core:** planning, set-asides, bills + Mark paid, transactions with splits, debts + write-off, insights + honest forecast, check-in, local-only mode, accounts, offline sync, export/delete.
 - **0.2 Automation and fun:** TNG import with confirmation, merchant memory, fun notifications, mascot + XP + streaks, fill-a-gap estimates, cycle comparison.
 - **0.3 Extras (if confirmed):** coins and cosmetics.
+- **0.3 also:** AI mascot from the student's photo (D-40), if NFR-20 is changed.
 - **Out of scope for v1:** bank balances, payments, loans, iOS, social features, paid AI, multi-category splits.
 
 ---
@@ -242,6 +245,7 @@ pnpm --filter @brokely/api dev   # run the API locally
 | Before 0.1 testing | Reference test device (NFR-06) |
 | Before 0.2 mascot screen | XP thresholds for the 3 growth stages; priority between moods (e.g. proud vs worried on the same day) |
 | Before 0.2 money tips | Daily cap and gap, who writes the first tips, tips related to the record or general, XP for tips (`docs/design/money-tips.md`) |
+| Before 0.3 AI mascot (D-40) | Image provider, one picture or all 12 moods, cost cap per student, photo consent wording |
 | During pilot | Coverage threshold (70%), XP values, notification cap |
 
 ---

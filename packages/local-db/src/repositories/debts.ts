@@ -97,19 +97,21 @@ function insertDebt(scope: WriteScope, input: NewDebt): string {
  * "I borrowed" or "I lent": the debt and its opening transaction (FR-DEBT-01).
  * Borrowing and lending are never spending (FR-DEBT-06).
  */
-export function createDebt(ctx: RepoContext, input: NewDebt & When & { amountSen: Sen }) {
-  return write(ctx, (scope) => {
-    const debtId = insertDebt(scope, input);
-    const { id: transactionId } = recordTransactionIn(scope, {
-      type: input.direction === "owed_by_me" ? "borrow" : "lend",
-      amountSen: input.amountSen,
-      occurredAt: input.occurredAt,
-      localDate: input.localDate,
-      note: input.notes,
-      lines: [{ kind: "debt", debtId, amountSen: input.amountSen }],
-    });
-    return { debtId, transactionId };
+export function createDebtIn(scope: WriteScope, input: NewDebt & When & { amountSen: Sen }) {
+  const debtId = insertDebt(scope, input);
+  const { id: transactionId } = recordTransactionIn(scope, {
+    type: input.direction === "owed_by_me" ? "borrow" : "lend",
+    amountSen: input.amountSen,
+    occurredAt: input.occurredAt,
+    localDate: input.localDate,
+    note: input.notes,
+    lines: [{ kind: "debt", debtId, amountSen: input.amountSen }],
   });
+  return { debtId, transactionId };
+}
+
+export function createDebt(ctx: RepoContext, input: NewDebt & When & { amountSen: Sen }) {
+  return write(ctx, (scope) => createDebtIn(scope, input));
 }
 
 export interface SplitPurchaseInput extends When {

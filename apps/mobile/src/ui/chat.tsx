@@ -365,12 +365,29 @@ export function ReplyButton({
 }
 
 /** Message box for an amount, with a round send button. */
-export function AmountComposer({
+export function AmountComposer(props: { label: string; onSend: (text: string) => void }) {
+  return <Composer {...props} amount />;
+}
+
+/** A short text answer, such as a friend's name. */
+export function TextComposer(props: {
+  label: string;
+  placeholder?: string;
+  onSend: (text: string) => void;
+}) {
+  return <Composer {...props} amount={false} />;
+}
+
+function Composer({
   label,
   onSend,
+  amount,
+  placeholder,
 }: {
   label: string;
   onSend: (text: string) => void;
+  amount: boolean;
+  placeholder?: string;
 }) {
   const { colors } = useTheme();
   const [text, setText] = useState("");
@@ -397,21 +414,25 @@ export function AmountComposer({
             paddingHorizontal: 18,
           }}
         >
-          <Text style={{ fontFamily: fonts.heading, fontSize: 20, color: colors.muted }}>RM</Text>
+          {amount ? (
+            <Text style={{ fontFamily: fonts.heading, fontSize: 20, color: colors.muted }}>RM</Text>
+          ) : null}
           <TextInput
             value={text}
             onChangeText={setText}
             onSubmitEditing={send}
-            keyboardType="decimal-pad"
+            keyboardType={amount ? "decimal-pad" : "default"}
+            autoCapitalize={amount ? "none" : "words"}
+            maxLength={amount ? undefined : 60}
             returnKeyType="send"
             autoFocus
-            placeholder="0.00"
+            placeholder={amount ? "0.00" : placeholder}
             placeholderTextColor={colors.muted}
             accessibilityLabel={label}
             style={{
               flex: 1,
-              fontFamily: fonts.heading,
-              fontSize: 24,
+              fontFamily: amount ? fonts.heading : fonts.body,
+              fontSize: amount ? 24 : 18,
               color: colors.text,
               fontVariant: ["tabular-nums"],
             }}

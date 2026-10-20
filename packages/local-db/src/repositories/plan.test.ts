@@ -1,10 +1,19 @@
-import { sen } from "@brokely/domain";
+import { budgetAfterPayback, sen } from "@brokely/domain";
 import { beforeEach, describe, expect, it } from "vitest";
 import { outboxOperations, planningCycles, planRevisions } from "../schema";
 import { createTestContext } from "../test-db";
 import { listCategories, seedDefaultCategories } from "./categories";
 import type { RepoContext } from "./context";
-import { findCycleOn, getPlan, quickStart, revisePlan, setAllocation } from "./plan";
+import { listDebts } from "./debts";
+import {
+  findCycleOn,
+  getPlan,
+  OPENING_DEBT_NOTE,
+  quickStart,
+  revisePlan,
+  setAllocation,
+} from "./plan";
+import { listTransactions } from "./transactions";
 
 describe("plan repository", () => {
   let ctx: RepoContext;
@@ -81,6 +90,68 @@ describe("plan repository", () => {
     expect(result).toMatchObject({ ok: false, code: "CYCLE_OVERLAP" });
     expect(ctx.db.select().from(planningCycles).all()).toHaveLength(1);
     expect(outbox()).toHaveLength(before);
+  });
+
+  it("records debts from before the plan in Debts, dated the day before, never as spending (D-41)", () => {
+    const result = quickStart(ctx, {
+      budgetSen: budgetAfterPayback(sen(50000), [sen(6000)]),
+      startDate: "2026-11-01",
+      endDateInclusive: "2026-11-30",
+      openingDebts: [
+        {
+          direction: "owed_by_me",
+          counterparty: "[FRIEND A]",
+          amountSen: sen(10000),
+          paybackSen: sen(6000),
+        },
+        { direction: "owed_to_me", counterparty: "[FRIEND B]", amountSen: sen(2000) },
+      ],
+    });
+    if (!result.ok) throw new Error(result.message);
+
+    expect(getPlan(ctx.db, result.value.cycleId)?.revision.budgetSen).toBe(44000);
+    const debts = listDebts(ctx.db);
+    const owedByMe = debts.find((d) => d.direction === "owed_by_me");
+    const owedToMe = debts.find((d) => d.direction === "owed_to_me");
+    expect(owedByMe).toMatchObject({
+      direction: "owed_by_me",
+      dueDate: "2026-11-30",
+      notes: OPENING_DEBT_NOTE,
+      summary: { outstandingSen: 10000 },
+    });
+    expect(owedToMe).toMatchObject({ direction: "owed_to_me", dueDate: null });
+    expect(listTransactions(ctx.db).map((t) => [t.type, t.localDate])).toEqual(
+      expect.arrayContaining([
+        ["borrow", "2026-10-31"],
+        ["lend", "2026-10-31"],
+      ]),
+    );
+    expect(outbox().map((o) => o.entity)).toEqual([
+      "planning_cycle",
+      "plan_revision",
+      "debt",
+      "transaction",
+      "debt",
+      "transaction",
+    ]);
+  });
+
+  it("refuses a payback on money owed to the student and writes nothing (D-41)", () => {
+    const result = quickStart(ctx, {
+      budgetSen: sen(40000),
+      startDate: "2026-11-01",
+      endDateInclusive: "2026-11-30",
+      openingDebts: [
+        {
+          direction: "owed_to_me",
+          counterparty: "[FRIEND B]",
+          amountSen: sen(2000),
+          paybackSen: sen(1000),
+        },
+      ],
+    });
+    expect(result).toMatchObject({ ok: false, code: "VALIDATION_FAILED" });
+    expect(outbox()).toHaveLength(0);
   });
 
   it("refuses an end date before the start date", () => {

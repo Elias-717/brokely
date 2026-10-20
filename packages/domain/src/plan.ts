@@ -129,3 +129,32 @@ export function moneyInSuggestion(
   );
   return received > budgetSen ? sen(received - budgetSen) : null;
 }
+
+/**
+ * Debts from before the plan (D-41). The part the student chooses to pay back during this plan
+ * comes out of the budget: B = money − Σ paybacks. Paying back is never spending (FR-DEBT-06),
+ * so lowering the budget is how the plan makes room for it.
+ */
+export function budgetAfterPayback(moneySen: Sen, paybacksSen: readonly Sen[]): Sen {
+  return sen(moneySen - sumSen(paybacksSen));
+}
+
+/**
+ * A payback must be above zero, at most what is owed, and leave something to plan with (D-41).
+ * `alreadyPlannedSen` is the paybacks chosen so far for other debts.
+ */
+export function checkPayback(
+  moneySen: Sen,
+  alreadyPlannedSen: Sen,
+  owedSen: Sen,
+  paybackSen: Sen,
+): RuleResult {
+  if (paybackSen <= 0) return fail("VALIDATION_FAILED", "Pay back an amount above zero");
+  if (paybackSen > owedSen) {
+    return fail("DEBT_EXCEEDS_OUTSTANDING", "That's more than you owe");
+  }
+  if (alreadyPlannedSen + paybackSen >= moneySen) {
+    return fail("VALIDATION_FAILED", "That leaves nothing in your plan");
+  }
+  return OK;
+}

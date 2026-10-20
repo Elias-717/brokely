@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { sen } from "./money";
 import { txn } from "./test-fixtures";
 import {
+  budgetAfterPayback,
+  checkPayback,
   checkCanApprove,
   checkCanCreateDraft,
   checkCanDeleteCategory,
@@ -119,5 +121,28 @@ describe("money in suggests a plan change (FR-TXN-11, D-26, AC-61)", () => {
   });
   it("ignores everything that is not money in", () => {
     expect(moneyInSuggestion([txn("borrow", 90000, [])], sen(40000))).toBe(null);
+  });
+});
+
+describe("debts from before the plan (D-41)", () => {
+  it("takes the paybacks out of the money: RM500 − RM60 − RM40 = RM400", () => {
+    expect(budgetAfterPayback(sen(50000), [sen(6000), sen(4000)])).toBe(40000);
+    expect(budgetAfterPayback(sen(50000), [])).toBe(50000);
+  });
+  it("accepts paying back part or all of what is owed", () => {
+    expect(checkPayback(sen(50000), sen(0), sen(10000), sen(6000)).ok).toBe(true);
+    expect(checkPayback(sen(50000), sen(0), sen(10000), sen(10000)).ok).toBe(true);
+  });
+  it("refuses zero and more than is owed", () => {
+    expect(checkPayback(sen(50000), sen(0), sen(10000), sen(0))).toMatchObject({
+      code: "VALIDATION_FAILED",
+    });
+    expect(checkPayback(sen(50000), sen(0), sen(10000), sen(10001))).toMatchObject({
+      code: "DEBT_EXCEEDS_OUTSTANDING",
+    });
+  });
+  it("refuses paybacks that leave nothing to plan with", () => {
+    expect(checkPayback(sen(10000), sen(4000), sen(9000), sen(6000)).ok).toBe(false);
+    expect(checkPayback(sen(10000), sen(4000), sen(9000), sen(5999)).ok).toBe(true);
   });
 });

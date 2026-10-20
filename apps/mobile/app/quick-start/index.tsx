@@ -1,4 +1,6 @@
 import {
+  budgetAfterPayback,
+  checkPayback,
   cycleFromInclusive,
   formatRM,
   inclusiveEnd,
@@ -7,10 +9,11 @@ import {
   offersCatchUp,
   parseAmount,
   sen,
+  sumSen,
   type LocalDate,
   type Sen,
 } from "@brokely/domain";
-import { getNickname, listCategories, quickStart } from "@brokely/local-db";
+import { getNickname, listCategories, quickStart, type OpeningDebt } from "@brokely/local-db";
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
@@ -25,6 +28,7 @@ import {
   ChatScreen,
   MyBubble,
   ReplyButton,
+  TextComposer,
   TypingBubble,
 } from "../../src/ui/chat";
 import { pickDate } from "../../src/ui/date-picker";
@@ -41,13 +45,32 @@ type Step =
   | "cu-money" // S1d: the month's money
   | "cu-gone" // S1d: roughly how much is gone
   | "cu-mostly" // S1d: mostly on which category
-  | "cu-confirm";
+  | "cu-confirm"
+  // D-41: debts from before the plan, asked right after the money
+  | "owe-ask"
+  | "owe-who"
+  | "owe-amount"
+  | "owe-payback"
+  | "owe-part"
+  | "owe-more"
+  | "owed-ask"
+  | "owed-who"
+  | "owed-amount"
+  | "owed-more";
+
+/** The debt being asked about (D-41). */
+interface DebtDraft {
+  readonly name: string;
+  readonly amountSen: Sen;
+}
 
 /**
  * Quick start as a chat with Brokely (D-33): S1c, S1b and S1d in one conversation.
  * FR-PLN-19 (budget and dates only, approved here), FR-PLN-01 (never a balance), FR-PLN-02
  * (any dates), FR-PLN-08 (a plain line, no totals box), FR-PLN-21 + R-12 (catch up: whole
  * month, one "Spent before Brokely" entry, days count from today). AC-53, AC-58, AC-59.
+ * D-41: after the money, Brokely asks about debts from before; what the student pays back
+ * during the plan comes off the budget, and every debt is saved in Debts.
  */
 export default function QuickStartChat() {
   const day = useMemo(() => today(), []);
@@ -64,7 +87,12 @@ export default function QuickStartChat() {
   const chat = useConversation<Step>("waiting");
   const [start, setStart] = useState(freshRange.start);
   const [end, setEnd] = useState(inclusiveEnd(freshRange));
+  const [mode, setMode] = useState<"fresh" | "catch_up">("fresh");
+  /** The money the student typed, before any payback (D-41). */
+  const [money, setMoney] = useState<Sen>(sen(0));
   const [budget, setBudget] = useState<Sen>(sen(0));
+  const [debts, setDebts] = useState<readonly OpeningDebt[]>([]);
+  const [draft, setDraft] = useState<DebtDraft>({ name: "", amountSen: sen(0) });
   const [gone, setGone] = useState<Sen>(sen(0));
   const [categoryId, setCategoryId] = useState<string | null>(null);
 
@@ -104,6 +132,64 @@ export default function QuickStartChat() {
   const summariseCatchUp = (spent: Sen) =>
     chat.say([brokely.catchUpSummary(budget, spent, day), brokely.askSetUp()], "cu-confirm");
 
+  const plannedPayback = (list: readonly OpeningDebt[]) =>
+    sumSen(list.map((d) => d.paybackSen ?? sen(0)));
+
+  /** After the money: ask about debts from before (D-41). */
+  const askDebts = (amount: Sen, chosen: "fresh" | "catch_up") => {
+    setMode(chosen);
+    setMoney(amount);
+    setDebts([]);
+    chat.say([brokely.askOwe()], "owe-ask");
+  };
+
+  /** Saves a debt the student owes, with what they pay back in this plan, then asks for more. */
+  const addOwed = (paybackSen: Sen | undefined, lines: Line[]) => {
+    setDebts((list) => [
+      ...list,
+      { direction: "owed_by_me", counterparty: draft.name, amountSen: draft.amountSen, paybackSen },
+    ]);
+    chat.say([...lines, brokely.askOweMore()], "owe-more");
+  };
+
+  /** Checks a payback (D-41); on a problem Brokely explains and asks for an amount. */
+  const tryPayback = (payback: Sen) => {
+    const planned = plannedPayback(debts);
+    const check = checkPayback(money, planned, draft.amountSen, payback);
+    if (check.ok) return addOwed(payback, [brokely.paybackNoted(payback, draft.name)]);
+    chat.say(
+      [
+        check.code === "DEBT_EXCEEDS_OUTSTANDING"
+          ? brokely.paybackMoreThanOwed(draft.amountSen, draft.name)
+          : brokely.paybackLeavesNothing(sen(money - planned)),
+      ],
+      "owe-part",
+    );
+  };
+
+  /** Debts done: the budget is the money minus the paybacks, then the usual questions. */
+  const finishDebts = () => {
+    const payback = plannedPayback(debts);
+    const planBudget = budgetAfterPayback(
+      money,
+      debts.map((d) => d.paybackSen ?? sen(0)),
+    );
+    setBudget(planBudget);
+    const summary: Line[] = payback > 0 ? [brokely.paybackSummary(money, payback, planBudget)] : [];
+    if (mode === "fresh") {
+      chat.say(
+        [
+          ...summary,
+          brokely.perDay(planBudget, days(start, end)),
+          brokely.confirmDates(start, end),
+        ],
+        "fresh-confirm",
+      );
+    } else {
+      chat.say([...summary, brokely.askAlreadyGone()], "cu-gone");
+    }
+  };
+
   const changeDates = async () => {
     chat.answer("Change dates");
     const from = await pickDate(start);
@@ -122,8 +208,9 @@ export default function QuickStartChat() {
     const saved = quickStart(
       repo,
       fresh
-        ? { budgetSen: budget, startDate: start, endDateInclusive: end }
+        ? { budgetSen: budget, startDate: start, endDateInclusive: end, openingDebts: debts }
         : {
+            openingDebts: debts,
             budgetSen: budget,
             startDate: month.start,
             endDateInclusive: inclusiveEnd(month),
@@ -169,8 +256,7 @@ export default function QuickStartChat() {
             onSend={(text) => {
               const amount = readAmount(text, "fresh-amount", false);
               if (amount === null) return;
-              setBudget(amount);
-              confirmFresh(amount, start, end);
+              askDebts(amount, "fresh");
             }}
           />
         );
@@ -188,8 +274,7 @@ export default function QuickStartChat() {
             onSend={(text) => {
               const amount = readAmount(text, "cu-money", false);
               if (amount === null) return;
-              setBudget(amount);
-              chat.say([brokely.askAlreadyGone()], "cu-gone");
+              askDebts(amount, "catch_up");
             }}
           />
         );
@@ -235,6 +320,123 @@ export default function QuickStartChat() {
         );
       case "cu-confirm":
         return <ReplyButton primary title="Yes, start my plan" onPress={startPlan} />;
+      case "owe-ask":
+      case "owed-ask":
+      case "owe-more":
+      case "owed-more": {
+        // Yes / No: anyone (else) the student owes, or who owes them (D-41).
+        const first = chat.step === "owe-ask" || chat.step === "owed-ask";
+        const owe = chat.step === "owe-ask" || chat.step === "owe-more";
+        const no = first ? "No" : "No, that's all";
+        const yes = !first
+          ? "Yes, someone else"
+          : owe
+            ? "Yes, I owe someone"
+            : "Yes, someone owes me";
+        return (
+          <>
+            <ReplyButton
+              title={no}
+              onPress={() => {
+                chat.answer(no);
+                if (owe) chat.say([brokely.askOwedToYou()], "owed-ask");
+                else finishDebts();
+              }}
+            />
+            <ReplyButton
+              title={yes}
+              onPress={() => {
+                chat.answer(yes);
+                if (owe) chat.say([brokely.askOweWho()], "owe-who");
+                else chat.say([brokely.askOwedWho()], "owed-who");
+              }}
+            />
+          </>
+        );
+      }
+      case "owe-who":
+      case "owed-who": {
+        const owe = chat.step === "owe-who";
+        return (
+          <TextComposer
+            label="Type their name"
+            placeholder="e.g. Aiman"
+            onSend={(text) => {
+              const name = text.trim();
+              if (name === "") return;
+              chat.answer(name);
+              setDraft({ name, amountSen: sen(0) });
+              if (owe) chat.say([brokely.askOweHowMuch(name)], "owe-amount");
+              else chat.say([brokely.askOwedHowMuch(name)], "owed-amount");
+            }}
+          />
+        );
+      }
+      case "owe-amount":
+        return (
+          <AmountComposer
+            label="Type how much you owe"
+            onSend={(text) => {
+              const amount = readAmount(text, "owe-amount", false);
+              if (amount === null) return;
+              setDraft({ name: draft.name, amountSen: amount });
+              chat.say([brokely.askPayBack(end)], "owe-payback");
+            }}
+          />
+        );
+      case "owe-payback":
+        return (
+          <>
+            <ReplyButton
+              primary
+              title={`All of it (${formatRM(draft.amountSen)})`}
+              onPress={() => {
+                chat.answer("All of it");
+                tryPayback(draft.amountSen);
+              }}
+            />
+            <ReplyButton
+              title="Part of it"
+              onPress={() => {
+                chat.answer("Part of it");
+                chat.say([brokely.askPayBackHowMuch(end)], "owe-part");
+              }}
+            />
+            <ReplyButton
+              title="Not this month"
+              onPress={() => {
+                chat.answer("Not this month");
+                addOwed(undefined, [brokely.paybackLater(draft.name)]);
+              }}
+            />
+          </>
+        );
+      case "owe-part":
+        return (
+          <AmountComposer
+            label="Type how much you'll pay back"
+            onSend={(text) => {
+              const amount = readAmount(text, "owe-part", false);
+              if (amount === null) return;
+              tryPayback(amount);
+            }}
+          />
+        );
+      case "owed-amount":
+        return (
+          <AmountComposer
+            label="Type how much they owe you"
+            onSend={(text) => {
+              const amount = readAmount(text, "owed-amount", false);
+              if (amount === null) return;
+              setDebts((list) => [
+                ...list,
+                { direction: "owed_to_me", counterparty: draft.name, amountSen: amount },
+              ]);
+              chat.say([brokely.owedNoted(draft.name), brokely.askOwedMore()], "owed-more");
+            }}
+          />
+        );
       default:
         return null; // Brokely is typing
     }
