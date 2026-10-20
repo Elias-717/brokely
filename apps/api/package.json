@@ -7,15 +7,23 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
     "@brokely/contracts": "workspace:*",
     "@brokely/domain": "workspace:*",
-    "fastify": "^5.4.0"
+    "drizzle-orm": "^0.44.7",
+    "fastify": "^5.4.0",
+    "jose": "^6.2.13",
+    "postgres": "^3.4.9",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.10",
     "@types/node": "^22.15.0",
-    "tsx": "^4.20.0"
+    "drizzle-kit": "^0.31.11",
+    "tsx": "^4.20.0",
+    "vitest": "^3.2.7"
   }
 }
