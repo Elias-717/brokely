@@ -13,6 +13,21 @@ import type { Db } from "./db/client";
 import { pull } from "./sync/pull";
 import { push } from "./sync/push";
 
+/**
+ * What may be logged about an error: its kind and, for a database error, Postgres's own code and
+ * message (e.g. 28P01 "password authentication failed", 42P01 "relation does not exist"), which
+ * never contain the query's values. Never the error's own message, query or parameters.
+ */
+export function errorSummary(error: unknown): Record<string, unknown> {
+  let root = error as { name?: string; code?: unknown; message?: string; cause?: unknown };
+  while (root.cause && typeof root.cause === "object") root = root.cause as typeof root;
+  const sqlState = typeof root.code === "string" && /^[0-9A-Z]{5}$/.test(root.code);
+  return {
+    error: root.name ?? "Error",
+    ...(sqlState ? { code: root.code, detail: root.message } : {}),
+  };
+}
+
 export interface AppDeps {
   readonly db: Db;
   readonly verifyToken: VerifyToken;
@@ -34,9 +49,24 @@ const PushEnvelopeSchema = z.object({
  * Builds the API without starting it, so tests can call it in memory.
  * Without `deps` only /health is served.
  */
-export function buildApp(deps?: AppDeps, options: { logger?: boolean } = {}): FastifyInstance {
+export function buildApp(
+  deps?: AppDeps,
+  options: { logger?: boolean; logStream?: { write(line: string): void } } = {},
+): FastifyInstance {
   // The default logger writes method, URL and status only: never bodies (NFR-17).
-  const app = Fastify({ logger: options.logger ?? false, bodyLimit: 1024 * 1024 });
+  const app = Fastify({
+    logger: options.logStream ? { stream: options.logStream } : (options.logger ?? false),
+    bodyLimit: 1024 * 1024,
+  });
+
+  // Errors are logged by kind only. Fastify's default would log the error as thrown, and a
+  // failed query's message carries its values: amounts, notes, names (NFR-17).
+  app.setErrorHandler((error, request, reply) => {
+    const code = (error as { statusCode?: number }).statusCode;
+    const status = code && code < 500 ? code : 500;
+    request.log.error(errorSummary(error), "request failed");
+    return reply.code(status).send({ error: status === 500 ? "Server error" : "Bad request" });
+  });
 
   app.get("/health", async (): Promise<HealthResponse> => ({ status: "ok" }));
   if (!deps) return app;

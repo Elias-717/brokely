@@ -1,5 +1,6 @@
 import { HealthResponseSchema, PullResponseSchema, PushResponseSchema } from "@brokely/contracts";
 import { randomUUID } from "node:crypto";
+import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { buildApp } from "./app";
 import type { Db } from "./db/client";
@@ -108,5 +109,34 @@ describe("sync routes (sync-api §4, §5)", () => {
       "rejected",
       "applied",
     ]);
+  });
+});
+
+describe("error logs (NFR-17)", () => {
+  it("log the kind of a database error, never the query's values", async () => {
+    const { db, close } = await createTestDb();
+    const student = randomUUID();
+    await addUsers(db, student);
+    await db.execute(sql`drop table brokely.categories cascade`); // any failing query will do
+    const lines: string[] = [];
+    const app = buildApp(
+      { db, verifyToken: async () => student },
+      { logStream: { write: (line) => void lines.push(line) } },
+    );
+
+    const res = await app.inject({
+      method: "GET",
+      url: "/v1/sync/pull?since=0",
+      headers: { authorization: "Bearer t" },
+    });
+
+    expect(res.statusCode).toBe(500);
+    expect(res.json()).toEqual({ error: "Server error" });
+    const log = lines.join("");
+    expect(log).toContain('"code":"42P01"'); // relation does not exist: enough to act on
+    expect(log).not.toContain(student); // the query's parameters stay out
+    expect(log).not.toContain("select ");
+    await app.close();
+    await close();
   });
 });
