@@ -7,11 +7,14 @@ import {
   archiveBill,
   createBill,
   editBill,
+  getBill,
+  listBills,
   listScheduledItems,
   markBillPaid,
   paidBillTransactionIds,
   skipScheduledItem,
   unskipScheduledItem,
+  unarchiveBill,
   type BillInput,
 } from "./bills";
 import { listCategories, seedDefaultCategories } from "./categories";
@@ -228,6 +231,32 @@ describe("bill repository", () => {
     expect(archiveBill(ctx, billId).ok).toBe(true);
     expect(items().map((i) => i.status)).toEqual(["paid"]);
     expect(ctx.db.select().from(bills).get()?.archivedAt).toBe(NOW);
+  });
+
+  it("lists live bills with their repeat rule; a stopped bill leaves the list (FR-CAT-03)", () => {
+    const billId = bill();
+    expect(listBills(ctx.db)).toEqual([
+      {
+        id: billId,
+        name: "Laundry",
+        categoryId: category("Laundry"),
+        amountSen: 500,
+        repeat: { kind: "weekdays", days: [1, 4] },
+        anchorDate: "2026-11-02",
+      },
+    ]);
+    archiveBill(ctx, billId);
+    expect(listBills(ctx.db)).toEqual([]);
+    expect(getBill(ctx.db, billId)?.name).toBe("Laundry");
+  });
+
+  it("undoing Stop brings the upcoming items back (FR-TXN-10)", () => {
+    const billId = bill();
+    archiveBill(ctx, billId);
+    expect(unarchiveBill(ctx, billId).ok).toBe(true);
+    expect(items()).toHaveLength(9);
+    expect(listBills(ctx.db)).toHaveLength(1);
+    expect(unarchiveBill(ctx, billId)).toMatchObject({ ok: false, code: "VALIDATION_FAILED" });
   });
 
   it("a bill made before any plan gets its items when the next cycle starts (FR-CAT-04)", async () => {

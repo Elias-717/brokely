@@ -1,6 +1,8 @@
+import { router } from "expo-router";
 import type { ReactNode } from "react";
 import { Pressable, ScrollView, Text, View, type ViewStyle } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Svg, { Path } from "react-native-svg";
 import { MIN_TOUCH, radius, space, type } from "./theme";
 import { useTheme } from "./theme-context";
 
@@ -156,5 +158,91 @@ export function Button({
         </Sticker>
       )}
     </Pressable>
+  );
+}
+
+/**
+ * A screen opened from More or Home (Bills, Debts…): a back arrow and a title, then content.
+ * `action` sits at the top right, e.g. "+ New bill".
+ */
+export function PageScreen({
+  title,
+  children,
+  action,
+}: {
+  title: string;
+  children: ReactNode;
+  action?: ReactNode;
+}) {
+  const { colors } = useTheme();
+  return (
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      edges={["top", "left", "right", "bottom"]}
+    >
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          gap: space.xs,
+          paddingHorizontal: space.sm,
+          paddingVertical: space.xs,
+        }}
+      >
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+          onPress={() => (router.canGoBack() ? router.back() : router.replace("/more"))}
+          style={{
+            width: MIN_TOUCH,
+            height: MIN_TOUCH,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Svg width={26} height={26} viewBox="0 0 24 24">
+            <Path
+              d="M15 5l-7 7 7 7"
+              stroke={colors.text}
+              strokeWidth={2.5}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
+            />
+          </Svg>
+        </Pressable>
+        <Text
+          style={[type.title, { flex: 1, color: colors.text, fontSize: 26 }]}
+          accessibilityRole="header"
+        >
+          {title}
+        </Text>
+        {action}
+      </View>
+      <ScrollView
+        contentContainerStyle={{ padding: space.md, paddingTop: space.xs, gap: space.md }}
+        keyboardShouldPersistTaps="handled"
+      >
+        {children}
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+/** A quiet line for an empty list, e.g. "No debts. Nice!". */
+export function Empty({ children }: { children: ReactNode }) {
+  const { colors } = useTheme();
+  return (
+    <View
+      style={{
+        borderWidth: 2,
+        borderStyle: "dashed",
+        borderColor: colors.outline,
+        borderRadius: radius.card,
+        padding: space.md,
+      }}
+    >
+      <Text style={[type.body, { color: colors.muted, fontSize: 15 }]}>{children}</Text>
+    </View>
   );
 }

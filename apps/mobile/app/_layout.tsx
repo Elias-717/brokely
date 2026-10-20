@@ -74,6 +74,10 @@ function AppStack() {
           name="record/[id]"
           options={{ presentation: "transparentModal", animation: "slide_from_bottom" }}
         />
+        <Stack.Screen
+          name="bills/pay/[id]"
+          options={{ presentation: "transparentModal", animation: "slide_from_bottom" }}
+        />
       </Stack>
       <StatusBar style={scheme === "dark" ? "light" : "dark"} />
     </>

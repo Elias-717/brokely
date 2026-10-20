@@ -209,16 +209,32 @@ export default function HomeScreen() {
           </Text>
         ) : (
           home.stillToCome.slice(0, 3).map((item) => (
-            <View key={item.id} style={{ flexDirection: "row", justifyContent: "space-between" }}>
-              <Text style={[type.body, { color: colors.text }]}>
-                {item.name} · {item.dueDate === day ? "today" : dayMonth(item.dueDate)}
-              </Text>
-              <Text style={[type.strong, { color: colors.text, fontVariant: ["tabular-nums"] }]}>
-                {formatRM(item.amountSen)}
-              </Text>
+            <View
+              key={item.id}
+              style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={[type.body, { color: colors.text }]}>
+                  {item.name} · {item.dueDate === day ? "today" : dayMonth(item.dueDate)}
+                </Text>
+                <Text style={[type.strong, { color: colors.text, fontVariant: ["tabular-nums"] }]}>
+                  {formatRM(item.amountSen)}
+                </Text>
+              </View>
+              {/* Mark paid straight from Home (FR-CAT-05, R-05) */}
+              <Button
+                label="Mark paid"
+                variant={item.dueDate <= day ? "primary" : "secondary"}
+                onPress={() => router.push(`/bills/pay/${item.id}`)}
+              />
             </View>
           ))
         )}
+        <Button
+          label={home.stillToCome.length > 3 ? `See all ${home.stillToCome.length} bills` : "Bills"}
+          variant="link"
+          onPress={() => router.push("/bills")}
+        />
       </Sticker>
 
       {/* Spending so far (FR-INS-02) */}

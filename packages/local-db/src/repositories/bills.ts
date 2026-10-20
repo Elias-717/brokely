@@ -210,6 +210,59 @@ export function archiveBill(ctx: RepoContext, id: string) {
   });
 }
 
+/** Undo of Stop: the bill is live again and gets its upcoming items back (FR-TXN-10). */
+export function unarchiveBill(ctx: RepoContext, id: string) {
+  return write(ctx, (scope) => {
+    const before = liveBill(scope.tx, id);
+    if (!before.archivedAt) throw new RepoError("VALIDATION_FAILED", "This bill wasn't stopped");
+    const after: BillRow = { ...before, ...touched(scope.at), archivedAt: null };
+    enqueueUpsert(scope, "bill", id, before.version, billData(after));
+    scope.tx.update(bills).set(after).where(eq(bills.id, id)).run();
+    syncItems(scope, after);
+  });
+}
+
+/** A bill as the Bills screen and its form show it. */
+export interface BillView {
+  readonly id: string;
+  readonly name: string;
+  readonly categoryId: string;
+  readonly amountSen: Sen;
+  readonly repeat: RepeatRule;
+  readonly anchorDate: string;
+}
+
+function billView(row: BillRow): BillView {
+  return {
+    id: row.id,
+    name: row.name,
+    categoryId: row.categoryId,
+    amountSen: row.amountSen as Sen,
+    repeat: ruleOf(row),
+    anchorDate: row.anchorDate,
+  };
+}
+
+/** Live bills (not stopped), by name (FR-CAT-03). */
+export function listBills(db: Db): BillView[] {
+  return db
+    .select()
+    .from(bills)
+    .where(and(isNull(bills.deletedAt), isNull(bills.archivedAt)))
+    .orderBy(asc(bills.name))
+    .all()
+    .map(billView);
+}
+
+export function getBill(db: Db, id: string): BillView | undefined {
+  const row = db
+    .select()
+    .from(bills)
+    .where(and(eq(bills.id, id), isNull(bills.deletedAt)))
+    .get();
+  return row ? billView(row) : undefined;
+}
+
 /** Items due inside a date range, earliest first, with their bill's name (FR-INS-07). */
 export function listScheduledItems(
   db: Db,
