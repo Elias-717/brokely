@@ -23,7 +23,7 @@ import {
 } from "../src/sync/auth";
 import { googleAvailable, signInWithGoogle } from "../src/sync/google";
 import { useSync } from "../src/sync/sync-provider";
-import { accountHasRecords, OfflineError } from "../src/sync/transport";
+import { accountHasRecords, OfflineError, ServerError } from "../src/sync/transport";
 import { Body, Button, Card, Heading, PageScreen, Sticker } from "../src/ui/components";
 import { TextField } from "../src/ui/text-field";
 import { space, type } from "../src/ui/theme";
@@ -106,8 +106,10 @@ export default function SignInScreen() {
       setPhase({ kind: "form" });
       setMessage(
         error instanceof OfflineError
-          ? "No internet connection. Connect and try again; you're still signed in."
-          : "Something went wrong while checking your account. Please try again.",
+          ? "Brokely couldn't reach its server. Check your connection and try again; you're still signed in."
+          : error instanceof ServerError
+            ? `Brokely's server had a problem (${error.status}). Please try again in a moment; you're still signed in.`
+            : "Something went wrong while checking your account. Please try again.",
       );
     }
   };

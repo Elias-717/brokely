@@ -11,6 +11,14 @@ export class OfflineError extends Error {
   }
 }
 
+/** The server answered with an error of its own (5xx): it's on our side, retried later. */
+export class ServerError extends Error {
+  constructor(readonly status: number) {
+    super(`The sync server had a problem (${status})`);
+    this.name = "ServerError";
+  }
+}
+
 /** The session is gone or was refused: the student needs to sign in again. */
 export class SignedOutError extends Error {
   constructor() {
@@ -34,7 +42,8 @@ async function call<T>(path: string, init: RequestInit = {}, retried = false): P
         "Content-Type": "application/json",
       },
     });
-  } catch {
+  } catch (error) {
+    console.warn("[sync]", path.split("?")[0], (error as Error).message);
     throw new OfflineError();
   }
   if (response.status === 401) {
@@ -42,7 +51,11 @@ async function call<T>(path: string, init: RequestInit = {}, retried = false): P
     if (!retried && !(await supabase.auth.refreshSession()).error) return call(path, init, true);
     throw new SignedOutError();
   }
-  if (response.status === 429 || response.status >= 500) throw new OfflineError();
+  if (response.status === 429) throw new OfflineError();
+  if (response.status >= 500) {
+    console.warn("[sync]", path.split("?")[0], "server error", response.status);
+    throw new ServerError(response.status);
+  }
   if (!response.ok) throw new Error(`Sync request refused (${response.status})`);
   return (await response.json()) as T;
 }
