@@ -263,15 +263,11 @@ export default function HomeScreen() {
       <Sticker style={{ padding: space.md, gap: space.sm }}>
         <SectionHeader
           title="Spent so far"
-          action={home.spentByCategory.length > 0 ? "View all" : undefined}
-          onAction={() => router.push("/records")}
+          action={home.spentByCategory.length > 0 ? "View all" : "+ Log spending"}
+          onAction={() => router.push(home.spentByCategory.length > 0 ? "/records" : "/quick-add")}
         />
         {home.spentByCategory.length === 0 ? (
-          <CompactEmpty
-            text="Nothing logged yet."
-            action="+ Log spending"
-            onAction={() => router.push("/quick-add")}
-          />
+          <Text style={[type.small, { color: colors.muted }]}>Nothing logged yet.</Text>
         ) : (
           home.spentByCategory.slice(0, 5).map((c) => (
             <View
@@ -488,25 +484,6 @@ function IconBubble({ emoji }: { emoji: string }) {
       }}
     >
       <Text style={{ fontSize: 18 }}>{emoji}</Text>
-    </View>
-  );
-}
-
-/** A one-line empty state with a small action. */
-function CompactEmpty({
-  text,
-  action,
-  onAction,
-}: {
-  text: string;
-  action: string;
-  onAction: () => void;
-}) {
-  const { colors } = useTheme();
-  return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}>
-      <Text style={[type.small, { color: colors.muted, flex: 1 }]}>{text}</Text>
-      <Button label={action} variant="secondary" onPress={onAction} />
     </View>
   );
 }
