@@ -227,7 +227,7 @@ export default function InsightsScreen() {
           <View style={{ flex: 1 }}>
             <Heading>Still to come</Heading>
             <Text style={[type.small, { color: colors.muted }]}>
-              Bills not paid yet · not spending
+              Bills & subscriptions not paid yet · not spending
             </Text>
           </View>
           <Text style={[type.strong, { color: colors.text }]}>

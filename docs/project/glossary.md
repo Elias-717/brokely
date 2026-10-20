@@ -1,4 +1,4 @@
-# Brokely Glossary (v1.5)
+# Brokely Glossary (v1.6)
 
 Plain meanings only. The exact formulas live in the SRS business rules (section 5).
 
@@ -22,7 +22,7 @@ Plain meanings only. The exact formulas live in the SRS business rules (section 
 - **Transfer**: moving your own money around, like a TNG top-up. Not spending.
 - **Debt**: money you owe a friend, or a friend owes you.
 - **Write-off**: giving up on a debt. If a friend never pays you back, it counts as spending.
-- **Bill**: a payment you know is coming, like laundry every 2 weeks. Tap "Mark paid" when you pay it.
+- **Bill or subscription**: a payment you make on a set day, like a phone plan, Spotify or a weekly bus pass. It waits in "Still to come"; tap "Mark paid" when you pay it. (Shown as "Bills & subscriptions", D-56.)
 - **Money in**: money you receive: from family, meal money, from a friend (a gift; money you must pay back is a loan, "I borrowed"), part-time pay, a gift. Not spending.
 - **Wallet check**: you type how much money you really have (cash, TNG and bank together); Brokely compares it with your records since your last check.
 - **Spent before Brokely**: one entry for what you spent this month before you started using the app.

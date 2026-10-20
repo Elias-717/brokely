@@ -40,8 +40,8 @@ export default function BillsScreen() {
 
   return (
     <PageScreen
-      title="Bills"
-      action={<Button label="+ New bill" onPress={() => router.push("/bills/edit")} />}
+      title="Bills & subscriptions"
+      action={<Button label="+ New" onPress={() => router.push("/bills/edit")} />}
     >
       {model.items === null ? (
         <Empty>Bill dates show up once you have a plan. You can still add bills now.</Empty>
@@ -64,7 +64,7 @@ export default function BillsScreen() {
             <Empty>
               {tab === "upcoming"
                 ? "Nothing still to come in this plan."
-                : "Nothing paid yet. Tap Mark paid when you pay a bill."}
+                : "Nothing paid yet. Tap Mark paid when you pay one."}
             </Empty>
           ) : (
             list.map((item) => (
@@ -109,10 +109,11 @@ export default function BillsScreen() {
         </>
       )}
 
-      <Heading>Your bills</Heading>
+      <Heading>Your bills & subscriptions</Heading>
       {model.bills.length === 0 ? (
         <Empty>
-          No bills yet. Add things you pay on a set day, like a phone plan or a weekly bus pass.
+          Nothing yet. Add what you pay on a set day: a phone plan, Spotify, Netflix, a gym or a
+          weekly bus pass.
         </Empty>
       ) : (
         model.bills.map((bill) => (

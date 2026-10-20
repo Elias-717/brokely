@@ -61,6 +61,7 @@ Decisions D-01 to D-09 and R-01 to R-08 were taken on 19 Oct 2026 while reviewin
 | D-53 | Date and Split on one row (20 Oct) | **In quick add the date button and "🤝 Split" share one row**, half each; the whole Split box toggles. When on, the friend's name and share open on the next line with the "your share counts as spending" line. | Saves a full row in the sheet. Money in and More show the date alone. |
 | D-54 | Minus sign on spending in Records (20 Oct) | **Spending rows show "−RM12.00"**; money in and refunds keep "+"; debts and transfers between your own wallets show no sign (not spending). | Uses a real minus (U+2212), read as "minus" by screen readers. Written-off money a friend owed counts as spending, so it gets "−" too. |
 | D-55 | Money in "From" as one row; Meal money first (20 Oct) | **Money in shows one "From" row like Category** (D-51): tap to open the sources, pick one, it closes. **Meal money is the default and first**, then From family, From a friend, Part-time, Gift, Borrowed (debt), Other, each with a small picture. | Friend's name and the Borrowed note still open under it. Money in never changes the budget by itself (D-26). |
+| D-56 | "Bills & subscriptions" (20 Oct) | **The Bills section is called "Bills & subscriptions"** (screen title, More, Home link, Records filter, Insights), with subscription examples ("Phone plan, Spotify, Netflix, a gym…"). | Same feature and data: a subscription is a repeating bill (D-17). Glossary v1.6. |
 
 ## Calculation rules
 

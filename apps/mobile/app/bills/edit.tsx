@@ -109,7 +109,7 @@ function BillForm({ bill }: { bill: BillView | undefined }) {
       : null;
 
   const save = () => {
-    if (name.trim() === "") return setProblem("Give the bill a name, e.g. Phone plan.");
+    if (name.trim() === "") return setProblem("Give it a name, e.g. Phone plan or Spotify.");
     if (amount === null || amount <= 0) return setProblem("Type how much it is each time.");
     if (!categoryId) return setProblem("Pick a category.");
     if (!repeat) {
@@ -132,9 +132,14 @@ function BillForm({ bill }: { bill: BillView | undefined }) {
   };
 
   return (
-    <PageScreen title={bill ? "Change bill" : "New bill"}>
+    <PageScreen title={bill ? "Change" : "New bill or subscription"}>
       <Labelled label="Name">
-        <Field value={name} onChange={setName} placeholder="e.g. Phone plan" label="Bill name" />
+        <Field
+          value={name}
+          onChange={setName}
+          placeholder="e.g. Phone plan, Spotify"
+          label="Name"
+        />
       </Labelled>
       <Labelled label="How much each time (RM)">
         <Field
@@ -226,8 +231,8 @@ function BillForm({ bill }: { bill: BillView | undefined }) {
           {problem}
         </Text>
       ) : null}
-      <Button label={bill ? "Save changes" : "Add bill"} onPress={save} />
-      {bill ? <Button label="Stop this bill" variant="secondary" onPress={stop} /> : null}
+      <Button label={bill ? "Save changes" : "Add it"} onPress={save} />
+      {bill ? <Button label="Stop this one" variant="secondary" onPress={stop} /> : null}
     </PageScreen>
   );
 }

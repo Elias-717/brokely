@@ -29,7 +29,11 @@ const CHOICES: { value: Appearance; label: string }[] = [
 /** Places under More (D-24): Bills, Debts and the rest open from here. */
 const PLACES: { label: string; detail: string; href: Href }[] = [
   { label: "Your plan", detail: "Budget and amounts per category", href: "/plan" },
-  { label: "Bills", detail: "Upcoming, paid, add a bill", href: "/bills" },
+  {
+    label: "Bills & subscriptions",
+    detail: "Phone plan, Spotify, bus pass…",
+    href: "/bills",
+  },
   { label: "Debts", detail: "Who owes you, who you owe", href: "/debts" },
   { label: "Wallet check", detail: "Compare your money with your records", href: "/wallet-check" },
 ];

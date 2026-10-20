@@ -241,7 +241,8 @@ export default function HomeScreen() {
         </View>
         {home.stillToCome.length === 0 ? (
           <Text style={[type.body, { color: colors.muted, fontSize: 14 }]}>
-            Nothing yet. Bills with a set date, like a phone plan, show up here.
+            Nothing yet. Bills and subscriptions with a set date, like a phone plan or Spotify, show
+            up here.
           </Text>
         ) : (
           home.stillToCome.slice(0, 3).map((item) => (
@@ -267,7 +268,11 @@ export default function HomeScreen() {
           ))
         )}
         <Button
-          label={home.stillToCome.length > 3 ? `See all ${home.stillToCome.length} bills` : "Bills"}
+          label={
+            home.stillToCome.length > 3
+              ? `See all ${home.stillToCome.length}`
+              : "Bills & subscriptions"
+          }
           variant="link"
           onPress={() => router.push("/bills")}
         />

@@ -20,7 +20,7 @@ const FILTERS: { value: RecordFilter; label: string }[] = [
   { value: "spending", label: "Spending" },
   { value: "money-in", label: "Money in" },
   { value: "debts", label: "Debts" },
-  { value: "bills", label: "Bills" },
+  { value: "bills", label: "Bills & subscriptions" },
 ];
 
 /**
