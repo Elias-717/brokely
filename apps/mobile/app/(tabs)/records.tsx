@@ -11,6 +11,9 @@ import { dayMonth, today, weekdayName } from "../../src/lib/today";
 import { fonts, MIN_TOUCH, space, type } from "../../src/ui/theme";
 import { useTheme } from "../../src/ui/theme-context";
 import { useUndo } from "../../src/ui/undo";
+import { BrokelyAvatar } from "../../src/ui/chat";
+import { Button } from "../../src/ui/components";
+import { Float } from "../../src/ui/motion";
 
 const FILTERS: { value: RecordFilter; label: string }[] = [
   { value: "all", label: "All" },
@@ -86,7 +89,13 @@ export default function RecordsScreen() {
       <SectionList
         sections={days.map((d) => ({ title: dayTitle(d.date), data: d.rows }))}
         keyExtractor={(row) => row.id}
-        contentContainerStyle={{ padding: space.md, paddingBottom: 120, gap: space.sm }}
+        contentContainerStyle={{
+          padding: space.md,
+          paddingBottom: 120,
+          gap: space.sm,
+          // Lets the empty message sit in the middle of the screen.
+          flexGrow: days.length === 0 ? 1 : undefined,
+        }}
         stickySectionHeadersEnabled={false}
         renderSectionHeader={({ section }) => (
           <Text
@@ -116,13 +125,7 @@ export default function RecordsScreen() {
             }}
           />
         )}
-        ListEmptyComponent={
-          <Text
-            style={[type.body, { color: colors.muted, textAlign: "center", paddingTop: space.xl }]}
-          >
-            {filter === "all" ? "Nothing logged yet. Tap + when you spend." : "Nothing here yet."}
-          </Text>
-        }
+        ListEmptyComponent={<EmptyRecords filter={filter} />}
       />
     </SafeAreaView>
   );
@@ -213,5 +216,37 @@ function Row({ row, onPress }: { row: RecordRow; onPress: () => void }) {
         ) : null}
       </View>
     </Pressable>
+  );
+}
+
+/** Empty Records: centred, with a small Brokely and one clear action. */
+function EmptyRecords({ filter }: { filter: RecordFilter }) {
+  const { colors } = useTheme();
+  const all = filter === "all";
+  return (
+    <View
+      style={{
+        flexGrow: 1,
+        alignItems: "center",
+        justifyContent: "center",
+        gap: space.md,
+        paddingHorizontal: space.lg,
+      }}
+    >
+      <Float>
+        <BrokelyAvatar size={96} />
+      </Float>
+      <Text style={[type.heading, { color: colors.text, textAlign: "center" }]}>
+        {all ? "Nothing logged yet?" : "Nothing here yet"}
+      </Text>
+      <Text style={[type.body, { color: colors.muted, textAlign: "center" }]}>
+        {all
+          ? "Log what you spend and I'll keep count. It takes two taps."
+          : "Records of this kind will show up here."}
+      </Text>
+      {all ? (
+        <Button label="Log my first spending" onPress={() => router.push("/quick-add")} />
+      ) : null}
+    </View>
   );
 }
