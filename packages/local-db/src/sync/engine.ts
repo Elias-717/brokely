@@ -11,7 +11,20 @@ import {
 } from "@brokely/contracts";
 import { and, eq, inArray, isNotNull, isNull, ne, sql } from "drizzle-orm";
 import type { Db, RepoContext } from "../repositories/context";
-import { dayCheckIns, outboxOperations, syncState, type OUTBOX_STATUSES } from "../schema";
+import {
+  allocations,
+  bills,
+  categories,
+  dayCheckIns,
+  debts,
+  outboxOperations,
+  planningCycles,
+  syncState,
+  transactionLines,
+  transactions,
+  walletChecks,
+  type OUTBOX_STATUSES,
+} from "../schema";
 import { columnsOf, entityTables, partsOf, partTables } from "./tables";
 
 /**
@@ -28,15 +41,19 @@ export interface SyncTransport {
 export interface SyncReport {
   /** Operations the server applied (or already had). */
   readonly pushed: number;
-  /** Operations based on an out-of-date copy, waiting for the student (FR-SYNC-08). */
+  /** Operations based on an out-of-date copy, still waiting for the student (FR-SYNC-08). */
   readonly conflicts: number;
-  /** Operations the server refused for a rule; they need the student. */
+  /** Operations the server refused for a rule, still waiting for the student. */
   readonly failed: number;
   /** Changes from the server written on this phone. */
   readonly pulled: number;
 }
 
-export const SYNC_KEYS = { cursor: "pull_cursor", account: "account_id" } as const;
+export const SYNC_KEYS = {
+  cursor: "pull_cursor",
+  account: "account_id",
+  device: "device_id",
+} as const;
 
 /** Raised when the phone is linked to another account than the one signing in. */
 export class AccountMismatchError extends Error {
@@ -57,12 +74,86 @@ export async function syncNow(
   account: { userId: string; deviceId: string },
 ): Promise<SyncReport> {
   linkAccount(ctx.db, account.userId);
-  const pushed = await pushAll(ctx, transport, account.deviceId);
+  let { pushed } = await pushAll(ctx, transport, account.deviceId);
   const pulled = await pullAll(ctx, transport, account.userId);
-  return { ...pushed, pulled };
+  // A pull can unblock waiting changes (a category merged into the account's): send them now.
+  if (pulled > 0 && nextBatch(ctx.db).length > 0) {
+    pushed += (await pushAll(ctx, transport, account.deviceId)).pushed;
+  }
+  const stuck = ctx.db.select({ status: outboxOperations.status }).from(outboxOperations).all();
+  return {
+    pushed,
+    conflicts: stuck.filter((op) => op.status === "conflict").length,
+    failed: stuck.filter((op) => op.status === "failed").length,
+    pulled,
+  };
 }
 
 // ── Account linking (sync-api §8, FR-ACC-03) ────────────────────────────────
+
+/** The account this phone's records belong to, or undefined in local-only mode (D-05). */
+export function linkedAccount(db: Db): string | undefined {
+  return readState(db, SYNC_KEYS.account);
+}
+
+/** This install's ID for push requests; made once, forgotten with the phone's data. */
+export function deviceIdOf(ctx: RepoContext): string {
+  const known = readState(ctx.db, SYNC_KEYS.device);
+  if (known) return known;
+  const id = ctx.newId();
+  writeState(ctx.db, SYNC_KEYS.device, id);
+  return id;
+}
+
+/** Changes not yet on the server, and ones that need the student (FR-SYNC-06). */
+export function syncCounts(db: Db): { waiting: number; needsAttention: number } {
+  const ops = db.select({ status: outboxOperations.status }).from(outboxOperations).all();
+  return {
+    waiting: ops.length,
+    needsAttention: ops.filter((op) => op.status !== "pending").length,
+  };
+}
+
+/**
+ * When the newest change still waiting to be sent was made. The app syncs a few seconds after a
+ * change newer than its last sync, so a sync's own writes never start another (sync-api §7).
+ */
+export function latestChangeAt(db: Db): string | undefined {
+  return db
+    .select({ at: outboxOperations.createdAt })
+    .from(outboxOperations)
+    .where(eq(outboxOperations.status, "pending"))
+    .orderBy(sql`created_at desc`)
+    .limit(1)
+    .get()?.at;
+}
+
+/**
+ * Whether the student has made anything beyond the untouched first-run setup (default
+ * categories): a plan, a record, a debt, a bill, a check-in or a wallet check (D-73 b).
+ */
+export function hasOwnRecords(db: Db): boolean {
+  return [planningCycles, transactions, debts, bills, dayCheckIns, walletChecks].some(
+    (table) => db.select({ id: table.id }).from(table).limit(1).get() !== undefined,
+  );
+}
+
+/**
+ * What signing in should do on this phone (D-73):
+ * - `sync`: the phone is this account's, or the account has nothing yet: sync as usual;
+ * - `replace`: the account has records and the phone only has the first-run setup: erase the
+ *   phone, then download the account's records;
+ * - `ask`: both have records: the student chooses (use the account's, or add this phone's);
+ * - `other-account`: the phone holds another account's records: never mixed.
+ */
+export type SignInStep = "sync" | "replace" | "ask" | "other-account";
+
+export function signInStep(db: Db, userId: string, accountHasRecords: boolean): SignInStep {
+  const linked = linkedAccount(db);
+  if (linked !== undefined) return linked === userId ? "sync" : "other-account";
+  if (!accountHasRecords) return "sync";
+  return hasOwnRecords(db) ? "ask" : "replace";
+}
 
 /**
  * The first sign-in claims this phone's records for the account. The outbox already holds
@@ -301,6 +392,7 @@ function applyChange(tx: Db, change: PullChange, userId: string, at: string): bo
   }
 
   if (entity === "day_check_in") clearLocalTwin(tx, change.data.localDate as string, entityId);
+  if (entity === "category") mergeLocalCategory(tx, change.data.name as string, entityId);
 
   const columns = { ...columnsOf(entity, change.data), ...synced, deletedAt: null };
   if (local) {
@@ -349,6 +441,47 @@ function clearLocalTwin(tx: Db, localDate: string, serverId: string) {
       ),
     )
     .run();
+}
+
+/**
+ * A phone that started on its own made its own default categories; the account has its own
+ * "Meals", "Laundry"… under other IDs, and names are unique (D-73 b, sync-api open point 3).
+ * When the account's category arrives, a same-named one that never reached the server merges
+ * into it: this phone's records and waiting changes point to the account's category instead,
+ * and the duplicate (and its refused create) disappears.
+ */
+function mergeLocalCategory(tx: Db, name: string, serverId: string) {
+  const twin = tx
+    .select({ id: categories.id, syncStatus: categories.syncStatus })
+    .from(categories)
+    .where(
+      and(eq(categories.name, name), ne(categories.id, serverId), isNull(categories.deletedAt)),
+    )
+    .get();
+  if (!twin || twin.syncStatus === "synced") return;
+  const from = twin.id;
+  tx.update(allocations)
+    .set({ categoryId: serverId })
+    .where(eq(allocations.categoryId, from))
+    .run();
+  tx.update(transactionLines)
+    .set({ categoryId: serverId })
+    .where(eq(transactionLines.categoryId, from))
+    .run();
+  tx.update(bills).set({ categoryId: serverId }).where(eq(bills.categoryId, from)).run();
+  tx.update(transactions)
+    .set({ writeOffCategoryId: serverId })
+    .where(eq(transactions.writeOffCategoryId, from))
+    .run();
+  tx.delete(outboxOperations)
+    .where(and(eq(outboxOperations.entity, "category"), eq(outboxOperations.entityId, from)))
+    .run();
+  // IDs are UUIDs, so a plain text replace in the queued payloads can't hit anything else.
+  tx.run(
+    sql`update outbox_operations set payload = replace(payload, ${from}, ${serverId}), status = 'pending'
+        where payload like ${`%${from}%`}`,
+  );
+  tx.delete(categories).where(eq(categories.id, from)).run();
 }
 
 // ── Sync state ──────────────────────────────────────────────────────────────
