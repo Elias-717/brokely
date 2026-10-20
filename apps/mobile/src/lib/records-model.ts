@@ -111,7 +111,10 @@ export function readRecords(db: Db, filter: RecordFilter): RecordDay[] {
         groups.push("debts");
       }
     }
-    const sign = style === "money-in" || t.type === "refund" ? "+" : "";
+    // + for money in and refunds, − for spending (D-54); debts and transfers aren't spending,
+    // so they get no sign. U+2212 is a real minus, which screen readers say as "minus".
+    const sign =
+      style === "money-in" || t.type === "refund" ? "+" : style === "spending" ? "−" : "";
     return {
       kind: "transaction",
       id: t.id,
