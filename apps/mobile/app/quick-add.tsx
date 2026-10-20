@@ -15,7 +15,7 @@ import { useMemo, useState } from "react";
 import { Pressable, ScrollView, Switch, Text, View } from "react-native";
 import { repo } from "../src/db/client";
 import { useRead } from "../src/db/use-read";
-import { categoriesByUse } from "../src/lib/category-order";
+import { categoriesByUse, recentNotesByCategory } from "../src/lib/category-order";
 import { categoryEmoji } from "../src/lib/essentials-meta";
 import { refusalText } from "../src/lib/messages";
 import { dayMonth, occurredAtFor, today } from "../src/lib/today";
@@ -32,6 +32,13 @@ import { useKeyboardOpen } from "../src/ui/use-keyboard";
 
 type Mode = "spent" | "in" | "more";
 type MoreKind = "transfer" | "lent" | "borrowed";
+
+/** What the note box asks, per tab (D-49). */
+const NOTE_PROMPT: Record<Mode, string> = {
+  spent: "✏️ What was it? e.g. nasi lemak",
+  in: "✏️ What's it for? e.g. October money",
+  more: "✏️ Add a note, e.g. for the trip",
+};
 
 /** Names of the default categories; anything else was typed by the student under Other. */
 const DEFAULT_NAMES = new Set(DEFAULT_CATEGORIES.map((c) => c.name));
@@ -56,8 +63,8 @@ export default function QuickAdd() {
   const showUndo = useUndo();
   const day = useMemo(() => today(), []);
   const keyboardOpen = useKeyboardOpen();
-  const [noteFocused, setNoteFocused] = useState(false);
   const categories = useRead((db) => categoriesByUse(db, day), [day]);
+  const recentNotes = useRead((db) => recentNotesByCategory(db, day), [day]);
 
   // Debts opens it on More → I lent / I borrowed (S7 "+ Add").
   const params = useLocalSearchParams<{ more?: MoreKind }>();
@@ -90,6 +97,8 @@ export default function QuickAdd() {
     mode === "spent" && !!picked && (picked.name === "Other" || !DEFAULT_NAMES.has(picked.name));
   const when = { localDate: date, occurredAt: occurredAtFor(date, day) };
   const cleanNote = note.trim();
+  // One-tap notes typed recently for this category, e.g. "nasi lemak".
+  const noteIdeas = picked ? (recentNotes.get(picked.id) ?? []) : [];
 
   /** Saves, then closes the sheet and offers Undo (D-38). */
   const finish = <T,>(result: RepoResult<T>, message: string, undo: (value: T) => void) => {
@@ -275,6 +284,35 @@ export default function QuickAdd() {
           contentContainerStyle={{ gap: space.sm }}
           keyboardShouldPersistTaps="handled"
         >
+          {/* The note comes first, so saying what it was is the obvious next step (D-49). */}
+          <View style={{ gap: space.xs }}>
+            <Field
+              value={note}
+              onChange={setNote}
+              expanded
+              placeholder={NOTE_PROMPT[mode]}
+              label={`Note, optional. ${NOTE_PROMPT[mode]}`}
+            />
+            {mode === "spent" && noteIdeas.length > 0 ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                contentContainerStyle={{ gap: space.sm }}
+              >
+                {noteIdeas.map((idea) => (
+                  <Chip
+                    key={idea}
+                    label={idea}
+                    dashed
+                    selected={note.trim().toLowerCase() === idea.toLowerCase()}
+                    onPress={() => setNote(idea)}
+                  />
+                ))}
+              </ScrollView>
+            ) : null}
+          </View>
+
           {mode === "spent" ? (
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
               {chips.map((c) => (
@@ -384,44 +422,28 @@ export default function QuickAdd() {
             </View>
           ) : null}
 
-          <View style={{ flexDirection: "row", gap: space.sm }}>
-            {/* While typing the note it gets the whole row. */}
-            {noteFocused ? null : (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`Date: ${date === day ? "today" : dayMonth(date)}. Change`}
-                onPress={async () => {
-                  const chosen = await pickDate(date);
-                  if (chosen) setDate(chosen);
-                }}
-                style={{
-                  flex: 1,
-                  minHeight: MIN_TOUCH,
-                  justifyContent: "center",
-                  paddingHorizontal: space.sm,
-                  borderRadius: radius.button,
-                  borderWidth: 2,
-                  borderColor: colors.outline,
-                  backgroundColor: colors.card,
-                }}
-              >
-                <Text style={[type.strong, { color: colors.text, fontSize: 15 }]}>
-                  📅 {date === day ? `Today, ${dayMonth(day)}` : dayMonth(date)}
-                </Text>
-              </Pressable>
-            )}
-            <View style={{ flex: 1 }}>
-              <Field
-                value={note}
-                onChange={setNote}
-                expanded
-                onFocus={() => setNoteFocused(true)}
-                onBlur={() => setNoteFocused(false)}
-                placeholder="Note (optional)"
-                label="Note, optional. What was it? For example nasi lemak"
-              />
-            </View>
-          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Date: ${date === day ? "today" : dayMonth(date)}. Change`}
+            onPress={async () => {
+              const chosen = await pickDate(date);
+              if (chosen) setDate(chosen);
+            }}
+            style={{
+              alignSelf: "flex-start",
+              minHeight: MIN_TOUCH,
+              justifyContent: "center",
+              paddingHorizontal: space.md,
+              borderRadius: radius.button,
+              borderWidth: 2,
+              borderColor: colors.outline,
+              backgroundColor: colors.card,
+            }}
+          >
+            <Text style={[type.strong, { color: colors.text, fontSize: 15 }]}>
+              📅 {date === day ? `Today, ${dayMonth(day)}` : dayMonth(date)}
+            </Text>
+          </Pressable>
 
           {mode === "spent" ? (
             <View
