@@ -1,4 +1,12 @@
-import { formatRM, inclusiveEnd, localDate, parseAmount, planTotals, sen } from "@brokely/domain";
+import {
+  formatRM,
+  inclusiveEnd,
+  localDate,
+  parseAmount,
+  planTotals,
+  sen,
+  type CategoryKind,
+} from "@brokely/domain";
 import {
   addCategory,
   findCycleOn,
@@ -15,12 +23,22 @@ import { useRead } from "../src/db/use-read";
 import { refusalText } from "../src/lib/messages";
 import { dayMonth, today } from "../src/lib/today";
 import { AllocationFields, asTyped, readAllocations } from "../src/ui/allocation-fields";
-import { Button, Empty, PageScreen, Sticker } from "../src/ui/components";
+import { Button, Empty, Heading, PageScreen, Sticker } from "../src/ui/components";
 import { SheetNote } from "../src/ui/sheet";
-import { Field, Labelled } from "../src/ui/sheet-parts";
+import { Chip, Field, Labelled } from "../src/ui/sheet-parts";
 import { space, type } from "../src/ui/theme";
 import { useTheme } from "../src/ui/theme-context";
 import { useUndo } from "../src/ui/undo";
+
+const NEW_KINDS: { kind: CategoryKind; label: string; detail: string }[] = [
+  { kind: "essential", label: "Essential", detail: "Something you need, like rent or a bus pass." },
+  { kind: "optional", label: "Optional", detail: "Nice to have, like the gym or hobbies." },
+  {
+    kind: "set_aside",
+    label: "Set aside",
+    detail: "Money you keep for later, like a trip home. Planned, but not spending.",
+  },
+];
 
 /**
  * S9 Current plan (FR-PLN-08…12, D-03, D-28): budget and every category's amount. Saving makes a
@@ -72,7 +90,8 @@ function PlanForm({
     Object.fromEntries(categories.map((c) => [c.id, asTyped(current.get(c.id) ?? 0)])),
   );
   const [askOver, setAskOver] = useState(false);
-  const [newSetAside, setNewSetAside] = useState("");
+  const [newName, setNewName] = useState("");
+  const [newKind, setNewKind] = useState<CategoryKind>("optional");
   const [problem, setProblem] = useState<string | null>(null);
 
   const budget = parseAmount(budgetText);
@@ -111,12 +130,14 @@ function PlanForm({
     );
   };
 
-  const addSetAside = () => {
-    const name = newSetAside.trim();
-    if (!name) return;
-    const added = addCategory(repo, { name, kind: "set_aside" });
+  /** A new category (or labelled set-aside, FR-PLN-12) to give an amount in this plan. */
+  const addOne = () => {
+    const name = newName.trim();
+    if (!name) return setProblem("Type a name for the new category.");
+    const added = addCategory(repo, { name, kind: newKind });
     if (!added.ok) return setProblem(refusalText(added.code, added.message));
-    setNewSetAside("");
+    setNewName("");
+    setProblem(null);
   };
 
   return (
@@ -146,19 +167,31 @@ function PlanForm({
           setAmounts((now) => ({ ...now, [id]: text }));
           setAskOver(false);
         }}
-        setAsideExtra={
-          <View style={{ flexDirection: "row", gap: space.sm, alignItems: "center" }}>
-            <View style={{ flex: 1 }}>
-              <Field
-                value={newSetAside}
-                onChange={setNewSetAside}
-                placeholder="New set-aside, e.g. Trip home"
-              />
-            </View>
-            <Button label="Add" variant="secondary" onPress={addSetAside} />
-          </View>
-        }
       />
+
+      <Sticker style={{ padding: space.md, gap: space.sm }}>
+        <Heading>Add a category</Heading>
+        <Field
+          value={newName}
+          onChange={setNewName}
+          placeholder="e.g. Gym, Trip home, Course books"
+          label="New category name"
+        />
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
+          {NEW_KINDS.map((k) => (
+            <Chip
+              key={k.kind}
+              label={k.label}
+              selected={newKind === k.kind}
+              onPress={() => setNewKind(k.kind)}
+            />
+          ))}
+        </View>
+        <Text style={[type.small, { color: colors.muted }]}>
+          {NEW_KINDS.find((k) => k.kind === newKind)?.detail}
+        </Text>
+        <Button label="Add category" variant="secondary" onPress={addOne} />
+      </Sticker>
 
       {totals ? (
         <SheetNote

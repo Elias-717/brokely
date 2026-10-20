@@ -1,5 +1,6 @@
-import { formatRM, parseAmount, sen, type LocalDate } from "@brokely/domain";
+import { DEFAULT_CATEGORIES, formatRM, parseAmount, sen, type LocalDate } from "@brokely/domain";
 import {
+  addCategory,
   createDebt,
   deleteDebt,
   deleteTransaction,
@@ -30,6 +31,9 @@ import { useKeyboardOpen } from "../src/ui/use-keyboard";
 
 type Mode = "spent" | "in" | "more";
 type MoreKind = "transfer" | "lent" | "borrowed";
+
+/** Names of the default categories; anything else was typed by the student under Other. */
+const DEFAULT_NAMES = new Set(DEFAULT_CATEGORIES.map((c) => c.name));
 
 const FRIEND = "From a friend";
 /** Shortcut to More → I borrowed: saved as a debt, not money in. */
@@ -65,6 +69,8 @@ export default function QuickAdd() {
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
   const [split, setSplit] = useState(false);
+  /** Under Other: the student's own category name (D-44). */
+  const [customName, setCustomName] = useState("");
   const [friend, setFriend] = useState("");
   const [shareText, setShareText] = useState("");
   // Money in / More
@@ -75,6 +81,12 @@ export default function QuickAdd() {
   const amount = parseAmount(amountText);
   const share = parseAmount(shareText);
   const picked = categories.find((c) => c.id === categoryId) ?? categories[0];
+  // Categories the student named themselves before, offered again under Other (D-44).
+  const ownCategories = categories.filter(
+    (c) => !DEFAULT_NAMES.has(c.name) && c.kind !== "set_aside",
+  );
+  const showOwn =
+    mode === "spent" && !!picked && (picked.name === "Other" || !DEFAULT_NAMES.has(picked.name));
   const when = { localDate: date, occurredAt: occurredAtFor(date, day) };
   const cleanNote = note.trim();
 
@@ -89,38 +101,61 @@ export default function QuickAdd() {
     if (amount === null || amount <= 0) return setProblem("Type an amount above zero first.");
     if (mode === "spent") {
       if (!picked) return;
-      const label = `${picked.name} ${categoryEmoji(picked.name)}`.trim();
-      if (split) {
-        if (!friend.trim() || share === null || share <= 0) {
-          return setProblem("Add your friend's name and their share.");
+      // A name typed under Other becomes a category of its own, kept for next time (D-44).
+      const typed = customName.trim();
+      if (picked.name === "Other" && typed) {
+        const existing = categories.find((c) => c.name.toLowerCase() === typed.toLowerCase());
+        if (existing) {
+          setCategoryId(existing.id);
+          setCustomName("");
+          return saveIn(existing);
         }
-        if (share >= amount) return setProblem("Your friend's share must be less than the total.");
-        return finish(
-          recordSplitPurchase(repo, {
-            amountSen: amount,
-            categoryId: picked.id,
-            friends: [{ counterparty: friend.trim(), amountSen: share }],
-            note: cleanNote,
-            ...when,
-          }),
-          `Saved ${formatRM(amount)} · ${label} · ${friend.trim()} owes ${formatRM(share)}`,
-          ({ transactionId, debtIds }) => {
-            deleteTransaction(repo, transactionId);
-            debtIds.forEach((id) => deleteDebt(repo, id));
-          },
-        );
+        const added = addCategory(repo, { name: typed, kind: "optional" });
+        if (!added.ok) return setProblem(refusalText(added.code, added.message));
+        return saveIn({ id: added.value.id, name: typed });
       }
+      return saveIn(picked);
+    }
+    return saveOther();
+  };
+
+  const saveIn = (picked: { id: string; name: string }) => {
+    if (amount === null) return;
+    const label = `${picked.name} ${categoryEmoji(picked.name)}`.trim();
+    if (split) {
+      if (!friend.trim() || share === null || share <= 0) {
+        return setProblem("Add your friend's name and their share.");
+      }
+      if (share >= amount) return setProblem("Your friend's share must be less than the total.");
       return finish(
-        recordPurchase(repo, {
+        recordSplitPurchase(repo, {
           amountSen: amount,
           categoryId: picked.id,
+          friends: [{ counterparty: friend.trim(), amountSen: share }],
           note: cleanNote,
           ...when,
         }),
-        `Saved ${formatRM(amount)} · ${label}`,
-        ({ id }) => deleteTransaction(repo, id),
+        `Saved ${formatRM(amount)} · ${label} · ${friend.trim()} owes ${formatRM(share)}`,
+        ({ transactionId, debtIds }) => {
+          deleteTransaction(repo, transactionId);
+          debtIds.forEach((id) => deleteDebt(repo, id));
+        },
       );
     }
+    return finish(
+      recordPurchase(repo, {
+        amountSen: amount,
+        categoryId: picked.id,
+        note: cleanNote,
+        ...when,
+      }),
+      `Saved ${formatRM(amount)} · ${label}`,
+      ({ id }) => deleteTransaction(repo, id),
+    );
+  };
+
+  const saveOther = () => {
+    if (amount === null) return;
     if (mode === "in" && from === BORROWED) {
       // A shortcut to More → I borrowed: money received that must be paid back is a debt,
       // never money in or spending (FR-DEBT-06).
@@ -254,7 +289,38 @@ export default function QuickAdd() {
                   <Chip label="All categories" dashed onPress={() => setShowAll(true)} />
                 ) : null}
               </View>
-            ) : mode === "in" ? (
+            ) : null}
+            {showOwn ? (
+              <View style={{ gap: space.sm }}>
+                {picked?.name === "Other" ? (
+                  <Field
+                    value={customName}
+                    onChange={setCustomName}
+                    expanded
+                    placeholder="Name it (optional), e.g. Haircut"
+                    label="Name your own category, optional"
+                  />
+                ) : null}
+                {ownCategories.length > 0 ? (
+                  <Labelled label="Your own categories">
+                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
+                      {ownCategories.map((c) => (
+                        <Chip
+                          key={c.id}
+                          label={c.name}
+                          selected={c.id === picked?.id}
+                          onPress={() => {
+                            setCategoryId(c.id);
+                            setCustomName("");
+                          }}
+                        />
+                      ))}
+                    </View>
+                  </Labelled>
+                ) : null}
+              </View>
+            ) : null}
+            {mode === "in" ? (
               <Labelled label="From">
                 <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
                   {FROM.map((f) => (
@@ -289,7 +355,7 @@ export default function QuickAdd() {
                   </View>
                 ) : null}
               </Labelled>
-            ) : (
+            ) : mode === "more" ? (
               <View style={{ gap: space.sm }}>
                 <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
                   {MORE.map((m) => (
@@ -316,7 +382,7 @@ export default function QuickAdd() {
                   </Text>
                 )}
               </View>
-            )}
+            ) : null}
 
             <View style={{ flexDirection: "row", gap: space.sm }}>
               {/* While typing the note it gets the whole row. */}

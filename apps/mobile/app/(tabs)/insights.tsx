@@ -233,7 +233,12 @@ export default function InsightsScreen() {
 
       {/* Every category: plan, spent, left (FR-INS-02) */}
       <Sticker style={{ padding: space.md, gap: space.sm, marginBottom: space.lg }}>
-        <Heading>By category</Heading>
+        <View
+          style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}
+        >
+          <Heading>By category</Heading>
+          <Button label="Change amounts" variant="link" onPress={() => router.push("/plan")} />
+        </View>
         {model.lines.length === 0 ? (
           <Body muted>Add essentials from Home to give categories an amount.</Body>
         ) : (
