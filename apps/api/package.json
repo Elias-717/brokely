@@ -8,7 +8,9 @@
     "dev": "tsx watch src/server.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "drizzle-kit generate",
+    "build": "node build.mjs",
+    "start": "node --enable-source-maps dist/server.mjs"
   },
   "dependencies": {
     "@brokely/contracts": "workspace:*",
@@ -23,6 +25,7 @@
     "@electric-sql/pglite": "^0.5.10",
     "@types/node": "^22.15.0",
     "drizzle-kit": "^0.31.11",
+    "esbuild": "0.28.2",
     "tsx": "^4.20.0",
     "vitest": "^3.2.7"
   }

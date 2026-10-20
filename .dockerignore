@@ -1,0 +1,11 @@
+# Only what apps/api/Dockerfile copies is needed; keep the build context small and private.
+**/node_modules
+**/dist
+.git
+.env
+.env.*
+private
+data
+docs
+apps/mobile/*
+!apps/mobile/package.json
