@@ -8,6 +8,7 @@ import { listDebts } from "./debts";
 import {
   findCycleOn,
   getPlan,
+  listRevisions,
   OPENING_DEBT_NOTE,
   quickStart,
   revisePlan,
@@ -152,6 +153,20 @@ describe("plan repository", () => {
     });
     expect(result).toMatchObject({ ok: false, code: "VALIDATION_FAILED" });
     expect(outbox()).toHaveLength(0);
+  });
+
+  it("lists revisions oldest first, so the original is kept beside the current one (D-03)", () => {
+    const { cycleId } = novemberQuickStart();
+    revisePlan(ctx, {
+      cycleId,
+      budgetSen: sen(45000),
+      allocations: [],
+      shortfallAcknowledged: false,
+    });
+    expect(listRevisions(ctx.db, cycleId).map((r) => [r.revisionNo, r.budgetSen])).toEqual([
+      [1, 40000],
+      [2, 45000],
+    ]);
   });
 
   it("refuses an end date before the start date", () => {

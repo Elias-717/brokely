@@ -122,6 +122,23 @@ function cycleData(row: CycleRow): EntityData<"planning_cycle"> {
   };
 }
 
+/** Every approved revision of a cycle, oldest first: original → … → current (D-03, FR-PLN-11). */
+export function listRevisions(db: Db, cycleId: string) {
+  return db
+    .select()
+    .from(planRevisions)
+    .where(eq(planRevisions.cycleId, cycleId))
+    .all()
+    .filter((r) => r.approvedAt !== null)
+    .sort((a, b) => a.revisionNo - b.revisionNo)
+    .map((r) => ({
+      id: r.id,
+      revisionNo: r.revisionNo,
+      budgetSen: sen(r.budgetSen),
+      approvedAt: r.approvedAt!,
+    }));
+}
+
 export interface QuickStartInput {
   readonly budgetSen: Sen;
   /** Dates as the student sees them; both included (FR-PLN-02). */

@@ -10,3 +10,5 @@ export * from "./scheduled-items";
 export * from "./bills";
 export * from "./essential-cards";
 export * from "./local-prefs";
+export * from "./settings";
+export * from "./data";
