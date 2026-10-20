@@ -1,6 +1,6 @@
 # Brokely — Sync API Design v0.1
 
-Status: **draft for review** (Phase 1). Implements SRS v1.2 FR-SYNC-01…10, FR-ACC-01…07 and decision D-06.
+Status: **server side of push and pull built** in `apps/api` (Phase 4, 21 Oct 2026; tables applied to Supabase). Not yet built: the phone's sync loop (§7), account linking (§8), `DELETE /v1/account`, rate limits. Implements SRS v1.2 FR-SYNC-01…10, FR-ACC-01…07 and decision D-06.
 Data model: [`erd.md`](erd.md). Shared request/response schemas will live in `packages/contracts` (Zod).
 
 ## 1. Purpose and shape
@@ -34,6 +34,8 @@ place. Per-table CRUD endpoints would spread that logic across dozens of routes.
 | S-06 | **Natural-key merge for one-per-day and one-per-user rows.** Check-ins merge on (`user`, `local_date`); settings on `user`. | Two phones can both tap "No spending today" for the same day; the second becomes a duplicate, not an error. |
 | S-07 | **Deletes are delete markers** (`deleted_at` set, version + 1). | Pull can tell other phones about the delete, so deleted records never come back (FR-SYNC-09). |
 | S-08 | **Pull is cursor-based on a global server sequence** (`server_seq`). | Simple, gap-free, and needs no clock agreement between phones and server. |
+| S-09 | **The sync API is the only way into the data** (Phase 4, D-64). Tables live in a private `brokely` schema on Supabase with row-level security on and no policies; Supabase's Data API roles (`anon`, `authenticated`) have no access. | All version and rule checks live in one place. The Supabase security advisor's "RLS enabled, no policy" notice is expected. |
+| S-10 | **One student's operations run one at a time** (a per-student advisory lock inside each operation's transaction). | Their rows then commit in `server_seq` order, so pull can never skip a row that took a number earlier but committed later. |
 
 ## 3. Synced entities
 
@@ -95,6 +97,9 @@ Content-Type: application/json
 6. Check business rules with `packages/domain` (table in section 6) → else `rejected` with the rule's code.
 7. Write the row(s): `version = old + 1` (or 1), `server_seq = nextval()`, `updated_at = now()`; for delete set `deleted_at`.
 8. Save the result in `processed_operation`. Steps 7 and 8 happen in **one** database transaction.
+   Only `applied` and `duplicate` results are saved: a `rejected` or `conflict` operation is checked afresh when sent
+   again (e.g. `REFERENCE_MISSING` succeeds once its parent has arrived).
+9. An upsert always leaves the row live: an upsert on a delete marker (with the marker's version) brings the record back (Undo, FR-TXN-10).
 
 ### Response (HTTP 200, one result per operation, same order)
 
@@ -215,5 +220,6 @@ trigger ─▶ push (outbox, oldest first, batches of 100) ─▶ pull (until ha
 
 ## 12. Open points
 
-1. Sign-in provider and token lifetime (Phase 4 start).
+1. ~~Sign-in provider~~ Supabase Auth (D-64). Tokens are ES256-signed; the API checks them against the project's public key set (`/auth/v1/.well-known/jwks.json`), issuer and audience `authenticated`. Token lifetime: Supabase default (1 hour, refreshed by the client).
+3. Categories have a unique live name per student. If two phones both created default categories offline and then join one account, the second phone's categories are `rejected` (VALIDATION_FAILED). Pilot students use one phone, so this waits; a name merge (like S-06) would fix it.
 2. Should pull be split per entity for very large first syncs? Not needed at pilot scale; revisit if a first sync exceeds a few seconds.
