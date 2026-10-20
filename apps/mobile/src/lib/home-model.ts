@@ -1,4 +1,5 @@
 import {
+  addDays,
   computeProgress,
   daysBetween,
   forecastCanShow,
@@ -14,7 +15,9 @@ import {
 import {
   findCycleOn,
   getCardChoices,
+  getDraftCycle,
   getPlan,
+  lastEndedCycle,
   listCategories,
   listCheckInDates,
   listDebts,
@@ -25,7 +28,13 @@ import {
 
 /** Everything Home shows, worked out from the phone database with the domain rules. */
 export type HomeModel =
-  | { readonly kind: "no-plan" }
+  | {
+      readonly kind: "no-plan";
+      /** The plan that just ended, for its summary (FR-PLN-17). */
+      readonly ended: { readonly id: string; readonly lastDay: LocalDate } | null;
+      /** A next plan started but not approved yet (AC-48). */
+      readonly draftId: string | null;
+    }
   | {
       readonly kind: "plan";
       readonly cycleId: string;
@@ -56,7 +65,16 @@ export type HomeModel =
 export function readHome(db: Db, today: LocalDate): HomeModel {
   const cycle = findCycleOn(db, today);
   const plan = cycle ? getPlan(db, cycle.id) : undefined;
-  if (!cycle || !plan) return { kind: "no-plan" };
+  if (!cycle || !plan) {
+    const ended = lastEndedCycle(db, today);
+    return {
+      kind: "no-plan",
+      ended: ended
+        ? { id: ended.id, lastDay: addDays(localDate(ended.endDateExclusive), -1) }
+        : null,
+      draftId: getDraftCycle(db)?.cycle.id ?? null,
+    };
+  }
 
   const range = {
     start: localDate(cycle.startDate),

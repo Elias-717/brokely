@@ -54,7 +54,7 @@ export interface Plan {
 
 const liveCycle = isNull(planningCycles.deletedAt);
 
-function cycleLike(row: CycleRow): CycleLike {
+export function cycleLike(row: CycleRow): CycleLike {
   return {
     id: row.id,
     range: { start: localDate(row.startDate), endExclusive: localDate(row.endDateExclusive) },
@@ -113,7 +113,7 @@ export function getPlan(db: Db, cycleId: string): Plan | undefined {
   };
 }
 
-function cycleData(row: CycleRow): EntityData<"planning_cycle"> {
+export function cycleData(row: CycleRow): EntityData<"planning_cycle"> {
   return {
     startDate: row.startDate,
     endDateExclusive: row.endDateExclusive,
@@ -229,20 +229,22 @@ export function quickStart(ctx: RepoContext, input: QuickStartInput) {
   return write(ctx, (scope) => quickStartIn(scope, input));
 }
 
-function insertApprovedRevision(
+/** A revision with its allocations; approved now, or a draft (approvedAt null, D-20). */
+export function insertApprovedRevision(
   scope: WriteScope,
   cycleId: string,
   revisionNo: number,
   budgetSen: Sen,
   parts: readonly { categoryId: string; amountSen: Sen }[],
   shortfallAcknowledged: boolean,
+  approved = true,
 ): string {
   const revision: RevisionRow = {
     ...freshRow(scope),
     cycleId,
     revisionNo,
     budgetSen,
-    approvedAt: scope.at,
+    approvedAt: approved ? scope.at : null,
     shortfallAcknowledged,
   };
   const rows = parts.map((p) => ({

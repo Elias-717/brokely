@@ -1,12 +1,14 @@
 import { formatRM, type Sen } from "@brokely/domain";
 import {
   checkInNoSpending,
+  completeEndedCycles,
   dismissCard,
   getNickname,
   postponeCard,
   undoCheckIn,
 } from "@brokely/local-db";
 import { router } from "expo-router";
+import { useEffect } from "react";
 import { Pressable, Text, View } from "react-native";
 import { repo } from "../../src/db/client";
 import { useRead } from "../../src/db/use-read";
@@ -30,6 +32,10 @@ const wholeRM = (amount: Sen) => `RM${Math.round(amount / 100)}`;
 export default function HomeScreen() {
   const { colors } = useTheme();
   const day = today();
+  // A plan whose end date has passed completes by itself (FR-PLN-17, D-18).
+  useEffect(() => {
+    completeEndedCycles(repo, day);
+  }, [day]);
   const home = useRead((db) => readHome(db, day), [day]);
   const nickname = useRead(getNickname);
   const showUndo = useUndo();
@@ -59,14 +65,39 @@ export default function HomeScreen() {
     return (
       <Screen>
         {header}
-        <Sticker style={{ padding: space.md, gap: space.sm }}>
-          <Text style={[type.heading, { color: colors.text }]}>No plan yet</Text>
-          <Text style={[type.body, { color: colors.muted }]}>
-            You can log spending without one. When you're ready, Brokely will set one up with you in
-            a minute.
-          </Text>
-          <Button label="Make a plan" onPress={() => router.push("/quick-start")} />
-        </Sticker>
+        {home.draftId ? (
+          <Sticker background={colors.cardTint} style={{ padding: space.md, gap: space.sm }}>
+            <Text style={[type.heading, { color: colors.text }]}>Your next plan is ready</Text>
+            <Text style={[type.body, { color: colors.muted }]}>
+              Check the dates and amounts, then approve it.
+            </Text>
+            <Button label="Check and approve" onPress={() => router.push("/next-plan")} />
+          </Sticker>
+        ) : null}
+        {home.ended ? (
+          <Sticker style={{ padding: space.md, gap: space.sm }}>
+            <Text style={[type.heading, { color: colors.text }]}>
+              Your plan ended on {dayMonth(home.ended.lastDay)} 🎉
+            </Text>
+            <Text style={[type.body, { color: colors.muted }]}>
+              See how it went: what you planned at the start, at the end, and what you spent.
+            </Text>
+            <Button
+              label="See the summary"
+              onPress={() => router.push(`/cycle/${home.ended!.id}`)}
+            />
+          </Sticker>
+        ) : null}
+        {home.draftId || home.ended ? null : (
+          <Sticker style={{ padding: space.md, gap: space.sm }}>
+            <Text style={[type.heading, { color: colors.text }]}>No plan yet</Text>
+            <Text style={[type.body, { color: colors.muted }]}>
+              You can log spending without one. When you're ready, Brokely will set one up with you
+              in a minute.
+            </Text>
+            <Button label="Make a plan" onPress={() => router.push("/quick-start")} />
+          </Sticker>
+        )}
       </Screen>
     );
   }

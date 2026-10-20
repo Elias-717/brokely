@@ -1,13 +1,4 @@
-import {
-  formatRM,
-  inclusiveEnd,
-  localDate,
-  parseAmount,
-  planTotals,
-  sen,
-  type AllocationInput,
-  type Sen,
-} from "@brokely/domain";
+import { formatRM, inclusiveEnd, localDate, parseAmount, planTotals, sen } from "@brokely/domain";
 import {
   addCategory,
   findCycleOn,
@@ -21,25 +12,15 @@ import { useMemo, useState } from "react";
 import { Text, View } from "react-native";
 import { repo } from "../src/db/client";
 import { useRead } from "../src/db/use-read";
-import { categoryEmoji } from "../src/lib/essentials-meta";
 import { refusalText } from "../src/lib/messages";
 import { dayMonth, today } from "../src/lib/today";
-import { Button, Empty, Heading, PageScreen, Sticker } from "../src/ui/components";
+import { AllocationFields, asTyped, readAllocations } from "../src/ui/allocation-fields";
+import { Button, Empty, PageScreen, Sticker } from "../src/ui/components";
 import { SheetNote } from "../src/ui/sheet";
 import { Field, Labelled } from "../src/ui/sheet-parts";
 import { space, type } from "../src/ui/theme";
 import { useTheme } from "../src/ui/theme-context";
 import { useUndo } from "../src/ui/undo";
-
-/** Sen as editable text; empty for zero so the field shows its placeholder. */
-const asTyped = (amount: number) =>
-  amount === 0 ? "" : `${Math.floor(amount / 100)}.${String(amount % 100).padStart(2, "0")}`;
-
-const GROUPS = [
-  { kind: "essential", title: "Essentials" },
-  { kind: "optional", title: "Optional" },
-  { kind: "set_aside", title: "Set aside" },
-] as const;
 
 /**
  * S9 Current plan (FR-PLN-08…12, D-03, D-28): budget and every category's amount. Saving makes a
@@ -95,14 +76,7 @@ function PlanForm({
   const [problem, setProblem] = useState<string | null>(null);
 
   const budget = parseAmount(budgetText);
-  const parsed = categories.map((c) => ({
-    c,
-    amount: amounts[c.id]?.trim() ? parseAmount(amounts[c.id]!) : sen(0),
-  }));
-  const bad = parsed.find((p) => p.amount === null);
-  const allocations: (AllocationInput & { categoryId: string })[] = parsed
-    .filter((p) => (p.amount ?? 0) > 0)
-    .map((p) => ({ categoryId: p.c.id, kind: p.c.kind, amountSen: p.amount as Sen }));
+  const { allocations, bad } = readAllocations(categories, amounts);
   const totals = budget !== null ? planTotals(budget, allocations) : null;
 
   const original = revisions[0];
@@ -113,7 +87,7 @@ function PlanForm({
 
   const save = (acknowledged: boolean) => {
     if (budget === null || budget <= 0) return setProblem("Type a budget above zero.");
-    if (bad) return setProblem(`Check the amount for ${bad.c.name}.`);
+    if (bad) return setProblem(`Check the amount for ${bad.name}.`);
     if (totals && totals.shortfallSen > 0 && !acknowledged) return setAskOver(true);
     const before = {
       budgetSen: sen(plan.revision.budgetSen),
@@ -165,49 +139,26 @@ function PlanForm({
         />
       </Labelled>
 
-      {GROUPS.map((g) => {
-        const inGroup = categories.filter((c) => c.kind === g.kind);
-        if (inGroup.length === 0) return null;
-        return (
-          <Sticker key={g.kind} style={{ padding: space.md, gap: space.sm }}>
-            <Heading>{g.title}</Heading>
-            {inGroup.map((c) => (
-              <View
-                key={c.id}
-                style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}
-              >
-                <Text style={[type.strong, { flex: 1, color: colors.text }]}>
-                  {c.name} {categoryEmoji(c.name)}
-                </Text>
-                <View style={{ width: 120 }}>
-                  <Field
-                    value={amounts[c.id] ?? ""}
-                    onChange={(text) => {
-                      setAmounts((now) => ({ ...now, [c.id]: text }));
-                      setAskOver(false);
-                    }}
-                    placeholder="0.00"
-                    label={`${c.name} amount`}
-                    numeric
-                  />
-                </View>
-              </View>
-            ))}
-            {g.kind === "set_aside" ? (
-              <View style={{ flexDirection: "row", gap: space.sm, alignItems: "center" }}>
-                <View style={{ flex: 1 }}>
-                  <Field
-                    value={newSetAside}
-                    onChange={setNewSetAside}
-                    placeholder="New set-aside, e.g. Trip home"
-                  />
-                </View>
-                <Button label="Add" variant="secondary" onPress={addSetAside} />
-              </View>
-            ) : null}
-          </Sticker>
-        );
-      })}
+      <AllocationFields
+        categories={categories}
+        amounts={amounts}
+        onChange={(id, text) => {
+          setAmounts((now) => ({ ...now, [id]: text }));
+          setAskOver(false);
+        }}
+        setAsideExtra={
+          <View style={{ flexDirection: "row", gap: space.sm, alignItems: "center" }}>
+            <View style={{ flex: 1 }}>
+              <Field
+                value={newSetAside}
+                onChange={setNewSetAside}
+                placeholder="New set-aside, e.g. Trip home"
+              />
+            </View>
+            <Button label="Add" variant="secondary" onPress={addSetAside} />
+          </View>
+        }
+      />
 
       {totals ? (
         <SheetNote
