@@ -11,9 +11,11 @@ import {
 } from "@brokely/local-db";
 import { router, type Href } from "expo-router";
 import { useState } from "react";
-import { Pressable, Share, Text, TextInput, View } from "react-native";
+import { Pressable, Text, TextInput, View } from "react-native";
 import { db, repo } from "../../src/db/client";
 import { useRead } from "../../src/db/use-read";
+import { shareExportFile } from "../../src/lib/export-file";
+import { today } from "../../src/lib/today";
 import { Button, Card, Heading, Screen, Sticker, Title } from "../../src/ui/components";
 import { fonts, radius, space, type } from "../../src/ui/theme";
 import { useTheme } from "../../src/ui/theme-context";
@@ -53,8 +55,10 @@ export default function MoreScreen() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const tz = phoneTimeZone();
 
-  // Sent through Android's share sheet as text (save to Drive, email it to yourself…).
-  const share = (title: string, message: string) => void Share.share({ title, message });
+  // A file through Android's share sheet: save to Drive or Files, email it to yourself…
+  const share = (name: string, mimeType: string, text: string) =>
+    void shareExportFile(name, mimeType, text);
+  const stamp = today();
 
   return (
     <Screen>
@@ -158,12 +162,20 @@ export default function MoreScreen() {
           <Button
             label="Export records (CSV)"
             variant="secondary"
-            onPress={() => share("Brokely records.csv", exportTransactionsCsv(db))}
+            onPress={() =>
+              share(`brokely-records-${stamp}.csv`, "text/csv", exportTransactionsCsv(db))
+            }
           />
           <Button
             label="Export everything (JSON)"
             variant="secondary"
-            onPress={() => share("Brokely data.json", exportJson(db, new Date().toISOString()))}
+            onPress={() =>
+              share(
+                `brokely-data-${stamp}.json`,
+                "application/json",
+                exportJson(db, new Date().toISOString()),
+              )
+            }
           />
         </View>
         {confirmDelete ? (
