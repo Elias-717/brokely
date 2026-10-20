@@ -56,6 +56,15 @@ shortfall state (unallocated −RM17.00).
 | S11 Wallet check (sheet) | Type what you have; compared with your records since the last check; log the difference or leave it | FR-WAL-01…04, BR-30, BR-31, AC-62, AC-63 |
 | S12 Brokely (0.2) | Mascot, stage, mood, XP bar, streak | FR-MAS-01…06, BR-24…26 |
 | S10 Cycle finished | Original → final → actual, still editable, start next cycle | FR-PLN-14, 15, 17, 18, D-18, D-19 |
+| S13a Back up and sync · sign in (node 25:384) | Brokely's value line, official "Sign in with Google" button, "Use email instead", "No bank login, ever" + privacy notice | FR-ACC-01…03, D-72, D-74, NFR-09 |
+| S13b Sign in · email (25:412) | Sign in / Create account tabs, password with Show and a live hint, one email to confirm | FR-ACC-01, 02, D-74 |
+| S13c Check your email (25:444) | Open email app, Resend after 60 s, "Wrong address? Change it", Spam hint | FR-ACC-01, D-74 |
+| S13d Your account already has records (25:468) | Two cards with what each side holds; use the account's or add this phone's | D-73 b, FR-ACC-03 |
+| S13e Erase this phone? (25:496) | Unsynced count, export first, destructive button (warning fill, ink outline), Cancel | D-73 a/b, FR-ACC-06 |
+| S13f This phone has someone else's records (26:410) | Never mixed: sign in with that account, or erase (→ S13e) | D-73 a, FR-ACC-04 |
+| S13g Welcome back (26:432) | Returning student: "Welcome back, Elias! Your plan and 140 records are here"; toast "You're backed up 🥦" after a first backup | D-72, D-07, FR-MAS-08 |
+| S13h More · Settings, signed in (26:455) | Backup row first in Settings with a cloud state icon; the other states (backing up, waiting, needs a look, signed out) | FR-SYNC-06, FR-ACC-02, D-72 |
+| S13i Backup (26:532) | Status, Back up now, needs a look (conflict screen later), Sign out with its rule | FR-SYNC-06, 08, D-73 c, FR-ACC-07 |
 
 ## Layout choices (all decided)
 
