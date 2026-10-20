@@ -5,18 +5,20 @@ import { Image, KeyboardAvoidingView, ScrollView, Text, TextInput, View } from "
 import { SafeAreaView } from "react-native-safe-area-context";
 import { repo } from "../src/db/client";
 import { Button, Sticker } from "../src/ui/components";
-import { Appear } from "../src/ui/motion";
+import { Appear, Float, TypeText } from "../src/ui/motion";
 import { fonts, radius, space, type } from "../src/ui/theme";
 import { useTheme } from "../src/ui/theme-context";
 
 /**
- * S1 Welcome (FR-MAS-08, FR-PLN-19, FR-PLN-04, AC-55, D-23, D-34). Brokely's fixed greeting in a
- * speech bubble, one static picture, and an optional nickname kept on this phone only.
+ * S1 Welcome (FR-MAS-08, FR-PLN-19, FR-PLN-04, AC-55, D-23, D-34, D-47). Brokely's fixed greeting
+ * types itself out in a speech bubble, the one picture gently floats, and an optional nickname
+ * is kept on this phone only.
  * No XP, mood or growth; never promises the student won't run out of money.
  */
 export default function WelcomeScreen() {
   const { colors } = useTheme();
   const [name, setName] = useState("");
+  const [greeted, setGreeted] = useState(false);
 
   const start = (next: "/quick-start" | "/") => {
     setNickname(repo, name); // blank stays blank (D-34)
@@ -40,20 +42,40 @@ export default function WelcomeScreen() {
         >
           <Appear>
             <Sticker style={{ padding: space.md, gap: space.xs, alignItems: "center" }}>
-              <Text style={[type.title, { color: colors.text, textAlign: "center" }]}>
-                Hi, I'm Brokely! 🥦
-              </Text>
-              <Text style={[type.body, { color: colors.muted, textAlign: "center" }]}>
-                Broke is my name, not your future. Let's plan it together.
-              </Text>
+              <View accessibilityRole="header">
+                <TypeText
+                  text="Hi, I'm Brokely! 🥦"
+                  delay={350}
+                  style={[type.title, { color: colors.text, textAlign: "center" }]}
+                  onDone={() => setGreeted(true)}
+                />
+              </View>
+              {greeted ? (
+                <TypeText
+                  text="Broke is my name, not your future. Let's plan it together."
+                  perCharMs={22}
+                  delay={150}
+                  style={[type.body, { color: colors.muted, textAlign: "center" }]}
+                />
+              ) : (
+                // Keeps the bubble's final size while the first line types.
+                <Text
+                  style={[type.body, { opacity: 0, textAlign: "center" }]}
+                  importantForAccessibility="no-hide-descendants"
+                >
+                  Broke is my name, not your future. Let's plan it together.
+                </Text>
+              )}
             </Sticker>
           </Appear>
-          <Image
-            source={require("../assets/mascot/main_design.png")}
-            style={{ width: "100%", height: 260 }}
-            resizeMode="contain"
-            accessibilityLabel="Brokely, a broccoli that grows money instead of leaves"
-          />
+          <Float>
+            <Image
+              source={require("../assets/mascot/main_design.png")}
+              style={{ width: "100%", height: 260 }}
+              resizeMode="contain"
+              accessibilityLabel="Brokely, a broccoli that grows money instead of leaves"
+            />
+          </Float>
           <View style={{ gap: space.xs }}>
             <Text style={[type.small, { color: colors.muted }]}>
               What should I call you? <Text style={{ fontFamily: fonts.body }}>(optional)</Text>
