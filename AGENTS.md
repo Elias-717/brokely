@@ -41,7 +41,7 @@ SRS v1.6 (PRD v1.5) includes every decision up to D-27 and R-13; D-28 is layout 
 ## 3. Current state (update every session)
 
 - **Date of last update:** 2026-10-21 (Phase 3 session 4)
-- **Phase:** 3 — Offline app **in progress** (started 2026-10-19): repositories, migrations, app shell, theme with dark mode and **every 0.1 screen done** (S1, S2a–S2d guided setup, S3a, S4, S5, S6/S6b, S7/S7b, S8, S9, S10, S11) plus money tips (D-67…D-70); the author tests on the reference phone through Metro. To close: new dev build (export files), final 0.1 check, SRS/PRD update. **Next: Phase 4** (Supabase + Cloud Run, D-64), awaiting the author's go
+- **Phase:** 3 — Offline app **in progress** (started 2026-10-19): repositories, migrations, app shell, theme with dark mode and **every 0.1 screen done** (S1, S2a–S2d guided setup, S3a, S4, S5, S6/S6b, S7/S7b, S8, S9, S10, S11) plus money tips (D-67…D-70); the author tests on the reference phone through Metro. To close: new dev build (export files), final 0.1 check, SRS/PRD update. **Next: Phase 4** (Supabase project `swkakkylbsewewulxgra` + Azure Container Apps, D-64/D-71); Supabase MCP connected (needs a new session to load its tools)
 - **Done:**
   - PRD and SRS v1.1 written, then v1.2; decision log D-01…D-21, R-01…R-10
   - Interview guide written; research on the author's spending data done (kept private, not in repo)
@@ -92,7 +92,7 @@ SRS v1.6 (PRD v1.5) includes every decision up to D-27 and R-13; D-28 is layout 
   3. ~~Guided setup S2a–S2d~~ **done** (`app/guided.tsx`, D-63, drafts in `drafts.ts`). Done screens, for reference, each from its Figma frame (`docs/design/wireframes.md`; S1 = node 9:288, S1b 9:306, S1c 16:330, S1d 16:349): S3a Home with essential cards (`acceptEssentialCard`; card queue Later/Not for me per cycle in `local_prefs`, D-30) → S4/S4c quick add with Undo (`recordPurchase`, `recordMoneyIn`, `deleteTransaction`) → S5 Records → S6/S6b Bills + Mark paid → S7/S7b Debts → S8 Insights (`computeProgress`) → S11 Wallet check → S9 More, settings (`user_settings` repo still missing), export/delete → S10 cycle finished. Guided setup S2a–S2d after the main flow.
   4. All 0.1 features are built; Phase 3 closes after the new dev build on the reference phone and a final check of the 0.1 acceptance tests
   5. **D-46 part 2:** after a finished plan, suggestions from the student's own spending (FR-PLN-13) instead of the fixed shares; still suggestions only, never applied
-  6. Later: server database schema (Drizzle + PostgreSQL) for Phase 4; SRS v1.7 / PRD v1.6 (add D-29…D-70 and R-14 (D-47 rewords FR-MAS-08) to the change record (D-43 renames a default category); D-41 needs an FR/AC for debts in quick start; D-40 needs NFR-20 reworded; D-39 needs a new FR/AC for in-app money tips; dark mode is new 0.1 scope; D-36 rewords AC-02 and AC-54: laundry is never a dated bill) when interviews happen
+  6. Later: server database schema (Drizzle + PostgreSQL) for Phase 4; SRS v1.7 / PRD v1.6 (add D-29…D-71 and R-14 (D-47 rewords FR-MAS-08) to the change record (D-43 renames a default category); D-41 needs an FR/AC for debts in quick start; D-40 needs NFR-20 reworded; D-39 needs a new FR/AC for in-app money tips; dark mode is new 0.1 scope; D-36 rewords AC-02 and AC-54: laundry is never a dated bill) when interviews happen
 - **Open questions:** see section 11
 
 ---
@@ -138,7 +138,7 @@ Build from the inside out: correct numbers first, then the offline app, then the
 | **1 Design** | ERD with keys and constraints; sync contract (`POST /sync/push`, `GET /sync/pull?since=`); low-detail wireframes; mascot art brief (3 stages × 4 moods) | Golden path (AC-04) traced through every table and endpoint on paper |
 | **2 Domain core** | BR-01…BR-26 in `packages/domain`; AC-02…AC-17 as automated tests; backtest data from the author's months as fixtures | 100% of BR-xx covered by tests |
 | **3 Offline app** | expo-sqlite + Drizzle, repositories (record + outbox in one transaction). Screens in order: plan wizard → quick add/records (with splits) → Home → bills/Mark paid → debts → insights → check-in → settings/export | All of 0.1 works on one phone, offline, without an account |
-| **4 Backend + sync** | Fastify on Google Cloud Run + Supabase (sign-in and PostgreSQL), Singapore (D-64); idempotent push, versioned writes, reject-and-notify conflicts, delete markers, pull cursor; local-only → account linking | AC-20…AC-24 pass between two real phones |
+| **4 Backend + sync** | Fastify on Azure Container Apps (Malaysia West, D-71) + Supabase (sign-in and PostgreSQL, Singapore, D-64); idempotent push, versioned writes, reject-and-notify conflicts, delete markers, pull cursor; local-only → account linking | AC-20…AC-24 pass between two real phones |
 | **5 Release 0.1** | NFR checks, accessibility, privacy review (PDPA), export/delete, backup drill, usability pilot (5–10 students) | AC-01…AC-30 pass; Play internal testing |
 | **6 Release 0.2** | Kotlin TNG listener (Expo Modules API) + parser on fixtures; pending imports, dedup, "Already logged?", merchant memory; fun notification engine; mascot pictures and XP; fill-a-gap estimates; cycle comparison | AC-31…AC-44 pass on a real phone with real TNG payments |
 | **7 Decide 0.3** | Coins and cosmetics only if the pilot wants them | Pilot data reviewed |
