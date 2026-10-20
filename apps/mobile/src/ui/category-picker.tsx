@@ -10,7 +10,7 @@ interface PickerCategory {
 }
 
 /**
- * One tidy "Category" row instead of a wall of chips (D-51). It shows the chosen category; a tap
+ * One tidy "Category" (or "From") row instead of a wall of chips (D-51, D-55). It shows the chosen category; a tap
  * opens the full list, choosing one closes it again. The list keeps the order it is given
  * (quick add passes most-used first).
  */
@@ -18,15 +18,20 @@ export function CategoryPicker({
   categories,
   selectedId,
   onSelect,
+  title = "Category",
+  emojiOf = categoryEmoji,
 }: {
   categories: readonly PickerCategory[];
   selectedId: string | null;
   onSelect: (id: string) => void;
+  /** The small label above the choice, e.g. "From" for money in. */
+  title?: string;
+  emojiOf?: (name: string) => string;
 }) {
   const { colors } = useTheme();
   const [open, setOpen] = useState(false);
   const selected = categories.find((c) => c.id === selectedId);
-  const label = (c: PickerCategory) => `${categoryEmoji(c.name) || "🏷️"}  ${c.name}`;
+  const label = (c: PickerCategory) => `${emojiOf(c.name) || "🏷️"}  ${c.name}`;
 
   return (
     <View
@@ -41,7 +46,7 @@ export function CategoryPicker({
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
-        accessibilityLabel={`Category: ${selected?.name ?? "none"}. ${open ? "Close the list" : "Change"}`}
+        accessibilityLabel={`${title}: ${selected?.name ?? "none"}. ${open ? "Close the list" : "Change"}`}
         onPress={() => setOpen((now) => !now)}
         style={({ pressed }) => ({
           minHeight: MIN_TOUCH + 4,
@@ -53,9 +58,9 @@ export function CategoryPicker({
         })}
       >
         <View style={{ flex: 1 }}>
-          <Text style={[type.small, { color: colors.muted }]}>Category</Text>
+          <Text style={[type.small, { color: colors.muted }]}>{title}</Text>
           <Text style={{ fontFamily: fonts.heavy, fontSize: 17, color: colors.text }}>
-            {selected ? label(selected) : "Choose a category"}
+            {selected ? label(selected) : `Choose ${title.toLowerCase()}`}
           </Text>
         </View>
         <Text style={[type.heading, { color: colors.muted }]}>{open ? "▴" : "▾"}</Text>

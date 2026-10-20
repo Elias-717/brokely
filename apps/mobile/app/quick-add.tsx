@@ -24,7 +24,7 @@ import { pickDate } from "../src/ui/date-picker";
 import { Keypad } from "../src/ui/keypad";
 import { SheetPanel } from "../src/ui/sheet";
 import { CategoryPicker } from "../src/ui/category-picker";
-import { Chip, Field, Labelled } from "../src/ui/sheet-parts";
+import { Chip, Field } from "../src/ui/sheet-parts";
 import { fonts, MIN_TOUCH, radius, space, type } from "../src/ui/theme";
 import { KeyboardSafe } from "../src/ui/keyboard-safe";
 import { useTheme } from "../src/ui/theme-context";
@@ -44,7 +44,19 @@ const NOTE_PROMPT: Record<Mode, string> = {
 const FRIEND = "From a friend";
 /** Shortcut to More → I borrowed: saved as a debt, not money in. */
 const BORROWED = "Borrowed (debt)";
-const FROM = ["From family", "Meal money", FRIEND, "Part-time", "Gift", BORROWED, "Other"];
+/** Meal money first: it is the default and the most common money in (D-55). */
+const FROM = ["Meal money", "From family", FRIEND, "Part-time", "Gift", BORROWED, "Other"];
+/** A small picture per money-in source, shown in the From list. */
+const FROM_EMOJI: Record<string, string> = {
+  "From family": "👨‍👩‍👧",
+  "Meal money": "🍱",
+  [FRIEND]: "🤝",
+  "Part-time": "💼",
+  Gift: "🎁",
+  [BORROWED]: "🧾",
+  Other: "✨",
+};
+
 const MORE: { kind: MoreKind; label: string }[] = [
   { kind: "transfer", label: "Between my own wallets" },
   { kind: "lent", label: "I lent money" },
@@ -324,12 +336,15 @@ export default function QuickAdd() {
             />
           ) : null}
           {mode === "in" ? (
-            <Labelled label="From">
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
-                {FROM.map((f) => (
-                  <Chip key={f} label={f} selected={f === from} onPress={() => setFrom(f)} />
-                ))}
-              </View>
+            <View>
+              {/* Same tidy row as Category: tap to open the sources, pick one (D-55). */}
+              <CategoryPicker
+                title="From"
+                categories={FROM.map((f) => ({ id: f, name: f }))}
+                selectedId={from}
+                onSelect={setFrom}
+                emojiOf={(name) => FROM_EMOJI[name] ?? ""}
+              />
               {from === FRIEND ? (
                 <View style={{ gap: space.xs, marginTop: space.sm }}>
                   <Field
@@ -357,7 +372,7 @@ export default function QuickAdd() {
                   </Text>
                 </View>
               ) : null}
-            </Labelled>
+            </View>
           ) : mode === "more" ? (
             <View style={{ gap: space.sm }}>
               <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
