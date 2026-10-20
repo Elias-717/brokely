@@ -40,8 +40,9 @@ environment, so no password or key is stored. It is skipped until this one-time 
 3. **Resource groups → `brokely-rg` → Access control (IAM) → Add role assignment** → role
    **Container Apps Contributor** (Job function roles; only Container Apps, not the whole group like Contributor) →
    members: *User, group, or service principal* → select `brokely-github-deploy`. Scoped to this resource group.
-   Subject identifier of the federated credential (step 2): `repo:Elias-717/brokely:environment:production`
-   (GitHub's default token subject; Azure's generated `…@{id}` form only matches if the repo opted into ID-based subjects).
+   Subject identifier of the federated credential (step 2), as GitHub sends it for this repo (ID-based form):
+   `repo:Elias-717@178709125/brokely@1424643964:environment:production` (owner ID 178709125, repository ID
+   1424643964). The old name-only form fails with AADSTS700213 "No matching federated identity record found".
 4. **Subscriptions** → note the **Subscription ID** of the subscription that holds `brokely-rg`.
 5. **GitHub → repo Settings → Secrets and variables → Actions → Variables tab** → add three repository
    variables: `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`. These IDs are not secrets (they grant
