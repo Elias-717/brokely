@@ -26,6 +26,7 @@ import { Chip, Field, Labelled } from "../src/ui/sheet-parts";
 import { fonts, MIN_TOUCH, radius, space, type } from "../src/ui/theme";
 import { useTheme } from "../src/ui/theme-context";
 import { useUndo } from "../src/ui/undo";
+import { useKeyboardOpen } from "../src/ui/use-keyboard";
 
 type Mode = "spent" | "in" | "more";
 type MoreKind = "transfer" | "lent" | "borrowed";
@@ -50,6 +51,8 @@ export default function QuickAdd() {
   const insets = useSafeAreaInsets();
   const showUndo = useUndo();
   const day = useMemo(() => today(), []);
+  const keyboardOpen = useKeyboardOpen();
+  const [noteFocused, setNoteFocused] = useState(false);
   const categories = useRead((db) => categoriesByUse(db, day), [day]);
 
   // Debts opens it on More → I lent / I borrowed (S7 "+ Add").
@@ -253,7 +256,8 @@ export default function QuickAdd() {
           </Text>
 
           <ScrollView
-            style={{ flexGrow: 0 }}
+            // Shrinks (and scrolls) when space is short, instead of pushing fields off screen.
+            style={{ flexGrow: 0, flexShrink: 1 }}
             contentContainerStyle={{ gap: space.sm }}
             keyboardShouldPersistTaps="handled"
           >
@@ -283,6 +287,7 @@ export default function QuickAdd() {
                     <Field
                       value={person}
                       onChange={setPerson}
+                      expanded
                       placeholder="Friend's name (optional)"
                     />
                     <Text style={[type.small, { color: colors.muted }]}>
@@ -295,6 +300,7 @@ export default function QuickAdd() {
                     <Field
                       value={person}
                       onChange={setPerson}
+                      expanded
                       placeholder="Who did you borrow from?"
                     />
                     <Text style={[type.small, { color: colors.muted }]}>
@@ -320,6 +326,7 @@ export default function QuickAdd() {
                   <Field
                     value={person}
                     onChange={setPerson}
+                    expanded
                     placeholder={
                       moreKind === "lent" ? "Who did you lend to?" : "Who did you borrow from?"
                     }
@@ -333,32 +340,38 @@ export default function QuickAdd() {
             )}
 
             <View style={{ flexDirection: "row", gap: space.sm }}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`Date: ${date === day ? "today" : dayMonth(date)}. Change`}
-                onPress={async () => {
-                  const chosen = await pickDate(date);
-                  if (chosen) setDate(chosen);
-                }}
-                style={{
-                  flex: 1,
-                  minHeight: MIN_TOUCH,
-                  justifyContent: "center",
-                  paddingHorizontal: space.sm,
-                  borderRadius: radius.button,
-                  borderWidth: 2,
-                  borderColor: colors.outline,
-                  backgroundColor: colors.card,
-                }}
-              >
-                <Text style={[type.strong, { color: colors.text, fontSize: 15 }]}>
-                  📅 {date === day ? `Today, ${dayMonth(day)}` : dayMonth(date)}
-                </Text>
-              </Pressable>
+              {/* While typing the note it gets the whole row. */}
+              {noteFocused ? null : (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Date: ${date === day ? "today" : dayMonth(date)}. Change`}
+                  onPress={async () => {
+                    const chosen = await pickDate(date);
+                    if (chosen) setDate(chosen);
+                  }}
+                  style={{
+                    flex: 1,
+                    minHeight: MIN_TOUCH,
+                    justifyContent: "center",
+                    paddingHorizontal: space.sm,
+                    borderRadius: radius.button,
+                    borderWidth: 2,
+                    borderColor: colors.outline,
+                    backgroundColor: colors.card,
+                  }}
+                >
+                  <Text style={[type.strong, { color: colors.text, fontSize: 15 }]}>
+                    📅 {date === day ? `Today, ${dayMonth(day)}` : dayMonth(date)}
+                  </Text>
+                </Pressable>
+              )}
               <View style={{ flex: 1 }}>
                 <Field
                   value={note}
                   onChange={setNote}
+                  expanded
+                  onFocus={() => setNoteFocused(true)}
+                  onBlur={() => setNoteFocused(false)}
                   placeholder="Note (optional)"
                   label="Note, optional. What was it? For example nasi lemak"
                 />
@@ -398,7 +411,12 @@ export default function QuickAdd() {
                 {split ? (
                   <View style={{ flexDirection: "row", gap: space.sm }}>
                     <View style={{ flex: 3 }}>
-                      <Field value={friend} onChange={setFriend} placeholder="Friend's name" />
+                      <Field
+                        value={friend}
+                        onChange={setFriend}
+                        placeholder="Friend's name"
+                        expanded
+                      />
                     </View>
                     <View style={{ flex: 2 }}>
                       <Field
@@ -420,13 +438,16 @@ export default function QuickAdd() {
             ) : null}
           </ScrollView>
 
-          <Keypad
-            value={amountText}
-            onChange={(next) => {
-              setAmountText(next);
-              setProblem(null);
-            }}
-          />
+          {/* Hidden while typing a note or name, so that field stays visible. */}
+          {keyboardOpen ? null : (
+            <Keypad
+              value={amountText}
+              onChange={(next) => {
+                setAmountText(next);
+                setProblem(null);
+              }}
+            />
+          )}
           {problem ? (
             <Text accessibilityRole="alert" style={[type.strong, { color: colors.warning }]}>
               {problem}

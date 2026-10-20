@@ -78,7 +78,7 @@ export function SheetShell({
           </View>
           {children ? (
             <ScrollView
-              style={{ flexGrow: 0 }}
+              style={{ flexGrow: 0, flexShrink: 1 }}
               contentContainerStyle={{ gap: space.sm }}
               keyboardShouldPersistTaps="handled"
             >

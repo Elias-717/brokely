@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 import { fonts, MIN_TOUCH, radius, space, type } from "./theme";
 import { useTheme } from "./theme-context";
@@ -62,14 +62,23 @@ export function Field({
   placeholder,
   label,
   numeric,
+  expanded,
+  onFocus,
+  onBlur,
 }: {
   value: string;
   onChange: (text: string) => void;
   placeholder: string;
   label?: string;
   numeric?: boolean;
+  /** Grows into a bigger, wrapping box while focused, so the whole text is visible. */
+  expanded?: boolean;
+  onFocus?: () => void;
+  onBlur?: () => void;
 }) {
   const { colors } = useTheme();
+  const [focused, setFocused] = useState(false);
+  const big = !!expanded && focused;
   return (
     <TextInput
       value={value}
@@ -79,8 +88,22 @@ export function Field({
       accessibilityLabel={label ?? placeholder}
       keyboardType={numeric ? "decimal-pad" : "default"}
       maxLength={numeric ? 12 : 120}
+      onFocus={() => {
+        setFocused(true);
+        onFocus?.();
+      }}
+      onBlur={() => {
+        setFocused(false);
+        onBlur?.();
+      }}
+      multiline={big}
+      // Enter closes the keyboard instead of adding a line (notes are one line of text).
+      submitBehavior={big ? "blurAndSubmit" : undefined}
+      returnKeyType="done"
       style={{
-        minHeight: MIN_TOUCH,
+        minHeight: big ? 72 : MIN_TOUCH,
+        paddingVertical: big ? space.sm : undefined,
+        textAlignVertical: big ? "top" : "center",
         paddingHorizontal: space.sm,
         borderRadius: radius.button,
         borderWidth: 2,
@@ -88,7 +111,7 @@ export function Field({
         backgroundColor: colors.card,
         color: colors.text,
         fontFamily: fonts.bold,
-        fontSize: 15,
+        fontSize: big ? 17 : 15,
       }}
     />
   );

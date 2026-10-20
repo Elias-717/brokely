@@ -38,6 +38,7 @@ import { Chip, Field } from "../../src/ui/sheet-parts";
 import { fonts, MIN_TOUCH, radius, space, type } from "../../src/ui/theme";
 import { useTheme } from "../../src/ui/theme-context";
 import { useUndo } from "../../src/ui/undo";
+import { useKeyboardOpen } from "../../src/ui/use-keyboard";
 
 /** Sen as text the keypad can keep editing: 700 → "7.00". */
 const asTyped = (amount: Sen) =>
@@ -87,6 +88,8 @@ function Sheet({
   const insets = useSafeAreaInsets();
   const showUndo = useUndo();
   const day = useMemo(() => today(), []);
+  const keyboardOpen = useKeyboardOpen();
+  const [noteFocused, setNoteFocused] = useState(false);
 
   const spending = t.lines.filter((l) => l.kind === "spending");
   const debtLines = t.lines.filter((l) => l.kind === "debt");
@@ -269,7 +272,8 @@ function Sheet({
           </Text>
 
           <ScrollView
-            style={{ flexGrow: 0 }}
+            // Shrinks (and scrolls) when space is short, instead of pushing fields off screen.
+            style={{ flexGrow: 0, flexShrink: 1 }}
             contentContainerStyle={{ gap: space.sm }}
             keyboardShouldPersistTaps="handled"
           >
@@ -312,30 +316,40 @@ function Sheet({
             ) : null}
 
             <View style={{ flexDirection: "row", gap: space.sm }}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`Date: ${dayMonth(date)}. Change`}
-                onPress={async () => {
-                  const chosen = await pickDate(date);
-                  if (chosen) setDate(chosen);
-                }}
-                style={{
-                  flex: 1,
-                  minHeight: MIN_TOUCH,
-                  justifyContent: "center",
-                  paddingHorizontal: space.sm,
-                  borderRadius: radius.button,
-                  borderWidth: 2,
-                  borderColor: colors.outline,
-                  backgroundColor: colors.card,
-                }}
-              >
-                <Text style={[type.strong, { color: colors.text, fontSize: 15 }]}>
-                  📅 {date === day ? `Today, ${dayMonth(day)}` : dayMonth(date)}
-                </Text>
-              </Pressable>
+              {/* While typing the note it gets the whole row. */}
+              {noteFocused ? null : (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Date: ${dayMonth(date)}. Change`}
+                  onPress={async () => {
+                    const chosen = await pickDate(date);
+                    if (chosen) setDate(chosen);
+                  }}
+                  style={{
+                    flex: 1,
+                    minHeight: MIN_TOUCH,
+                    justifyContent: "center",
+                    paddingHorizontal: space.sm,
+                    borderRadius: radius.button,
+                    borderWidth: 2,
+                    borderColor: colors.outline,
+                    backgroundColor: colors.card,
+                  }}
+                >
+                  <Text style={[type.strong, { color: colors.text, fontSize: 15 }]}>
+                    📅 {date === day ? `Today, ${dayMonth(day)}` : dayMonth(date)}
+                  </Text>
+                </Pressable>
+              )}
               <View style={{ flex: 1 }}>
-                <Field value={note} onChange={setNote} placeholder="Note (optional)" />
+                <Field
+                  value={note}
+                  onChange={setNote}
+                  placeholder="Note (optional)"
+                  expanded
+                  onFocus={() => setNoteFocused(true)}
+                  onBlur={() => setNoteFocused(false)}
+                />
               </View>
             </View>
 
@@ -368,7 +382,8 @@ function Sheet({
             ) : null}
           </ScrollView>
 
-          {mode === "edit" && split ? null : (
+          {/* No keypad for a split, or while typing a note (it stays visible then). */}
+          {(mode === "edit" && split) || keyboardOpen ? null : (
             <Keypad
               value={mode === "edit" ? amountText : refundText}
               onChange={(next) => {
