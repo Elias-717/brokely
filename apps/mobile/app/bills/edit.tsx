@@ -8,6 +8,7 @@ import {
   type RepeatRule,
 } from "@brokely/domain";
 import {
+  addCategory,
   archiveBill,
   createBill,
   editBill,
@@ -21,10 +22,11 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
 import { Text, View } from "react-native";
 import { db, repo } from "../../src/db/client";
-import { categoryEmoji } from "../../src/lib/essentials-meta";
+import { BILL_TYPES, billTypeOf, OTHER_BILLS } from "../../src/lib/bill-types";
 import { describeRepeat } from "../../src/lib/bills-model";
 import { refusalText } from "../../src/lib/messages";
 import { dayMonth, today } from "../../src/lib/today";
+import { CategoryPicker } from "../../src/ui/category-picker";
 import { Button, PageScreen } from "../../src/ui/components";
 import { pickDate } from "../../src/ui/date-picker";
 import { DateButton, SheetNote } from "../../src/ui/sheet";
@@ -35,13 +37,13 @@ import { useUndo } from "../../src/ui/undo";
 
 type RepeatKind = RepeatRule["kind"];
 
-const KINDS: { kind: RepeatKind; label: string }[] = [
-  { kind: "monthly", label: "Monthly" },
-  { kind: "weekdays", label: "On some weekdays" },
-  { kind: "every_n_weeks", label: "Every few weeks" },
-  { kind: "every_n_days", label: "Every few days" },
-  { kind: "daily", label: "Every day" },
-  { kind: "once", label: "Once" },
+const KINDS: { kind: RepeatKind; label: string; emoji: string }[] = [
+  { kind: "monthly", label: "Monthly", emoji: "🗓️" },
+  { kind: "weekdays", label: "On some weekdays", emoji: "📆" },
+  { kind: "every_n_weeks", label: "Every few weeks", emoji: "🔁" },
+  { kind: "every_n_days", label: "Every few days", emoji: "⏱️" },
+  { kind: "daily", label: "Every day", emoji: "☀️" },
+  { kind: "once", label: "Once", emoji: "1️⃣" },
 ];
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -56,23 +58,29 @@ export default function BillFormRoute() {
 }
 
 /**
- * New bill or change a bill (FR-CAT-03, FR-CAT-04, FR-CAT-07, D-17): name, amount each time,
- * category, how it repeats and from when. Changes apply to upcoming dates only; paid ones stay.
+ * New bill or change a bill (FR-CAT-03, FR-CAT-04, FR-CAT-07, D-17, D-57): name, amount each
+ * time, the kind of bill (which decides its spending category), how it repeats and from when. Changes apply to upcoming dates only; paid ones stay.
  * Stop keeps the history and offers Undo.
  */
 function BillForm({ bill }: { bill: BillView | undefined }) {
   const { colors } = useTheme();
   const showUndo = useUndo();
   const day = useMemo(() => today(), []);
-  const categories = useMemo(() => listCategories(db).filter((c) => c.kind !== "set_aside"), []);
+  const categories = useMemo(() => listCategories(db, { includeArchived: true }), []);
+  const currentCategory = categories.find((c) => c.id === bill?.categoryId)?.name;
   const cycle = useMemo(() => findCycleOn(db, day), [day]);
 
   const rule = bill?.repeat;
   const [name, setName] = useState(bill?.name ?? "");
   const [amountText, setAmountText] = useState(bill ? asTyped(bill.amountSen) : "");
-  const [categoryId, setCategoryId] = useState(
-    bill?.categoryId ?? categories.find((c) => c.name === "Phone & internet")?.id ?? null,
+  // The kind of bill (D-57); a saved bill's kind comes from its category's name.
+  const [typeName, setTypeName] = useState<string | null>(
+    currentCategory ? billTypeOf(currentCategory).name : null,
   );
+  const [otherName, setOtherName] = useState(
+    currentCategory && billTypeOf(currentCategory).name === OTHER_BILLS ? currentCategory : "",
+  );
+  const billType = BILL_TYPES.find((t) => t.name === typeName);
   const [kind, setKind] = useState<RepeatKind>(rule?.kind ?? "monthly");
   const [days, setDays] = useState<number[]>(rule?.kind === "weekdays" ? [...rule.days] : []);
   const [everyText, setEveryText] = useState(
@@ -111,11 +119,21 @@ function BillForm({ bill }: { bill: BillView | undefined }) {
   const save = () => {
     if (name.trim() === "") return setProblem("Give it a name, e.g. Phone plan or Spotify.");
     if (amount === null || amount <= 0) return setProblem("Type how much it is each time.");
-    if (!categoryId) return setProblem("Pick a category.");
+    if (!billType) return setProblem("Pick what kind of bill it is.");
+    const categoryName = billType.name === OTHER_BILLS ? otherName.trim() : billType.category;
+    if (!categoryName) return setProblem("Type what kind of bill it is, e.g. Club fees.");
     if (!repeat) {
       return setProblem(
         kind === "weekdays" ? "Pick at least one day." : "Type a number from 1 to 365.",
       );
+    }
+    // Its spending category: an existing one with that name, or a new one (D-57).
+    const existing = categories.find((c) => c.name.toLowerCase() === categoryName.toLowerCase());
+    let categoryId = existing?.id;
+    if (!categoryId) {
+      const added = addCategory(repo, { name: categoryName, kind: billType.kind });
+      if (!added.ok) return setProblem(refusalText(added.code, added.message));
+      categoryId = added.value.id;
     }
     const input = { name, amountSen: amount, categoryId, repeat, anchorDate: anchor };
     const saved = bill ? editBill(repo, bill.id, input) : createBill(repo, input);
@@ -150,30 +168,33 @@ function BillForm({ bill }: { bill: BillView | undefined }) {
           numeric
         />
       </Labelled>
-      <Labelled label="Counts as spending in">
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
-          {categories.map((c) => (
-            <Chip
-              key={c.id}
-              label={`${c.name} ${categoryEmoji(c.name)}`.trim()}
-              selected={c.id === categoryId}
-              onPress={() => setCategoryId(c.id)}
-            />
-          ))}
-        </View>
-      </Labelled>
-      <Labelled label="Repeats">
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
-          {KINDS.map((k) => (
-            <Chip
-              key={k.kind}
-              label={k.label}
-              selected={kind === k.kind}
-              onPress={() => setKind(k.kind)}
-            />
-          ))}
-        </View>
-      </Labelled>
+      {/* One "Type" row and one "Repeats" row, like Category in quick add (D-57). */}
+      <CategoryPicker
+        title="Type of bill"
+        categories={BILL_TYPES.map((t) => ({ id: t.name, name: t.name }))}
+        selectedId={typeName}
+        onSelect={(id) => {
+          setTypeName(id);
+          setProblem(null);
+        }}
+        emojiOf={(n) => BILL_TYPES.find((t) => t.name === n)?.emoji ?? ""}
+      />
+      {typeName === OTHER_BILLS ? (
+        <Field
+          value={otherName}
+          onChange={setOtherName}
+          expanded
+          placeholder="What kind of bill? e.g. Club fees"
+          label="What kind of bill"
+        />
+      ) : null}
+      <CategoryPicker
+        title="Repeats"
+        categories={KINDS.map((k) => ({ id: k.kind, name: k.label }))}
+        selectedId={kind}
+        onSelect={(id) => setKind(id as RepeatKind)}
+        emojiOf={(n) => KINDS.find((k) => k.label === n)?.emoji ?? ""}
+      />
       {kind === "weekdays" ? (
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
           {WEEKDAYS.map((label, d) => (

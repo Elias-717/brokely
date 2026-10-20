@@ -80,6 +80,13 @@ const EMOJI: Record<string, string> = {
   Other: "✨",
   Emergency: "🛟",
   Savings: "🐷",
+  // Created from bill types (D-57)
+  "Housing & Rent": "🏠",
+  Utilities: "💡",
+  "Loans & Debt": "🏦",
+  Subscriptions: "📺",
+  Insurance: "🛡️",
+  Education: "🎓",
 };
 
 export function categoryEmoji(name: string): string {
