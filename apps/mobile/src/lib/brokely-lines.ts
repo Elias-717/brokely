@@ -80,6 +80,23 @@ export const brokely = {
 
   askSetUp: (): Line => ["Shall I set it up?"],
 
+  /**
+   * D-46: what a healthy plan usually looks like for this budget. A suggestion only: nothing
+   * is filled in, and each essential card suggests its own amount again.
+   */
+  healthyPlan: (
+    budget: Sen,
+    parts: readonly { name: string; percent: number; sen: Sen }[],
+  ): Line => [
+    `Tip: a healthy plan for ${formatRM(budget)} usually looks like `,
+    ...parts.flatMap((p, i) => [
+      i === 0 ? "" : i === parts.length - 1 ? " and " : ", ",
+      { b: `${p.name.toLowerCase()} ${formatRM(p.sen)}` },
+      ` (${p.percent}%)`,
+    ]),
+    ". Just a starting point; you choose your own amounts.",
+  ],
+
   // Debts from before the plan (D-41). Paying back is never spending; it comes off the budget.
   askOwe: (): Line => [
     "Before we plan: do you owe anyone money from before? A friend, family, anyone.",
@@ -162,6 +179,13 @@ export const essentialLines = {
   intro: (intro: string, emoji: string): Line => [`${intro} ${emoji}`],
 
   askHowOften: (name: string): Line => [`How often do you spend on ${name.toLowerCase()}?`],
+
+  /** D-46: a suggestion before the question; the student still types their own amount. */
+  healthyHint: (name: string, percent: number, total: Sen, perDay: Sen | null): Line => [
+    `A healthy plan puts about ${percent}% into ${name.toLowerCase()}: around `,
+    { b: perDay !== null ? `${formatRM(perDay)} a day` : formatRM(total) },
+    perDay !== null ? " for you." : " for this plan.",
+  ],
 
   askHowMuch: (per: Period): Line => [`About how much ${PER[per]}?`],
 

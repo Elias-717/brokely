@@ -4,6 +4,7 @@ import {
   essentialAllocation,
   essentialSuggestion,
   formatRM,
+  healthySuggestion,
   inclusiveEnd,
   lastDayOfMonth,
   lengthInDays,
@@ -147,7 +148,13 @@ function Chat({
 
   useEffect(() => {
     const [question, step] = firstQuestion();
-    chat.say([say.intro(meta.intro, meta.emoji), question], step);
+    // D-46: a suggested amount first, never filled in; the student types their own.
+    const tip = healthySuggestion(category.name, budget, planDays);
+    const daily = meta.style === "daily" || meta.likely === "day";
+    const hint = tip
+      ? [say.healthyHint(category.name, tip.percent, tip.totalSen, daily ? tip.perDaySen : null)]
+      : [];
+    chat.say([say.intro(meta.intro, meta.emoji), ...hint, question], step);
     // Runs only when the chat first shows.
   }, []);
 

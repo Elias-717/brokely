@@ -3,6 +3,7 @@ import {
   checkPayback,
   cycleFromInclusive,
   formatRM,
+  healthySuggestion,
   inclusiveEnd,
   lengthInDays,
   midMonthStart,
@@ -57,6 +58,24 @@ type Step =
   | "owed-who"
   | "owed-amount"
   | "owed-more";
+
+/** The biggest parts of a healthy plan for this budget, as a tip only (D-46). */
+function healthyParts(budget: Sen, planDays: number) {
+  const parts = ["Meals", "Home necessities", "Transport"].flatMap((name) => {
+    const s = healthySuggestion(name, budget, planDays);
+    return s ? [{ name, percent: s.percent, sen: s.totalSen }] : [];
+  });
+  const emergency = healthySuggestion("Emergency", budget, planDays);
+  const savings = healthySuggestion("Savings", budget, planDays);
+  if (emergency && savings) {
+    parts.push({
+      name: "Set aside",
+      percent: emergency.percent + savings.percent,
+      sen: sen(emergency.totalSen + savings.totalSen),
+    });
+  }
+  return parts;
+}
 
 /** The debt being asked about (D-41). */
 interface DebtDraft {
@@ -130,7 +149,14 @@ export default function QuickStartChat() {
     );
 
   const summariseCatchUp = (spent: Sen) =>
-    chat.say([brokely.catchUpSummary(budget, spent, day), brokely.askSetUp()], "cu-confirm");
+    chat.say(
+      [
+        brokely.catchUpSummary(budget, spent, day),
+        brokely.healthyPlan(budget, healthyParts(budget, days(month.start, inclusiveEnd(month)))),
+        brokely.askSetUp(),
+      ],
+      "cu-confirm",
+    );
 
   const plannedPayback = (list: readonly OpeningDebt[]) =>
     sumSen(list.map((d) => d.paybackSen ?? sen(0)));
@@ -181,6 +207,7 @@ export default function QuickStartChat() {
         [
           ...summary,
           brokely.perDay(planBudget, days(start, end)),
+          brokely.healthyPlan(planBudget, healthyParts(planBudget, days(start, end))),
           brokely.confirmDates(start, end),
         ],
         "fresh-confirm",
