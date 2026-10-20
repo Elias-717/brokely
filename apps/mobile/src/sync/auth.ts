@@ -89,4 +89,6 @@ export async function setNewPassword(
 /** Forgets the session on this phone only, so it works offline too. */
 export async function signOutHere(): Promise<void> {
   await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
+  const { signOutOfGoogle } = await import("./google");
+  await signOutOfGoogle();
 }

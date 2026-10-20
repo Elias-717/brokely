@@ -21,6 +21,7 @@ import {
   signInWithEmail,
   signOutHere,
 } from "../src/sync/auth";
+import { googleAvailable, signInWithGoogle } from "../src/sync/google";
 import { useSync } from "../src/sync/sync-provider";
 import { accountHasRecords, OfflineError } from "../src/sync/transport";
 import { Body, Button, Card, Heading, PageScreen, Sticker } from "../src/ui/components";
@@ -52,6 +53,10 @@ export default function SignInScreen() {
   const [password, setPassword] = useState("");
   const [phase, setPhase] = useState<Phase>({ kind: "form" });
   const [message, setMessage] = useState<string | null>(null);
+  const [withGoogle, setWithGoogle] = useState(false);
+  useEffect(() => {
+    void googleAvailable().then(setWithGoogle);
+  }, []);
 
   /** Where to go once the phone and the account agree. */
   const leave = () => {
@@ -141,6 +146,19 @@ export default function SignInScreen() {
     }
     if (!result.session) return setPhase({ kind: "check-email", email, why: "confirm" });
     await afterSignIn(result.session);
+  };
+
+  const continueWithGoogle = async () => {
+    setMessage(null);
+    setPhase({ kind: "working", text: "Signing in with Google…" });
+    const result = await signInWithGoogle();
+    if (!result.ok) {
+      setPhase({ kind: "form" });
+      if (!("cancelled" in result)) setMessage(result.message);
+      return;
+    }
+    if (result.session) await afterSignIn(result.session);
+    else setPhase({ kind: "form" });
   };
 
   const exportFirst = () =>
@@ -247,6 +265,15 @@ export default function SignInScreen() {
               ? "Sign in to bring back your plan and records."
               : "Keep a backup of your records and use Brokely on more than one phone. Optional: everything works without an account."}
           </Body>
+          {withGoogle && mode !== "forgot" ? (
+            <>
+              {/* The main way in (D-74): one tap, nothing to type. */}
+              <Button label="Continue with Google" onPress={() => void continueWithGoogle()} />
+              <Text style={[type.small, { color: colors.muted, textAlign: "center" }]}>
+                or use your email
+              </Text>
+            </>
+          ) : null}
           <TextField
             label="Email"
             value={email}
@@ -284,6 +311,7 @@ export default function SignInScreen() {
                   ? "Send reset link"
                   : "Sign in"
             }
+            variant={withGoogle && mode !== "forgot" ? "secondary" : "primary"}
             onPress={() => void submit()}
           />
           <View style={{ flexDirection: "row", flexWrap: "wrap" }}>

@@ -9,6 +9,7 @@
     "@expo-google-fonts/lilita-one": "^0.4.1",
     "@expo-google-fonts/nunito": "^0.4.2",
     "@react-native-community/datetimepicker": "9.2.1",
+    "@react-native-google-signin/google-signin": "^16.1.5",
     "@supabase/supabase-js": "^2.118.0",
     "drizzle-orm": "^0.44.7",
     "expo": "~58.0.14",
