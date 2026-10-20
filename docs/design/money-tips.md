@@ -1,6 +1,6 @@
-# In-app money tips (release 0.2)
+# In-app money tips (built in 0.1, D-67)
 
-**Status:** requested by the author on 20 Oct 2026, decision **D-39**. Not built yet. Needs an FR and an
+**Status:** requested 20 Oct 2026 (D-39); **built 21 Oct 2026 (D-67)**, brought forward into 0.1 by the author. Tips live in `apps/mobile/src/lib/money-tips.ts`; the pop-up in `src/ui/money-tip.tsx`. Needs an FR and an
 acceptance test in the next SRS/PRD revision (v1.7 / v1.6).
 
 ## What it is
@@ -42,7 +42,14 @@ Example tone (draft, to be reviewed):
 - "Paying a friend back fast keeps friendships (and your plan) healthy."
 - "Set aside a small Emergency amount first, even RM20. Future you will say thanks."
 
-## Open questions (ask the author before building)
+## Answers (D-67, 21 Oct)
+
+1. **Cap:** at most 3 tips a day (default; change `TIPS_PER_DAY`). Shown only after logging **spending** (author: "after the user adds an expense").
+2. **Writers:** the author's 30 tips (reworded for the glossary: "money in", not "allowance"/"payday") plus 20 by Brokely, some inspired by *Rich Dad Poor Dad* ideas (pay yourself first, assets vs liabilities, learning that earns) in our own words. **The author reviews them all.**
+3. **Related to the record:** mostly (about 3 in 4 times) a tip matching the category just logged, otherwise a general one.
+4. **XP:** none for now (0.2).
+
+## Open questions (original, kept for history)
 
 1. Daily cap: how many tips per day at most (suggestion: 2–3), and a minimum gap between them.
 2. Who writes the first set of tips, and how many to start with (suggestion: 30–50).

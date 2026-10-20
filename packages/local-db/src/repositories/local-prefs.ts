@@ -85,3 +85,49 @@ export function postponeCard(ctx: RepoContext, cycleId: string, cardId: string):
     later: [...later.filter((id) => id !== cardId), cardId],
   });
 }
+
+/** Money tips after saving an expense (D-39, D-67). Phone-only, never synced. */
+export interface MoneyTipsState {
+  /** On by default; More → Settings turns it off. */
+  readonly enabled: boolean;
+  /** The local date the count below belongs to. */
+  readonly day: string | null;
+  readonly shownToday: number;
+  /** Tip IDs already shown, oldest first, so tips don't repeat until most have been seen. */
+  readonly seen: readonly string[];
+}
+
+const TIPS_KEY = "money_tips";
+
+export function getMoneyTips(db: Db): MoneyTipsState {
+  const v = getPref(db, TIPS_KEY) as Partial<MoneyTipsState> | undefined;
+  return {
+    enabled: v?.enabled ?? true,
+    day: typeof v?.day === "string" ? v.day : null,
+    shownToday: typeof v?.shownToday === "number" ? v.shownToday : 0,
+    seen: Array.isArray(v?.seen) ? v.seen.filter((x): x is string => typeof x === "string") : [],
+  };
+}
+
+export function setMoneyTipsEnabled(ctx: RepoContext, enabled: boolean): void {
+  setPref(ctx, TIPS_KEY, { ...getMoneyTips(ctx.db), enabled });
+}
+
+/**
+ * Remembers a shown tip: counts it for `today` (a new day starts at 0) and adds it to `seen`.
+ * Once `seen` holds `resetAfter` tips the list starts over, so every tip comes back eventually.
+ */
+export function recordTipShown(
+  ctx: RepoContext,
+  input: { tipId: string; today: string; resetAfter: number },
+): void {
+  const now = getMoneyTips(ctx.db);
+  const shownToday = now.day === input.today ? now.shownToday + 1 : 1;
+  const seen = [...now.seen.filter((id) => id !== input.tipId), input.tipId];
+  setPref(ctx, TIPS_KEY, {
+    ...now,
+    day: input.today,
+    shownToday,
+    seen: seen.length >= input.resetAfter ? [input.tipId] : seen,
+  });
+}

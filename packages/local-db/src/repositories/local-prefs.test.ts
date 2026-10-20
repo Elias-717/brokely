@@ -7,9 +7,12 @@ import {
   dismissCard,
   getAppearance,
   getCardChoices,
+  getMoneyTips,
   getNickname,
   postponeCard,
+  recordTipShown,
   setAppearance,
+  setMoneyTipsEnabled,
   setNickname,
 } from "./local-prefs";
 
@@ -96,5 +99,25 @@ describe("phone-only preferences (D-30, D-32)", () => {
       dismissCard(ctx, NOV, "meals");
       expect(ctx.db.select().from(outboxOperations).all()).toHaveLength(0);
     });
+  });
+
+  it("money tips: on by default, counted per day, never repeated until most were seen (D-67)", () => {
+    expect(getMoneyTips(ctx.db)).toEqual({ enabled: true, day: null, shownToday: 0, seen: [] });
+
+    recordTipShown(ctx, { tipId: "a", today: "2026-10-21", resetAfter: 3 });
+    recordTipShown(ctx, { tipId: "b", today: "2026-10-21", resetAfter: 3 });
+    expect(getMoneyTips(ctx.db)).toMatchObject({
+      day: "2026-10-21",
+      shownToday: 2,
+      seen: ["a", "b"],
+    });
+
+    // A new day starts counting again; the third tip fills the list, so it starts over.
+    recordTipShown(ctx, { tipId: "c", today: "2026-10-22", resetAfter: 3 });
+    expect(getMoneyTips(ctx.db)).toMatchObject({ day: "2026-10-22", shownToday: 1, seen: ["c"] });
+
+    setMoneyTipsEnabled(ctx, false);
+    expect(getMoneyTips(ctx.db).enabled).toBe(false);
+    expect(ctx.db.select().from(outboxOperations).all()).toHaveLength(0); // phone-only
   });
 });

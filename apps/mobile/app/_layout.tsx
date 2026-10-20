@@ -13,6 +13,7 @@ import { ActivityIndicator, Text, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { db, repo } from "../src/db/client";
 import { ThemeProvider, useTheme } from "../src/ui/theme-context";
+import { MoneyTipProvider } from "../src/ui/money-tip";
 import { UndoProvider } from "../src/ui/undo";
 
 /**
@@ -52,7 +53,9 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ThemeProvider>
         <UndoProvider>
-          <AppStack />
+          <MoneyTipProvider>
+            <AppStack />
+          </MoneyTipProvider>
         </UndoProvider>
       </ThemeProvider>
     </SafeAreaProvider>

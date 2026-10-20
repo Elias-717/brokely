@@ -2,16 +2,18 @@ import {
   deleteAllData,
   exportJson,
   exportTransactionsCsv,
+  getMoneyTips,
   getNickname,
   getSettings,
   NICKNAME_MAX,
+  setMoneyTipsEnabled,
   setNickname,
   updateSettings,
   type Appearance,
 } from "@brokely/local-db";
 import { router, type Href } from "expo-router";
 import { useState } from "react";
-import { Pressable, Text, TextInput, View } from "react-native";
+import { Pressable, Switch, Text, TextInput, View } from "react-native";
 import { db, repo } from "../../src/db/client";
 import { useRead } from "../../src/db/use-read";
 import { shareExportFile } from "../../src/lib/export-file";
@@ -61,6 +63,7 @@ export default function MoreScreen() {
   const saved = useRead(getNickname);
   const [name, setName] = useState(saved ?? "");
   const settings = useRead(getSettings);
+  const tips = useRead(getMoneyTips);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const tz = phoneTimeZone();
 
@@ -139,6 +142,21 @@ export default function MoreScreen() {
       </Card>
       <Card>
         <Heading>Settings</Heading>
+        {/* Money tips after saving an expense (D-39, D-67); on by default. */}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: space.sm, minHeight: 48 }}>
+          <View style={{ flex: 1 }}>
+            <Text style={[type.strong, { color: colors.text }]}>Money tips</Text>
+            <Text style={[type.small, { color: colors.muted }]}>
+              A short tip from Brokely after you log spending, up to 3 a day
+            </Text>
+          </View>
+          <Switch
+            value={tips.enabled}
+            onValueChange={(on) => setMoneyTipsEnabled(repo, on)}
+            accessibilityLabel="Money tips after logging spending"
+            trackColor={{ true: colors.primary, false: colors.outline }}
+          />
+        </View>
         <Text style={[type.small, { color: colors.muted }]}>Week starts on</Text>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
           {WEEK_STARTS.map((w) => (

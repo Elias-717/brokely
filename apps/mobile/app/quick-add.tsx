@@ -28,6 +28,7 @@ import { Chip, Field } from "../src/ui/sheet-parts";
 import { fonts, MIN_TOUCH, radius, space, type } from "../src/ui/theme";
 import { KeyboardSafe } from "../src/ui/keyboard-safe";
 import { useTheme } from "../src/ui/theme-context";
+import { useMoneyTip } from "../src/ui/money-tip";
 import { useUndo } from "../src/ui/undo";
 import { useKeyboardOpen } from "../src/ui/use-keyboard";
 
@@ -71,6 +72,7 @@ const MORE: { kind: MoreKind; label: string }[] = [
 export default function QuickAdd() {
   const { colors } = useTheme();
   const showUndo = useUndo();
+  const offerTip = useMoneyTip();
   const day = useMemo(() => today(), []);
   const keyboardOpen = useKeyboardOpen();
   const categories = useRead((db) => categoriesByUse(db, day), [day]);
@@ -104,10 +106,17 @@ export default function QuickAdd() {
   const noteIdeas = picked ? (recentNotes.get(picked.id) ?? []) : [];
 
   /** Saves, then closes the sheet and offers Undo (D-38). */
-  const finish = <T,>(result: RepoResult<T>, message: string, undo: (value: T) => void) => {
+  const finish = <T,>(
+    result: RepoResult<T>,
+    message: string,
+    undo: (value: T) => void,
+    /** For spending: the category, so a money tip can relate to it (D-67). */
+    tipFor?: string,
+  ) => {
     if (!result.ok) return setProblem(refusalText(result.code, result.message));
     router.back();
     showUndo(message, () => undo(result.value));
+    if (tipFor !== undefined) offerTip(tipFor);
   };
 
   const save = () => {
@@ -153,6 +162,7 @@ export default function QuickAdd() {
           deleteTransaction(repo, transactionId);
           debtIds.forEach((id) => deleteDebt(repo, id));
         },
+        picked.name,
       );
     }
     return finish(
@@ -164,6 +174,7 @@ export default function QuickAdd() {
       }),
       `Saved ${formatRM(amount)} · ${label}`,
       ({ id }) => deleteTransaction(repo, id),
+      picked.name,
     );
   };
 
