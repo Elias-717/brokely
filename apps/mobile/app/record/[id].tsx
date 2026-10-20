@@ -32,9 +32,10 @@ import { refusalText } from "../../src/lib/messages";
 import { dayMonth, occurredAtFor, today } from "../../src/lib/today";
 import { Button } from "../../src/ui/components";
 import { pickDate } from "../../src/ui/date-picker";
+import { CategoryPicker } from "../../src/ui/category-picker";
 import { Keypad } from "../../src/ui/keypad";
 import { SheetPanel } from "../../src/ui/sheet";
-import { Chip, Field } from "../../src/ui/sheet-parts";
+import { Field } from "../../src/ui/sheet-parts";
 import { fonts, MIN_TOUCH, radius, space, type } from "../../src/ui/theme";
 import { KeyboardSafe } from "../../src/ui/keyboard-safe";
 import { useTheme } from "../../src/ui/theme-context";
@@ -284,16 +285,11 @@ function Sheet({
               </Text>
             </View>
           ) : canPickCategory ? (
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
-              {categories.map((c) => (
-                <Chip
-                  key={c.id}
-                  label={`${c.name} ${categoryEmoji(c.name)}`.trim()}
-                  selected={c.id === categoryId}
-                  onPress={() => setCategoryId(c.id)}
-                />
-              ))}
-            </View>
+            <CategoryPicker
+              categories={categories}
+              selectedId={categoryId}
+              onSelect={setCategoryId}
+            />
           ) : split ? (
             <Text style={[type.small, { color: colors.muted }]}>
               This was split with a friend, so its amounts are locked. To change them, delete it and

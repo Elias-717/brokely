@@ -1,4 +1,4 @@
-import { DEFAULT_CATEGORIES, formatRM, parseAmount, sen, type LocalDate } from "@brokely/domain";
+import { formatRM, parseAmount, sen, type LocalDate } from "@brokely/domain";
 import {
   addCategory,
   createDebt,
@@ -23,6 +23,7 @@ import { Button } from "../src/ui/components";
 import { pickDate } from "../src/ui/date-picker";
 import { Keypad } from "../src/ui/keypad";
 import { SheetPanel } from "../src/ui/sheet";
+import { CategoryPicker } from "../src/ui/category-picker";
 import { Chip, Field, Labelled } from "../src/ui/sheet-parts";
 import { fonts, MIN_TOUCH, radius, space, type } from "../src/ui/theme";
 import { KeyboardSafe } from "../src/ui/keyboard-safe";
@@ -39,9 +40,6 @@ const NOTE_PROMPT: Record<Mode, string> = {
   in: "✏️ What's it for? e.g. October money",
   more: "✏️ Add a note, e.g. for the trip",
 };
-
-/** Names of the default categories; anything else was typed by the student under Other. */
-const DEFAULT_NAMES = new Set(DEFAULT_CATEGORIES.map((c) => c.name));
 
 const FRIEND = "From a friend";
 /** Shortcut to More → I borrowed: saved as a debt, not money in. */
@@ -75,7 +73,6 @@ export default function QuickAdd() {
   const [problem, setProblem] = useState<string | null>(null);
   // Spent
   const [categoryId, setCategoryId] = useState<string | null>(null);
-  const [showAll, setShowAll] = useState(false);
   const [split, setSplit] = useState(false);
   /** Under Other: the student's own category name (D-44). */
   const [customName, setCustomName] = useState("");
@@ -89,12 +86,6 @@ export default function QuickAdd() {
   const amount = parseAmount(amountText);
   const share = parseAmount(shareText);
   const picked = categories.find((c) => c.id === categoryId) ?? categories[0];
-  // Categories the student named themselves before, offered again under Other (D-44).
-  const ownCategories = categories.filter(
-    (c) => !DEFAULT_NAMES.has(c.name) && c.kind !== "set_aside",
-  );
-  const showOwn =
-    mode === "spent" && !!picked && (picked.name === "Other" || !DEFAULT_NAMES.has(picked.name));
   const when = { localDate: date, occurredAt: occurredAtFor(date, day) };
   const cleanNote = note.trim();
   // One-tap notes typed recently for this category, e.g. "nasi lemak".
@@ -233,8 +224,6 @@ export default function QuickAdd() {
             ? `Save money in · ${formatRM(amount)}`
             : `Save ${formatRM(amount)}`;
 
-  const chips = showAll ? categories : categories.slice(0, 4);
-
   return (
     <KeyboardSafe style={{ justifyContent: "flex-end" }}>
       {/* Tapping the dimmed Home closes the sheet. */}
@@ -314,49 +303,25 @@ export default function QuickAdd() {
           </View>
 
           {mode === "spent" ? (
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
-              {chips.map((c) => (
-                <Chip
-                  key={c.id}
-                  label={`${c.name} ${categoryEmoji(c.name)}`.trim()}
-                  selected={c.id === picked?.id}
-                  onPress={() => setCategoryId(c.id)}
-                />
-              ))}
-              {!showAll && categories.length > 4 ? (
-                <Chip label="All categories" dashed onPress={() => setShowAll(true)} />
-              ) : null}
-            </View>
+            // One Category row; the list opens on tap and closes after a choice (D-51).
+            // It holds every category, the student's own ones too (D-44).
+            <CategoryPicker
+              categories={categories}
+              selectedId={picked?.id ?? null}
+              onSelect={(id) => {
+                setCategoryId(id);
+                setCustomName("");
+              }}
+            />
           ) : null}
-          {showOwn ? (
-            <View style={{ gap: space.sm }}>
-              {picked?.name === "Other" ? (
-                <Field
-                  value={customName}
-                  onChange={setCustomName}
-                  expanded
-                  placeholder="Name it (optional), e.g. Haircut"
-                  label="Name your own category, optional"
-                />
-              ) : null}
-              {ownCategories.length > 0 ? (
-                <Labelled label="Your own categories">
-                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
-                    {ownCategories.map((c) => (
-                      <Chip
-                        key={c.id}
-                        label={c.name}
-                        selected={c.id === picked?.id}
-                        onPress={() => {
-                          setCategoryId(c.id);
-                          setCustomName("");
-                        }}
-                      />
-                    ))}
-                  </View>
-                </Labelled>
-              ) : null}
-            </View>
+          {mode === "spent" && picked?.name === "Other" ? (
+            <Field
+              value={customName}
+              onChange={setCustomName}
+              expanded
+              placeholder="Name it (optional), e.g. Haircut"
+              label="Name your own category, optional"
+            />
           ) : null}
           {mode === "in" ? (
             <Labelled label="From">
