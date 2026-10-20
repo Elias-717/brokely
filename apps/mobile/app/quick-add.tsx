@@ -387,80 +387,78 @@ export default function QuickAdd() {
             </View>
           ) : null}
 
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Date: ${date === day ? "today" : dayMonth(date)}. Change`}
-            onPress={async () => {
-              const chosen = await pickDate(date);
-              if (chosen) setDate(chosen);
-            }}
-            style={{
-              alignSelf: "flex-start",
-              minHeight: MIN_TOUCH,
-              justifyContent: "center",
-              paddingHorizontal: space.md,
-              borderRadius: radius.button,
-              borderWidth: 2,
-              borderColor: colors.outline,
-              backgroundColor: colors.card,
-            }}
-          >
-            <Text style={[type.strong, { color: colors.text, fontSize: 15 }]}>
-              📅 {date === day ? `Today, ${dayMonth(day)}` : dayMonth(date)}
-            </Text>
-          </Pressable>
-
-          {mode === "spent" ? (
-            <View
+          {/* Date and "Split" share one row; the friend's details open below (D-53). */}
+          <View style={{ flexDirection: "row", gap: space.sm }}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Date: ${date === day ? "today" : dayMonth(date)}. Change`}
+              onPress={async () => {
+                const chosen = await pickDate(date);
+                if (chosen) setDate(chosen);
+              }}
               style={{
+                flex: 1,
+                minHeight: MIN_TOUCH,
+                justifyContent: "center",
+                paddingHorizontal: space.sm,
                 borderRadius: radius.button,
                 borderWidth: 2,
                 borderColor: colors.outline,
                 backgroundColor: colors.card,
-                paddingHorizontal: space.sm,
-                gap: space.sm,
-                paddingBottom: split ? space.sm : 0,
               }}
             >
-              <View
+              <Text style={[type.strong, { color: colors.text, fontSize: 15 }]} numberOfLines={1}>
+                📅 {date === day ? `Today, ${dayMonth(day)}` : dayMonth(date)}
+              </Text>
+            </Pressable>
+            {mode === "spent" ? (
+              <Pressable
+                accessibilityRole="switch"
+                accessibilityState={{ checked: split }}
+                accessibilityLabel="Split with a friend"
+                onPress={() => setSplit((on) => !on)}
                 style={{
+                  flex: 1,
+                  minHeight: MIN_TOUCH,
                   flexDirection: "row",
                   alignItems: "center",
                   justifyContent: "space-between",
-                  minHeight: MIN_TOUCH,
+                  paddingLeft: space.sm,
+                  borderRadius: radius.button,
+                  borderWidth: 2,
+                  borderColor: split ? colors.primary : colors.outline,
+                  backgroundColor: split ? colors.cardTint : colors.card,
                 }}
               >
-                <Text style={[type.strong, { color: colors.text, fontSize: 15 }]}>
-                  Split with a friend
+                <Text style={[type.strong, { color: colors.text, fontSize: 15 }]} numberOfLines={1}>
+                  🤝 Split
                 </Text>
                 <Switch
                   value={split}
                   onValueChange={setSplit}
-                  accessibilityLabel="Split with a friend"
+                  importantForAccessibility="no"
                   trackColor={{ true: colors.primary, false: colors.outline }}
                 />
-              </View>
-              {split ? (
-                <View style={{ flexDirection: "row", gap: space.sm }}>
-                  <View style={{ flex: 3 }}>
-                    <Field
-                      value={friend}
-                      onChange={setFriend}
-                      placeholder="Friend's name"
-                      expanded
-                    />
-                  </View>
-                  <View style={{ flex: 2 }}>
-                    <Field
-                      value={shareText}
-                      onChange={setShareText}
-                      placeholder="Their share"
-                      numeric
-                    />
-                  </View>
+              </Pressable>
+            ) : null}
+          </View>
+
+          {mode === "spent" && split ? (
+            <View style={{ gap: space.sm }}>
+              <View style={{ flexDirection: "row", gap: space.sm }}>
+                <View style={{ flex: 3 }}>
+                  <Field value={friend} onChange={setFriend} placeholder="Friend's name" expanded />
                 </View>
-              ) : null}
-              {split && amount !== null && share !== null && share > 0 && share < amount ? (
+                <View style={{ flex: 2 }}>
+                  <Field
+                    value={shareText}
+                    onChange={setShareText}
+                    placeholder="Their share"
+                    numeric
+                  />
+                </View>
+              </View>
+              {amount !== null && share !== null && share > 0 && share < amount ? (
                 <Text style={[type.small, { color: colors.muted }]}>
                   Your share {formatRM(sen(amount - share))} counts as spending;{" "}
                   {friend.trim() || "your friend"} owes you {formatRM(share)}.
