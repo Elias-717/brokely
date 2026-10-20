@@ -9,7 +9,7 @@ import {
   recordTransaction,
   type RepoResult,
 } from "@brokely/local-db";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
 import { KeyboardAvoidingView, Pressable, ScrollView, Switch, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -52,7 +52,9 @@ export default function QuickAdd() {
   const day = useMemo(() => today(), []);
   const categories = useRead((db) => categoriesByUse(db, day), [day]);
 
-  const [mode, setMode] = useState<Mode>("spent");
+  // Debts opens it on More → I lent / I borrowed (S7 "+ Add").
+  const params = useLocalSearchParams<{ more?: MoreKind }>();
+  const [mode, setMode] = useState<Mode>(params.more ? "more" : "spent");
   const [amountText, setAmountText] = useState("");
   const [date, setDate] = useState<LocalDate>(day);
   const [note, setNote] = useState("");
@@ -65,7 +67,7 @@ export default function QuickAdd() {
   const [shareText, setShareText] = useState("");
   // Money in / More
   const [from, setFrom] = useState(FROM[0]!);
-  const [moreKind, setMoreKind] = useState<MoreKind>("transfer");
+  const [moreKind, setMoreKind] = useState<MoreKind>(params.more ?? "transfer");
   const [person, setPerson] = useState("");
 
   const amount = parseAmount(amountText);

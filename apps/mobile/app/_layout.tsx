@@ -57,6 +57,9 @@ export default function RootLayout() {
   );
 }
 
+/** Bottom sheets that slide up over the current screen (U-10). */
+const SHEETS = ["bills/pay/[id]", "debts/repay/[id]", "debts/write-off/[id]"];
+
 function AppStack() {
   const { colors, scheme } = useTheme();
   return (
@@ -74,10 +77,13 @@ function AppStack() {
           name="record/[id]"
           options={{ presentation: "transparentModal", animation: "slide_from_bottom" }}
         />
-        <Stack.Screen
-          name="bills/pay/[id]"
-          options={{ presentation: "transparentModal", animation: "slide_from_bottom" }}
-        />
+        {SHEETS.map((name) => (
+          <Stack.Screen
+            key={name}
+            name={name}
+            options={{ presentation: "transparentModal", animation: "slide_from_bottom" }}
+          />
+        ))}
       </Stack>
       <StatusBar style={scheme === "dark" ? "light" : "dark"} />
     </>
