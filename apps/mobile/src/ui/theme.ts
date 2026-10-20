@@ -28,6 +28,12 @@ export interface Colors {
   tabInactive: string;
   /** Warnings only; over pace is never red (rule 9). */
   warning: string;
+  /**
+   * Chart slices in fixed order, then "Everything else" (FR-INS-03). Checked with the dataviz
+   * validator against each mode's card colour: lightness, chroma, colour-blind separation.
+   */
+  chart: readonly string[];
+  chartOther: string;
 }
 
 export const lightColors: Colors = {
@@ -49,6 +55,8 @@ export const lightColors: Colors = {
   tabActive: "#4E6127",
   tabInactive: "#5F665A",
   warning: "#8A5A00",
+  chart: ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#6250d6"],
+  chartOther: "#898781",
 };
 
 export const darkColors: Colors = {
@@ -70,6 +78,8 @@ export const darkColors: Colors = {
   tabActive: "#9DBF5E",
   tabInactive: "#9AA196",
   warning: "#E0B460",
+  chart: ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#9085e9"],
+  chartOther: "#898781",
 };
 
 /** Bundled fonts (loaded in app/_layout.tsx): Lilita One for headings, Nunito for text. */
