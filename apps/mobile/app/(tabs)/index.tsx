@@ -9,13 +9,13 @@ import {
 } from "@brokely/local-db";
 import { router } from "expo-router";
 import { useEffect } from "react";
-import { Pressable, Text, useWindowDimensions, View } from "react-native";
+import { Image, Pressable, Text, useWindowDimensions, View } from "react-native";
 import { repo } from "../../src/db/client";
 import { useRead } from "../../src/db/use-read";
 import { homeStatus } from "../../src/lib/brokely-lines";
 import { categoryEmoji, essentialMeta } from "../../src/lib/essentials-meta";
 import { readHome } from "../../src/lib/home-model";
-import { dayMonth, today, weekdayName } from "../../src/lib/today";
+import { dayMonth, today } from "../../src/lib/today";
 import { AnimatedAmount } from "../../src/ui/animated-amount";
 import { BrokelyAvatar } from "../../src/ui/chat";
 import { Button, Screen, Sticker } from "../../src/ui/components";
@@ -23,6 +23,9 @@ import { ProgressRing } from "../../src/ui/progress-ring";
 import { fonts, radius, space, type } from "../../src/ui/theme";
 import { useTheme } from "../../src/ui/theme-context";
 import { useUndo } from "../../src/ui/undo";
+
+/** The full mascot picture (author's main design). */
+const MASCOT = require("../../assets/mascot/main_design.png");
 
 /** A forecast bound is a whole RM10 step (R-10), so it reads best without sen. */
 const wholeRM = (amount: Sen) => `RM${Math.round(amount / 100)}`;
@@ -49,24 +52,25 @@ export default function HomeScreen() {
   // The ring stays smaller than the amount beside it, also on narrow phones (D-58).
   const ringSize = Math.round(Math.min(104, Math.max(80, width * 0.24)));
 
+  // Home header (D-65): the full Brokely picture beside the greeting; no date line, the
+  // budget card already says how many days are left.
   const header = (
     <View style={{ flexDirection: "row", alignItems: "center", gap: space.md }}>
-      <BrokelyAvatar size={56} />
+      <Image
+        source={MASCOT}
+        style={{ width: 72, height: 90 }}
+        resizeMode="contain"
+        accessibilityIgnoresInvertColors
+        accessibilityLabel="Brokely"
+      />
       <View style={{ gap: 2, flex: 1 }}>
-        <Text
-          style={[
-            type.small,
-            { color: colors.muted, textTransform: "uppercase", letterSpacing: 0.5 },
-          ]}
-        >
-          {weekdayName(day)}, {dayMonth(day)}
-          {home.kind === "plan" ? ` · day ${home.dayOfPlan} of ${home.planDays}` : ""}
-        </Text>
         <Text style={[type.title, { color: colors.text }]} numberOfLines={1}>
           {nickname ? `Hi, ${nickname}` : "Hi there"}
         </Text>
         {home.kind === "plan" ? (
-          <Text style={[type.small, { color: colors.muted }]}>{homeStatus[home.status]}</Text>
+          <Text style={[type.body, { color: colors.muted, fontSize: 15 }]}>
+            {homeStatus[home.status]}
+          </Text>
         ) : null}
       </View>
     </View>

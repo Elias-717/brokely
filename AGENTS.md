@@ -92,7 +92,7 @@ SRS v1.6 (PRD v1.5) includes every decision up to D-27 and R-13; D-28 is layout 
   3. ~~Guided setup S2a–S2d~~ **done** (`app/guided.tsx`, D-63, drafts in `drafts.ts`). Done screens, for reference, each from its Figma frame (`docs/design/wireframes.md`; S1 = node 9:288, S1b 9:306, S1c 16:330, S1d 16:349): S3a Home with essential cards (`acceptEssentialCard`; card queue Later/Not for me per cycle in `local_prefs`, D-30) → S4/S4c quick add with Undo (`recordPurchase`, `recordMoneyIn`, `deleteTransaction`) → S5 Records → S6/S6b Bills + Mark paid → S7/S7b Debts → S8 Insights (`computeProgress`) → S11 Wallet check → S9 More, settings (`user_settings` repo still missing), export/delete → S10 cycle finished. Guided setup S2a–S2d after the main flow.
   4. All 0.1 features are built; Phase 3 closes after the new dev build on the reference phone and a final check of the 0.1 acceptance tests
   5. **D-46 part 2:** after a finished plan, suggestions from the student's own spending (FR-PLN-13) instead of the fixed shares; still suggestions only, never applied
-  4. Later: server database schema (Drizzle + PostgreSQL) before Phase 4; SRS v1.7 / PRD v1.6 (add D-29…D-63 and R-14 (D-47 rewords FR-MAS-08) to the change record (D-43 renames a default category); D-41 needs an FR/AC for debts in quick start; D-40 needs NFR-20 reworded; D-39 needs a new FR/AC for in-app money tips; dark mode is new 0.1 scope; D-36 rewords AC-02 and AC-54: laundry is never a dated bill) when interviews happen
+  4. Later: server database schema (Drizzle + PostgreSQL) before Phase 4; SRS v1.7 / PRD v1.6 (add D-29…D-65 and R-14 (D-47 rewords FR-MAS-08) to the change record (D-43 renames a default category); D-41 needs an FR/AC for debts in quick start; D-40 needs NFR-20 reworded; D-39 needs a new FR/AC for in-app money tips; dark mode is new 0.1 scope; D-36 rewords AC-02 and AC-54: laundry is never a dated bill) when interviews happen
 - **Open questions:** see section 11
 
 ---
@@ -138,7 +138,7 @@ Build from the inside out: correct numbers first, then the offline app, then the
 | **1 Design** | ERD with keys and constraints; sync contract (`POST /sync/push`, `GET /sync/pull?since=`); low-detail wireframes; mascot art brief (3 stages × 4 moods) | Golden path (AC-04) traced through every table and endpoint on paper |
 | **2 Domain core** | BR-01…BR-26 in `packages/domain`; AC-02…AC-17 as automated tests; backtest data from the author's months as fixtures | 100% of BR-xx covered by tests |
 | **3 Offline app** | expo-sqlite + Drizzle, repositories (record + outbox in one transaction). Screens in order: plan wizard → quick add/records (with splits) → Home → bills/Mark paid → debts → insights → check-in → settings/export | All of 0.1 works on one phone, offline, without an account |
-| **4 Backend + sync** | Fastify + PostgreSQL; sign-in (choose the provider at the start of this phase); idempotent push, versioned writes, reject-and-notify conflicts, delete markers, pull cursor; local-only → account linking | AC-20…AC-24 pass between two real phones |
+| **4 Backend + sync** | Fastify on Google Cloud Run + Supabase (sign-in and PostgreSQL), Singapore (D-64); idempotent push, versioned writes, reject-and-notify conflicts, delete markers, pull cursor; local-only → account linking | AC-20…AC-24 pass between two real phones |
 | **5 Release 0.1** | NFR checks, accessibility, privacy review (PDPA), export/delete, backup drill, usability pilot (5–10 students) | AC-01…AC-30 pass; Play internal testing |
 | **6 Release 0.2** | Kotlin TNG listener (Expo Modules API) + parser on fixtures; pending imports, dedup, "Already logged?", merchant memory; fun notification engine; mascot pictures and XP; fill-a-gap estimates; cycle comparison | AC-31…AC-44 pass on a real phone with real TNG payments |
 | **7 Decide 0.3** | Coins and cosmetics only if the pilot wants them | Pilot data reviewed |
@@ -249,7 +249,6 @@ pnpm --filter @brokely/api dev   # run the API locally
 |---|---|
 | Before 0.2 import work | Full TNG notification formats (QR payment, top-up, refund) and whether a transaction ID exists in notification extras (delayed until testing access) |
 | Sync review | Open points in `docs/design/sync-api.md` section 12 |
-| Phase 4 start | Sign-in provider (library inside our API, e.g. Better Auth, vs managed, e.g. Firebase Auth); hosting provider |
 | Before 0.2 mascot screen | XP thresholds for the 3 growth stages; priority between moods (e.g. proud vs worried on the same day) |
 | Before 0.2 money tips | Daily cap and gap, who writes the first tips, tips related to the record or general, XP for tips (`docs/design/money-tips.md`) |
 | Before 0.3 AI mascot (D-40) | Image provider, one picture or all 12 moods, cost cap per student, photo consent wording |
