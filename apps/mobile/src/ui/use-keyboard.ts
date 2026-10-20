@@ -18,3 +18,19 @@ export function useKeyboardOpen(): boolean {
   }, []);
   return open;
 }
+
+/** The open keyboard's height in dp, 0 when closed; used to keep sheets inside the screen. */
+export function useKeyboardHeight(): number {
+  const [height, setHeight] = useState(0);
+  useEffect(() => {
+    const shown = Keyboard.addListener("keyboardDidShow", (e) =>
+      setHeight(e.endCoordinates.height),
+    );
+    const hidden = Keyboard.addListener("keyboardDidHide", () => setHeight(0));
+    return () => {
+      shown.remove();
+      hidden.remove();
+    };
+  }, []);
+  return height;
+}

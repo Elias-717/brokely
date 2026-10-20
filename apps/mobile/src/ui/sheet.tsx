@@ -8,10 +8,12 @@ import {
   Pressable,
   ScrollView,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useReduceMotion } from "./motion";
+import { useKeyboardHeight } from "./use-keyboard";
 import { fonts, radius, space, type } from "./theme";
 import { useTheme } from "./theme-context";
 
@@ -100,6 +102,11 @@ export function SheetPanel({ top, children }: { top?: ReactNode; children?: Reac
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const reduce = useReduceMotion();
+  // A real number, not "94%": the sheet's parent has no fixed height, so a percentage never
+  // limited it and tall sheets ran off the top with the keypad drawn over them.
+  const { height: screenHeight } = useWindowDimensions();
+  const keyboard = useKeyboardHeight();
+  const maxHeight = screenHeight - insets.top - space.md - keyboard;
   const offset = useRef(new Animated.Value(0)).current;
 
   const drag = useMemo(
@@ -128,7 +135,7 @@ export function SheetPanel({ top, children }: { top?: ReactNode; children?: Reac
   return (
     <Animated.View
       style={{
-        maxHeight: "94%",
+        maxHeight,
         backgroundColor: colors.background,
         borderTopWidth: 2,
         borderColor: colors.outline,
