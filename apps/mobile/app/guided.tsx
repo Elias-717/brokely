@@ -1,5 +1,6 @@
 import {
   addDays,
+  checkGuidedBudget,
   cycleFromInclusive,
   essentialSuggestion,
   formatRM,
@@ -34,6 +35,7 @@ import { router } from "expo-router";
 import { useMemo, useState } from "react";
 import { Text, View } from "react-native";
 import { db, repo } from "../src/db/client";
+import { useRead } from "../src/db/use-read";
 import { categoryEmoji, essentialMeta } from "../src/lib/essentials-meta";
 import { refusalText } from "../src/lib/messages";
 import { dayMonth, today } from "../src/lib/today";
@@ -123,6 +125,22 @@ export default function GuidedSetup() {
   const [each, setEach] = useState<Record<string, string>>({});
   const [askOver, setAskOver] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
+  /** Over the plan's budget: refuse, offer to keep it or to change the plan first (D-66). */
+  const [overPlan, setOverPlan] = useState(false);
+  // The current plan's budget, read live so a change made in Your plan applies on return.
+  const planBudget = useRead(
+    (db) =>
+      start.mode === "edit" ? sen(getPlan(db, start.cycleId)?.revision.budgetSen ?? 0) : null,
+    [start.mode, start.cycleId],
+  );
+
+  /** False (and shows the refusal) when the budget is above the plan's (D-66). */
+  const withinPlan = (value: Sen | null): boolean => {
+    if (planBudget === null || value === null) return true;
+    const ok = checkGuidedBudget(value, planBudget).ok;
+    setOverPlan(!ok);
+    return ok;
+  };
 
   const budget = parseAmount(budgetText);
   const planDays = endDate >= startDate ? lengthInDays(cycleFromInclusive(startDate, endDate)) : 0;
@@ -165,6 +183,7 @@ export default function GuidedSetup() {
   const next = () => {
     if (step === 1) {
       if (endDate < startDate) return setProblem("The end date is before the start date.");
+      if (!withinPlan(budget)) return;
       if (start.mode === "new" && datesClash(db, startDate, endDate)) {
         return setProblem("You already have a plan for some of these dates. Pick later dates.");
       }
@@ -188,6 +207,7 @@ export default function GuidedSetup() {
 
   const approve = (acknowledged: boolean) => {
     if (budget === null || budget <= 0) return setProblem("Type a budget above zero.");
+    if (!withinPlan(budget)) return setStep(1);
     if (totals && totals.shortfallSen > 0 && !acknowledged) return setAskOver(true);
     if (!saveDraft()) return;
     const approved =
@@ -276,12 +296,45 @@ export default function GuidedSetup() {
           <Labelled label={`Budget for these ${planDays} days (RM)`}>
             <Field
               value={budgetText}
-              onChange={setBudgetText}
+              onChange={(text) => {
+                setBudgetText(text);
+                setOverPlan(false);
+              }}
               placeholder="0.00"
               label="Budget"
               numeric
             />
           </Labelled>
+          {planBudget !== null ? (
+            <Text style={[type.small, { color: colors.muted }]}>
+              Your plan has {formatRM(planBudget)}. You can plan up to that here.
+            </Text>
+          ) : null}
+          {overPlan && planBudget !== null && budget !== null ? (
+            <Sticker background={colors.cardTint} style={{ padding: space.md, gap: space.sm }}>
+              <Text style={[type.strong, { color: colors.text }]}>
+                {formatRM(budget)} is more than the {formatRM(planBudget)} in your plan.
+              </Text>
+              <Text style={[type.small, { color: colors.muted }]}>
+                Planning more than you have isn't possible here. Got more money? Change your plan's
+                budget first, then come back.
+              </Text>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
+                <Button
+                  label={`Use ${formatRM(planBudget)}`}
+                  onPress={() => {
+                    setBudgetText(asTyped(planBudget));
+                    setOverPlan(false);
+                  }}
+                />
+                <Button
+                  label="Change my plan first"
+                  variant="secondary"
+                  onPress={() => router.push("/plan")}
+                />
+              </View>
+            </Sticker>
+          ) : null}
         </>
       ) : null}
 

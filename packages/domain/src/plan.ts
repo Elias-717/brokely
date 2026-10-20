@@ -158,3 +158,15 @@ export function checkPayback(
   }
   return OK;
 }
+
+/**
+ * Guided setup over an existing plan (D-66): its budget can't exceed the plan's current budget,
+ * which is the money the student said they have. To plan more, they change the plan's budget
+ * first, on purpose, in Your plan (a new revision, D-03).
+ */
+export function checkGuidedBudget(budgetSen: Sen, planBudgetSen: Sen): RuleResult {
+  if (budgetSen <= 0) return fail("VALIDATION_FAILED", "Type a budget above zero");
+  return budgetSen <= planBudgetSen
+    ? OK
+    : fail("VALIDATION_FAILED", "That's more than the budget in your plan");
+}

@@ -3,6 +3,7 @@ import { sen } from "./money";
 import { txn } from "./test-fixtures";
 import {
   budgetAfterPayback,
+  checkGuidedBudget,
   checkPayback,
   checkCanApprove,
   checkCanCreateDraft,
@@ -144,5 +145,14 @@ describe("debts from before the plan (D-41)", () => {
   it("refuses paybacks that leave nothing to plan with", () => {
     expect(checkPayback(sen(10000), sen(4000), sen(9000), sen(6000)).ok).toBe(false);
     expect(checkPayback(sen(10000), sen(4000), sen(9000), sen(5999)).ok).toBe(true);
+  });
+});
+
+describe("guided setup budget stays within the plan (D-66)", () => {
+  it("allows up to the plan's budget, refuses more and zero", () => {
+    expect(checkGuidedBudget(sen(6000), sen(6000)).ok).toBe(true);
+    expect(checkGuidedBudget(sen(5000), sen(6000)).ok).toBe(true);
+    expect(checkGuidedBudget(sen(6001), sen(6000))).toMatchObject({ code: "VALIDATION_FAILED" });
+    expect(checkGuidedBudget(sen(0), sen(6000)).ok).toBe(false);
   });
 });
