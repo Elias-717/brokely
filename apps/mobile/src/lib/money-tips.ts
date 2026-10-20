@@ -300,8 +300,11 @@ const TOPICS_BY_CATEGORY: Record<string, readonly TipTopic[]> = {
   Savings: ["savings"],
 };
 
-/** At most this many tips a day, so they stay special (open question 1, default 3). */
-export const TIPS_PER_DAY = 3;
+/**
+ * Tips per day: no limit, a tip after every expense (author, D-69). Kept as a setting so a cap
+ * can come back after the pilot if students find it too much.
+ */
+export const TIPS_PER_DAY = Number.POSITIVE_INFINITY;
 
 /**
  * Picks the next tip: one not seen yet that fits the category (most of the time), otherwise any

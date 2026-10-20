@@ -34,7 +34,7 @@ const TipContext = createContext<((categoryName: string | null) => void) | null>
 /**
  * Money tips after saving an expense (D-39, D-67, D-68): a friendly message slides in at the top,
  * from the left or the right at random,
- * clear of the Undo bar at the bottom. Off in More → Settings; at most a few a day; tips don't
+ * clear of the Undo bar at the bottom. Off in More → Settings; one after every expense; tips don't
  * repeat until most have been shown.
  */
 export function MoneyTipProvider({ children }: { children: ReactNode }) {
