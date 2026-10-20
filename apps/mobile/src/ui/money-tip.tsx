@@ -32,12 +32,14 @@ const TIP_MS = 7000;
 const TipContext = createContext<((categoryName: string | null) => void) | null>(null);
 
 /**
- * Money tips after saving an expense (D-39, D-67): a friendly message slides in at the top,
+ * Money tips after saving an expense (D-39, D-67, D-68): a friendly message slides in at the top,
+ * from the left or the right at random,
  * clear of the Undo bar at the bottom. Off in More → Settings; at most a few a day; tips don't
  * repeat until most have been shown.
  */
 export function MoneyTipProvider({ children }: { children: ReactNode }) {
-  const [tip, setTip] = useState<{ key: number; tip: MoneyTip } | null>(null);
+  /** `side` is -1 (from the left) or 1 (from the right), picked at random each time (D-68). */
+  const [tip, setTip] = useState<{ key: number; tip: MoneyTip; side: -1 | 1 } | null>(null);
   const nextKey = useRef(0);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -56,13 +58,16 @@ export function MoneyTipProvider({ children }: { children: ReactNode }) {
     });
     // A moment after the sheet closes, so the save and the tip don't arrive at once.
     clearTimeout(timer.current);
-    timer.current = setTimeout(() => setTip({ key: nextKey.current++, tip: chosen }), 600);
+    const side = Math.random() < 0.5 ? -1 : 1;
+    timer.current = setTimeout(() => setTip({ key: nextKey.current++, tip: chosen, side }), 600);
   }, []);
 
   return (
     <TipContext.Provider value={offer}>
       {children}
-      {tip ? <TipBanner key={tip.key} tip={tip.tip} onDone={() => setTip(null)} /> : null}
+      {tip ? (
+        <TipBanner key={tip.key} tip={tip.tip} side={tip.side} onDone={() => setTip(null)} />
+      ) : null}
     </TipContext.Provider>
   );
 }
@@ -74,21 +79,23 @@ export function useMoneyTip() {
   return offer;
 }
 
-function TipBanner({ tip, onDone }: { tip: MoneyTip; onDone: () => void }) {
+function TipBanner({ tip, side, onDone }: { tip: MoneyTip; side: -1 | 1; onDone: () => void }) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const reduce = useReduceMotion();
-  const x = useRef(new Animated.Value(reduce ? 0 : width)).current;
+  // Starts off screen on its side and leaves the same way.
+  const offscreen = side * width;
+  const x = useRef(new Animated.Value(reduce ? 0 : offscreen)).current;
 
   const leave = useCallback(() => {
     Animated.timing(x, {
-      toValue: width,
+      toValue: offscreen,
       duration: reduce ? 0 : 220,
       easing: Easing.in(Easing.cubic),
       useNativeDriver: true,
     }).start(onDone);
-  }, [x, width, reduce, onDone]);
+  }, [x, offscreen, reduce, onDone]);
 
   useEffect(() => {
     AccessibilityInfo.announceForAccessibility(`Money tip: ${tip.text}`);
