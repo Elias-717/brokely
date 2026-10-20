@@ -2,14 +2,16 @@ import { LilitaOne_400Regular } from "@expo-google-fonts/lilita-one/400Regular";
 import { Nunito_500Medium } from "@expo-google-fonts/nunito/500Medium";
 import { Nunito_700Bold } from "@expo-google-fonts/nunito/700Bold";
 import { Nunito_800ExtraBold } from "@expo-google-fonts/nunito/800ExtraBold";
+import { renameRetiredDefaults } from "@brokely/local-db";
 import migrations from "@brokely/local-db/migrations";
 import { useMigrations } from "drizzle-orm/expo-sqlite/migrator";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { useEffect } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { db } from "../src/db/client";
+import { db, repo } from "../src/db/client";
 import { ThemeProvider, useTheme } from "../src/ui/theme-context";
 import { UndoProvider } from "../src/ui/undo";
 
@@ -62,6 +64,10 @@ const SHEETS = ["bills/pay/[id]", "debts/repay/[id]", "debts/write-off/[id]", "w
 
 function AppStack() {
   const { colors, scheme } = useTheme();
+  // Category names changed after some phones were set up (D-43).
+  useEffect(() => {
+    renameRetiredDefaults(repo);
+  }, []);
   return (
     <>
       <Stack

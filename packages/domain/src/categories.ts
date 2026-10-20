@@ -15,7 +15,7 @@ export interface DefaultCategory {
 
 export const DEFAULT_CATEGORIES: readonly DefaultCategory[] = [
   { key: "meals", name: "Meals", kind: "essential" },
-  { key: "groceries", name: "Groceries & toiletries", kind: "essential" },
+  { key: "groceries", name: "Home necessities", kind: "essential" }, // was "Groceries & toiletries" (D-43)
   { key: "laundry", name: "Laundry", kind: "essential" },
   { key: "transport", name: "Transport", kind: "essential" },
   { key: "phone", name: "Phone & internet", kind: "essential", mayBeBill: true },

@@ -137,11 +137,13 @@ function Chat({
   const addLabel = spentBeforeSen > 0 ? "Add to my plan" : `Add ${formatRM(total)} to my plan`;
 
   const firstQuestion = (): [Line, Step] =>
-    meta.style === "often"
-      ? [say.askHowOften(category.name), "often"]
-      : meta.style === "count"
-        ? [say.askCount(meta.unit), "count"]
-        : [say.askBillOrTopUp(), "bill-or-topup"];
+    meta.style === "daily"
+      ? [say.askDaily(), "amount"]
+      : meta.style === "often"
+        ? [say.askHowOften(category.name), "often"]
+        : meta.style === "count"
+          ? [say.askCount(meta.unit), "count"]
+          : [say.askBillOrTopUp(), "bill-or-topup"];
 
   useEffect(() => {
     const [question, step] = firstQuestion();
@@ -314,7 +316,7 @@ function Chat({
         return (
           <AmountComposer
             label={
-              meta.style === "often"
+              meta.style === "often" || meta.style === "daily"
                 ? `Type how much ${often === "day" ? "a day" : often === "week" ? "a week" : "a month"}`
                 : `Type how much each ${meta.unit}`
             }

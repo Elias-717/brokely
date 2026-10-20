@@ -4,6 +4,7 @@ import type { Period } from "@brokely/domain";
  * How each essential card asks its questions (D-35, D-36). Matched by the default category
  * names (D-22); an essential the student added themselves uses the "other" entry.
  *
+ * - "daily": straight to "about how much a day?" (Meals: everyone eats every day, D-42).
  * - "often": how often (every day / week / month), then how much each time.
  * - "count": about how many times a month (1/2/3/4+/Not sure), then how much each time.
  * - "bill-or-topup": a monthly bill on a set day, or top-ups as needed (count style).
@@ -14,7 +15,7 @@ export interface EssentialMeta {
   readonly intro: string;
   /** The thing it counts, for "about how much each …". */
   readonly unit: string;
-  readonly style: "often" | "count" | "bill-or-topup";
+  readonly style: "daily" | "often" | "count" | "bill-or-topup";
   /** For "often": the most likely period, offered first. */
   readonly likely: Period;
 }
@@ -22,14 +23,14 @@ export interface EssentialMeta {
 const META: Record<string, EssentialMeta> = {
   Meals: {
     emoji: "🍛",
-    intro: "Let's plan your meals",
+    intro: "Meals first! A fed brain studies better, so this one comes before everything else.",
     unit: "time",
-    style: "often",
+    style: "daily",
     likely: "day",
   },
-  "Groceries & toiletries": {
+  "Home necessities": {
     emoji: "🧴",
-    intro: "Groceries and toiletries next",
+    intro: "Home necessities next: groceries, toiletries, cleaning things",
     unit: "time",
     style: "often",
     likely: "week",

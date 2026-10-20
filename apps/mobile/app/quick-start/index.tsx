@@ -36,7 +36,7 @@ import { space } from "../../src/ui/theme";
 import { useConversation } from "../../src/ui/use-conversation";
 
 /** The "Mostly on" choices for catching up, in this order (wireframe S1d). */
-const MOSTLY_ON = ["Meals", "Snacks & treats", "Groceries & toiletries", "Other"];
+const MOSTLY_ON = ["Meals", "Snacks & treats", "Home necessities", "Other"];
 
 type Step =
   | "choose" // S1c: already spent some?

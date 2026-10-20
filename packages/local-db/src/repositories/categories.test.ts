@@ -8,6 +8,7 @@ import {
   deleteCategory,
   listCategories,
   renameCategory,
+  renameRetiredDefaults,
   seedDefaultCategories,
 } from "./categories";
 import type { RepoContext } from "./context";
@@ -126,5 +127,15 @@ describe("category repository", () => {
       ok: false,
       code: "NOT_FOUND",
     });
+  });
+
+  it("renames the old Groceries & toiletries to Home necessities once, keeping its ID (D-43)", () => {
+    seedDefaultCategories(ctx);
+    const home = listCategories(ctx.db).find((c) => c.name === "Home necessities")!;
+    renameCategory(ctx, home.id, "Groceries & toiletries"); // a phone set up before D-43
+
+    expect(renameRetiredDefaults(ctx)).toEqual({ ok: true, value: { renamed: 1 } });
+    expect(listCategories(ctx.db).find((c) => c.id === home.id)?.name).toBe("Home necessities");
+    expect(renameRetiredDefaults(ctx)).toEqual({ ok: true, value: { renamed: 0 } });
   });
 });

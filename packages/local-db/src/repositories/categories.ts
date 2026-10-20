@@ -109,6 +109,29 @@ export function renameCategory(ctx: RepoContext, id: string, name: string) {
   return write(ctx, (scope) => updateCategory(scope, id, { name: name.trim() }));
 }
 
+/** Default names that were changed later, old → new (D-43). */
+const RENAMED_DEFAULTS: readonly [string, string][] = [
+  ["Groceries & toiletries", "Home necessities"],
+];
+
+/**
+ * Gives phones set up before a rename the new default name, once (D-43). Skipped when the
+ * student already has a category with the new name, so nothing clashes.
+ */
+export function renameRetiredDefaults(ctx: RepoContext) {
+  return write(ctx, (scope) => {
+    const live = listCategories(scope.tx, { includeArchived: true });
+    let renamed = 0;
+    for (const [from, to] of RENAMED_DEFAULTS) {
+      const old = live.find((c) => c.name === from);
+      if (!old || live.some((c) => c.name === to)) continue;
+      updateCategory(scope, old.id, { name: to });
+      renamed += 1;
+    }
+    return { renamed };
+  });
+}
+
 /** Archived categories keep their history but are no longer offered (FR-CAT-02, AC-27). */
 export function archiveCategory(ctx: RepoContext, id: string) {
   return write(ctx, (scope) => updateCategory(scope, id, { archivedAt: scope.at }));

@@ -165,6 +165,13 @@ export const essentialLines = {
 
   askHowMuch: (per: Period): Line => [`About how much ${PER[per]}?`],
 
+  /** Meals (D-42): no "how often", everyone eats every day. */
+  askDaily: (): Line => [
+    "About how much do you spend on food ",
+    { b: "a day" },
+    "? Breakfast, lunch, dinner and drinks together. A guess is fine.",
+  ],
+
   askCount: (unit: string): Line =>
     unit === "wash"
       ? ["About how many times do you wash a ", { b: "month" }, "? A guess is fine."]
