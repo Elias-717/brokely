@@ -1,3 +1,4 @@
+import { DEFAULT_NOTIFICATION_SETTINGS, type NotificationSettings } from "@brokely/domain";
 import { eq } from "drizzle-orm";
 import { localPrefs } from "../schema";
 import type { Db, RepoContext } from "./context";
@@ -130,4 +131,76 @@ export function recordTipShown(
     shownToday,
     seen: seen.length >= input.resetAfter ? [input.tipId] : seen,
   });
+}
+
+// ── Notifications (D-94): settings and a little state, this phone only ─────────
+
+const NOTIFY_KEY = "notifications";
+
+export interface NotificationPrefs {
+  readonly settings: NotificationSettings;
+  /** Brokely explained and Android asked once (N2); never ask again unprompted. */
+  readonly asked: boolean;
+  /** The day the last pace heads-up was planned: at most one a week. */
+  readonly lastPaceDate: string | null;
+  /** The streak milestone already celebrated. */
+  readonly celebratedStreak: number;
+}
+
+const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
+const time = (value: unknown, fallback: string) =>
+  typeof value === "string" && HHMM.test(value) ? value : fallback;
+
+/** The stored preferences, with defaults for anything missing or malformed. */
+export function getNotificationPrefs(db: Db): NotificationPrefs {
+  const v = (getPref(db, NOTIFY_KEY) ?? {}) as {
+    settings?: Partial<NotificationSettings> & { kinds?: Partial<NotificationSettings["kinds"]> };
+    asked?: unknown;
+    lastPaceDate?: unknown;
+    celebratedStreak?: unknown;
+  };
+  const d = DEFAULT_NOTIFICATION_SETTINGS;
+  const s = v.settings ?? {};
+  const kinds = Object.fromEntries(
+    Object.entries(d.kinds).map(([k, on]) => [
+      k,
+      typeof s.kinds?.[k as keyof typeof d.kinds] === "boolean"
+        ? s.kinds[k as keyof typeof d.kinds]
+        : on,
+    ]),
+  ) as unknown as NotificationSettings["kinds"];
+  return {
+    settings: {
+      enabled: typeof s.enabled === "boolean" ? s.enabled : d.enabled,
+      kinds,
+      eveningTime: time(s.eveningTime, d.eveningTime),
+      tone: s.tone === "cheeky" || s.tone === "friendly" ? s.tone : d.tone,
+      quietStart: time(s.quietStart, d.quietStart),
+      quietEnd: time(s.quietEnd, d.quietEnd),
+    },
+    asked: v.asked === true,
+    lastPaceDate: typeof v.lastPaceDate === "string" ? v.lastPaceDate : null,
+    celebratedStreak: typeof v.celebratedStreak === "number" ? v.celebratedStreak : 0,
+  };
+}
+
+/** Changes settings; `kinds` merges, so one switch can change alone (FR-NOT-05). */
+export function setNotificationSettings(
+  ctx: RepoContext,
+  change: Partial<Omit<NotificationSettings, "kinds">> & {
+    kinds?: Partial<NotificationSettings["kinds"]>;
+  },
+): void {
+  const now = getNotificationPrefs(ctx.db);
+  setPref(ctx, NOTIFY_KEY, {
+    ...now,
+    settings: { ...now.settings, ...change, kinds: { ...now.settings.kinds, ...change.kinds } },
+  });
+}
+
+export function setNotificationState(
+  ctx: RepoContext,
+  change: Partial<Omit<NotificationPrefs, "settings">>,
+): void {
+  setPref(ctx, NOTIFY_KEY, { ...getNotificationPrefs(ctx.db), ...change });
 }

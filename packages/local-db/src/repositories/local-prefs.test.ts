@@ -9,11 +9,14 @@ import {
   getCardChoices,
   getMoneyTips,
   getNickname,
+  getNotificationPrefs,
   postponeCard,
   recordTipShown,
   setAppearance,
   setMoneyTipsEnabled,
   setNickname,
+  setNotificationSettings,
+  setNotificationState,
 } from "./local-prefs";
 
 describe("phone-only preferences (D-30, D-32)", () => {
@@ -31,6 +34,32 @@ describe("phone-only preferences (D-30, D-32)", () => {
 
     setAppearance(ctx, "system");
     expect(getAppearance(ctx.db)).toBe("system");
+  });
+
+  it("notification settings start from the defaults and change one switch at a time (D-94, FR-NOT-05)", () => {
+    const start = getNotificationPrefs(ctx.db);
+    expect(start.settings).toMatchObject({
+      enabled: true,
+      eveningTime: "20:30",
+      tone: "friendly",
+      kinds: { bill_due: true, pace: false },
+    });
+    expect(start).toMatchObject({ asked: false, lastPaceDate: null, celebratedStreak: 0 });
+
+    setNotificationSettings(ctx, { kinds: { pace: true }, tone: "cheeky" });
+    setNotificationSettings(ctx, { eveningTime: "21:15" });
+    setNotificationState(ctx, { asked: true, celebratedStreak: 7 });
+    const now = getNotificationPrefs(ctx.db);
+    expect(now.settings).toMatchObject({
+      eveningTime: "21:15",
+      tone: "cheeky",
+      kinds: { pace: true, bill_due: true },
+    });
+    expect(now).toMatchObject({ asked: true, celebratedStreak: 7 });
+    // A bad stored time falls back to the default rather than breaking the schedule.
+    setNotificationSettings(ctx, { quietStart: "25:99" });
+    expect(getNotificationPrefs(ctx.db).settings.quietStart).toBe("23:00");
+    expect(ctx.db.select().from(outboxOperations).all()).toHaveLength(0);
   });
 
   it("never writes to the outbox: preferences stay on this phone", () => {

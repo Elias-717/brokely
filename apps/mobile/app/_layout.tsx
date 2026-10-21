@@ -13,6 +13,7 @@ import { ActivityIndicator, Text, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { db, repo } from "../src/db/client";
 import { ThemeProvider, useTheme } from "../src/ui/theme-context";
+import { NotificationProvider } from "../src/notifications/notification-provider";
 import { SyncProvider } from "../src/sync/sync-provider";
 import { MoneyTipProvider } from "../src/ui/money-tip";
 import { ToastProvider } from "../src/ui/toast";
@@ -58,7 +59,9 @@ export default function RootLayout() {
           <UndoProvider>
             <MoneyTipProvider>
               <ToastProvider>
-                <AppStack />
+                <NotificationProvider>
+                  <AppStack />
+                </NotificationProvider>
               </ToastProvider>
             </MoneyTipProvider>
           </UndoProvider>

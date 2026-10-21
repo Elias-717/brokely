@@ -3,6 +3,7 @@ import {
   exportJson,
   exportTransactionsCsv,
   getMoneyTips,
+  getNotificationPrefs,
   getSettings,
   setMoneyTipsEnabled,
   updateSettings,
@@ -18,7 +19,7 @@ import { signOutHere } from "../../src/sync/auth";
 import { useSync } from "../../src/sync/sync-provider";
 import { useRead } from "../../src/db/use-read";
 import { shareExportFile } from "../../src/lib/export-file";
-import { today } from "../../src/lib/today";
+import { clockTime, today } from "../../src/lib/today";
 import { Button, Card, Heading, Screen, Sticker, Title } from "../../src/ui/components";
 import { Segmented } from "../../src/ui/segmented";
 import { space, type } from "../../src/ui/theme";
@@ -54,6 +55,7 @@ export default function MoreScreen() {
   const { colors, appearance, setAppearance } = useTheme();
   const settings = useRead(getSettings);
   const tips = useRead(getMoneyTips);
+  const notify = useRead((db) => getNotificationPrefs(db).settings, []);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const { session } = useSync();
   const tz = phoneTimeZone();
@@ -122,6 +124,16 @@ export default function MoreScreen() {
             onChange={(weekStart) => updateSettings(repo, { weekStart })}
           />
         </Row>
+        {/* Reminders on this phone (D-94): what, when, tone and quiet hours on their own screen. */}
+        <Row
+          title="Notifications"
+          detail={
+            notify.enabled
+              ? `On · evening check-in ${notify.kinds.evening ? clockTime(notify.eveningTime) : "off"}`
+              : "Off"
+          }
+          onPress={() => router.push("/notifications")}
+        />
         {/* Money tips after saving an expense (D-39, D-67); on by default. */}
         <Row title="Money tips" detail="After you add spending, up to 10 a day">
           <Switch

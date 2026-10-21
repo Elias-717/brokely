@@ -14,4 +14,5 @@ export * from "./wallet";
 export * from "./essentials";
 export * from "./suggestions";
 export * from "./category-guess";
+export * from "./notifications";
 export * from "./guide";

@@ -64,3 +64,9 @@ export function occurredAtFor(date: LocalDate, day: LocalDate): string {
   const [y, m, d] = date.split("-").map(Number) as [number, number, number];
   return new Date(y, m - 1, d, 12).toISOString();
 }
+
+/** "20:30" → "8:30 pm" (D-94). */
+export function clockTime(hhmm: string): string {
+  const [h, m] = hhmm.split(":").map(Number) as [number, number];
+  return `${h % 12 === 0 ? 12 : h % 12}:${String(m).padStart(2, "0")} ${h < 12 ? "am" : "pm"}`;
+}

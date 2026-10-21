@@ -34,7 +34,11 @@
       "expo-font",
       "./plugins/with-windows-cmake",
       "@react-native-community/datetimepicker",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        { "icon": "./assets/android-icon-monochrome.png", "color": "#5E7330" }
+      ]
     ]
   }
 }
