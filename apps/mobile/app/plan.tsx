@@ -23,8 +23,15 @@ import { repo } from "../src/db/client";
 import { useRead } from "../src/db/use-read";
 import { refusalText } from "../src/lib/messages";
 import { dayMonth, today } from "../src/lib/today";
-import { asTyped, readAllocations } from "../src/ui/allocation-fields";
+import {
+  AmountFieldGroups,
+  asTyped,
+  GroupLabel,
+  PLAN_GROUPS,
+  readAllocations,
+} from "../src/ui/allocation-fields";
 import { Button, Empty, PageScreen, Sticker } from "../src/ui/components";
+import { PlanSplit } from "../src/ui/plan-split";
 import { Chip, Field } from "../src/ui/sheet-parts";
 import { fonts, space, type } from "../src/ui/theme";
 import { useTheme } from "../src/ui/theme-context";
@@ -41,12 +48,6 @@ const NEW_KINDS: { kind: CategoryKind; label: string; detail: string }[] = [
     label: "Set aside",
     detail: "Money you keep for later, like a trip home. Planned, but not spending.",
   },
-];
-
-/** Essentials first, then optional and set-asides (FR-PLN-05, FR-PLN-12). */
-const GROUPS: { title: string; kinds: readonly CategoryKind[] }[] = [
-  { title: "Essentials", kinds: ["essential"] },
-  { title: "Optional · set aside", kinds: ["optional", "set_aside"] },
 ];
 
 /**
@@ -123,8 +124,6 @@ function PlanView({
   const setAside = byKind("set_aside");
   const planned = essentials + optional + setAside;
   const left = budget - planned;
-  // The bar is the budget, or everything planned when that's more (then nothing is left).
-  const whole = Math.max(budget, planned, 1);
   const parts = [
     { label: "Essentials", value: essentials, color: colors.card },
     { label: "Optional", value: optional, color: colors.heroRing },
@@ -164,56 +163,14 @@ function PlanView({
             ? `, started at ${formatRM(sen(original.budgetSen))}`
             : ""}
         </Text>
-        <View
-          style={{
-            flexDirection: "row",
-            height: 14,
-            borderRadius: 7,
-            borderWidth: 1.5,
-            borderColor: colors.onHero,
-            overflow: "hidden",
-            marginTop: space.xs,
-          }}
-        >
-          {parts
-            .filter((p) => p.value > 0)
-            .map((p) => (
-              <View key={p.label} style={{ flex: p.value / whole, backgroundColor: p.color }} />
-            ))}
-        </View>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", columnGap: 10, rowGap: 2 }}>
-          {parts
-            .filter((p) => p.value > 0)
-            .map((p) => (
-              <View key={p.label} style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
-                <View
-                  style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: 5,
-                    borderWidth: 1,
-                    borderColor: colors.onHero,
-                    backgroundColor: p.color,
-                  }}
-                />
-                <Text style={[type.small, { color: colors.onHero }]}>
-                  {p.label} {formatRM(sen(p.value))}
-                </Text>
-              </View>
-            ))}
-          {left < 0 ? (
-            <Text style={[type.small, { color: colors.onHero }]}>
-              · {formatRM(sen(-left))} over budget
-            </Text>
-          ) : null}
-        </View>
+        <PlanSplit parts={parts} budgetSen={budget} overSen={Math.max(0, -left)} />
       </View>
 
       {used.length === 0 ? (
         <Empty>No amounts yet. Tap Change amounts to plan your categories.</Empty>
       ) : (
-        GROUPS.map((g) => {
-          const rows = used.filter((c) => g.kinds.includes(c.kind));
+        PLAN_GROUPS.map((g) => {
+          const rows = used.filter((c) => (g.kinds as readonly CategoryKind[]).includes(c.kind));
           if (rows.length === 0) return null;
           return (
             <View key={g.title} style={{ gap: space.xs }}>
@@ -424,48 +381,14 @@ function ChangeAmounts({
         </View>
       </Sticker>
 
-      {GROUPS.map((g) => {
-        const rows = shown.filter((c) => g.kinds.includes(c.kind));
-        if (rows.length === 0) return null;
-        return (
-          <View key={g.title} style={{ gap: space.xs }}>
-            <GroupLabel>{g.title}</GroupLabel>
-            <Sticker style={{ padding: 0 }}>
-              {rows.map((c, i) => (
-                <View
-                  key={c.id}
-                  style={{
-                    minHeight: 56,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: space.sm,
-                    paddingVertical: 6,
-                    paddingHorizontal: space.md,
-                    borderTopWidth: i === 0 ? 0 : 2,
-                    borderTopColor: colors.background,
-                  }}
-                >
-                  <Text style={[type.strong, { flex: 1, color: colors.text }]}>
-                    {c.kind === "set_aside" ? `${c.name} · set aside` : c.name}
-                  </Text>
-                  <View style={{ width: 118 }}>
-                    <Field
-                      value={amounts[c.id] ?? ""}
-                      onChange={(text) => {
-                        setAmounts((now) => ({ ...now, [c.id]: text }));
-                        setAskOver(false);
-                      }}
-                      placeholder="0.00"
-                      label={`${c.name} amount`}
-                      numeric
-                    />
-                  </View>
-                </View>
-              ))}
-            </Sticker>
-          </View>
-        );
-      })}
+      <AmountFieldGroups
+        categories={shown}
+        amounts={amounts}
+        onChange={(id, text) => {
+          setAmounts((now) => ({ ...now, [id]: text }));
+          setAskOver(false);
+        }}
+      />
 
       <View style={{ flexDirection: "row", flexWrap: "wrap", columnGap: space.md }}>
         <Button
@@ -513,18 +436,6 @@ function ChangeAmounts({
         Saving keeps your earlier versions, so the end-of-plan summary can show where you started.
       </Text>
     </PageScreen>
-  );
-}
-
-function GroupLabel({ children }: { children: string }) {
-  const { colors } = useTheme();
-  return (
-    <Text
-      accessibilityRole="header"
-      style={{ fontFamily: fonts.heavy, fontSize: 13, letterSpacing: 0.5, color: colors.muted }}
-    >
-      {children.toUpperCase()}
-    </Text>
   );
 }
 

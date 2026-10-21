@@ -5,10 +5,87 @@ import { Text, View } from "react-native";
 import { categoryEmoji } from "../lib/essentials-meta";
 import { Heading, Sticker } from "./components";
 import { Field } from "./sheet-parts";
-import { space, type } from "./theme";
+import { fonts, space, type } from "./theme";
 import { useTheme } from "./theme-context";
 
 type Category = ReturnType<typeof listCategories>[number];
+
+/** Essentials first, then optional and set-asides (FR-PLN-05, FR-PLN-12). */
+export const PLAN_GROUPS = [
+  { title: "Essentials", kinds: ["essential"] },
+  { title: "Optional · set aside", kinds: ["optional", "set_aside"] },
+] as const;
+
+export function GroupLabel({ children }: { children: string }) {
+  const { colors } = useTheme();
+  return (
+    <Text
+      accessibilityRole="header"
+      style={{ fontFamily: fonts.heavy, fontSize: 13, letterSpacing: 0.5, color: colors.muted }}
+    >
+      {children.toUpperCase()}
+    </Text>
+  );
+}
+
+/**
+ * The shown categories as compact rows, name left and amount box right, in PLAN_GROUPS
+ * (Change amounts on Your plan, step 3 of Plan step by step; D-81).
+ */
+export function AmountFieldGroups({
+  categories,
+  amounts,
+  onChange,
+}: {
+  categories: readonly Category[];
+  amounts: Record<string, string>;
+  onChange: (categoryId: string, text: string) => void;
+}) {
+  const { colors } = useTheme();
+  return (
+    <>
+      {PLAN_GROUPS.map((g) => {
+        const rows = categories.filter((c) => (g.kinds as readonly string[]).includes(c.kind));
+        if (rows.length === 0) return null;
+        return (
+          <View key={g.title} style={{ gap: space.xs }}>
+            <GroupLabel>{g.title}</GroupLabel>
+            <Sticker style={{ padding: 0 }}>
+              {rows.map((c, i) => (
+                <View
+                  key={c.id}
+                  style={{
+                    minHeight: 56,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: space.sm,
+                    paddingVertical: 6,
+                    paddingHorizontal: space.md,
+                    borderTopWidth: i === 0 ? 0 : 2,
+                    borderTopColor: colors.background,
+                  }}
+                >
+                  <Text style={[type.strong, { flex: 1, color: colors.text }]}>
+                    {c.kind === "set_aside" ? `${c.name} · set aside` : c.name}
+                  </Text>
+                  <View style={{ width: 118 }}>
+                    <Field
+                      value={amounts[c.id] ?? ""}
+                      onChange={(text) => onChange(c.id, text)}
+                      placeholder="0.00"
+                      label={`${c.name} amount`}
+                      numeric
+                    />
+                  </View>
+                </View>
+              ))}
+            </Sticker>
+          </View>
+        );
+      })}
+    </>
+  );
+}
 
 const GROUPS = [
   { kind: "essential", title: "Essentials" },
