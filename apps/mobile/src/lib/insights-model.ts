@@ -40,7 +40,16 @@ export interface CategoryLine {
 }
 
 export type InsightsModel =
-  | { readonly kind: "no-plan" }
+  | {
+      /**
+       * No plan covers today. Spending still counts (FR-PLN-04): this calendar month so far,
+       * by category, so a student who only tracks still sees where it went (S8 B, D-77).
+       */
+      readonly kind: "no-plan";
+      readonly month: DateRange;
+      readonly spentSen: Sen;
+      readonly slices: readonly CategoryLine[];
+    }
   | {
       readonly kind: "plan";
       readonly range: DateRange;
@@ -67,7 +76,7 @@ export type InsightsModel =
 export function readInsights(db: Db, today: LocalDate): InsightsModel {
   const cycle = findCycleOn(db, today);
   const plan = cycle ? getPlan(db, cycle.id) : undefined;
-  if (!cycle || !plan) return { kind: "no-plan" };
+  if (!cycle || !plan) return readMonth(db, today);
 
   const range = {
     start: localDate(cycle.startDate),
@@ -144,6 +153,40 @@ export function readInsights(db: Db, today: LocalDate): InsightsModel {
               coveragePercent !== null && coveragePercent < FORECAST_MIN_COVERAGE_PERCENT,
           },
   };
+}
+
+/** The calendar month containing `today`: [1st, 1st of next month). */
+export function monthOf(today: LocalDate): DateRange {
+  const [y, m] = today.split("-").map(Number) as [number, number];
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const next = m === 12 ? `${y + 1}-01-01` : `${y}-${pad(m + 1)}-01`;
+  return { start: localDate(`${y}-${pad(m)}-01`), endExclusive: localDate(next) };
+}
+
+/** Without a plan: this month's spending by category, the same rules as in a plan (BR-09). */
+function readMonth(db: Db, today: LocalDate): InsightsModel {
+  const month = monthOf(today);
+  const transactions = listTransactions(db, month);
+  const directions = new Map(listDebts(db).map((d) => [d.id, d.direction]));
+  const spent = spendingByCategory(transactions, (id) => directions.get(id));
+  const spentSen = sen([...spent.values()].reduce((sum, v) => sum + v, 0));
+  const slices = listCategories(db, { includeArchived: true })
+    .map((c) => ({ c, spentSen: spent.get(c.id) ?? sen(0) }))
+    .filter(({ spentSen: s }) => s > 0)
+    .map(({ c, spentSen: s }): CategoryLine => {
+      const share = shareOfSpending(s, spentSen);
+      return {
+        id: c.id,
+        name: c.name,
+        kind: c.kind,
+        spentSen: s,
+        percent: share ? percentHalfEven(share) : 0,
+        allocationSen: sen(0),
+        remainingSen: sen(0),
+      };
+    })
+    .sort((a, b) => b.spentSen - a.spentSen);
+  return { kind: "no-plan", month, spentSen, slices };
 }
 
 const kindOrder = (kind: CategoryLine["kind"]) =>
