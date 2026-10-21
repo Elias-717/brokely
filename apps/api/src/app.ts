@@ -8,6 +8,7 @@ import {
 } from "@brokely/contracts";
 import Fastify, { type FastifyInstance, type FastifyRequest } from "fastify";
 import { z } from "zod";
+import { deleteAccount } from "./account";
 import type { VerifyToken } from "./auth";
 import type { Db } from "./db/client";
 import { pull } from "./sync/pull";
@@ -92,6 +93,14 @@ export function buildApp(
     const query = PullQuerySchema.safeParse(request.query);
     if (!query.success) return reply.code(400).send({ error: "Bad since or limit" });
     return pull(deps.db, userId, query.data.since, query.data.limit);
+  });
+
+  // FR-ACC-07: the account and everything backed up with it. 204 when done (or already gone).
+  app.delete("/v1/account", async (request, reply) => {
+    const userId = await student(request);
+    if (!userId) return reply.code(401).send({ error: "Sign in again" });
+    await deleteAccount(deps.db, userId);
+    return reply.code(204).send();
   });
 
   return app;
