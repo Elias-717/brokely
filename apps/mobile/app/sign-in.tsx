@@ -332,7 +332,7 @@ export default function SignInScreen() {
   const picture = (height: number) => (
     <Float>
       <Image
-        source={require("../assets/mascot/main_design.png")}
+        source={require("../assets/mascot/main_design.webp")}
         style={{ width: "100%", height }}
         resizeMode="contain"
         accessibilityLabel="Brokely"

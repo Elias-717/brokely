@@ -275,7 +275,7 @@ function EmptyRecords({ filter }: { filter: RecordFilter }) {
       <Float>
         {/* The full Brokely picture, no circle (D-65). */}
         <Image
-          source={require("../../assets/mascot/main_design.png")}
+          source={require("../../assets/mascot/main_design.webp")}
           style={{ width: 120, height: 150 }}
           resizeMode="contain"
           accessibilityIgnoresInvertColors

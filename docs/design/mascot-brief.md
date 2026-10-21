@@ -33,7 +33,7 @@ students feel broke, and Brokely helps their money grow by helping them plan.
 
 ## Delivered (19 Oct)
 
-All 12 pictures and `main_design.png` are in `apps/mobile/assets/mascot/`. The author chose **`main_design.png` for the 0.1 welcome screen** instead of a separate `brokely_welcome.png`. Sizes are ~1250 px PNGs (~15 MB total): resize and convert to WebP before release (NFR-19, ≤ 5 MB).
+All 12 pictures and `main_design` are in the app as **WebP** (`apps/mobile/assets/mascot/*.webp`, longest side 768 px, quality 85, transparent: **1.0 MB in total**, NFR-19 ≤ 5 MB, 22 Oct). The original ~1250 px PNGs (14.7 MB) are kept as masters in `design/mascot-source/`, with `shrink_mascot.py` to make the WebP files again. The author chose **`main_design` for the 0.1 welcome screen** instead of a separate `brokely_welcome`.
 
 ## Needed first, for 0.1: the welcome picture (D-23, FR-MAS-08)
 

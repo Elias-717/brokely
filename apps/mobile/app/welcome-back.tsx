@@ -29,7 +29,7 @@ export default function WelcomeBackScreen() {
       <View style={{ flex: 1, justifyContent: "center", padding: space.lg, gap: space.lg }}>
         <Float>
           <Image
-            source={require("../assets/mascot/main_design.png")}
+            source={require("../assets/mascot/main_design.webp")}
             style={{ width: "100%", height: 240 }}
             resizeMode="contain"
             accessibilityLabel="Brokely, happy to see you"

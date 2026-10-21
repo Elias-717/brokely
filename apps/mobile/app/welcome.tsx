@@ -78,7 +78,7 @@ export default function WelcomeScreen() {
           {typing ? null : (
             <Float>
               <Image
-                source={require("../assets/mascot/main_design.png")}
+                source={require("../assets/mascot/main_design.webp")}
                 style={{ width: "100%", height: 260 }}
                 resizeMode="contain"
                 accessibilityLabel="Brokely, a broccoli that grows money instead of leaves"

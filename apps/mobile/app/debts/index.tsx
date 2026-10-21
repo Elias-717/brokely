@@ -257,7 +257,7 @@ function AllSquare({ onAdd }: { onAdd: (side: Side) => void }) {
   return (
     <PageScreen title="Debts">
       <Image
-        source={require("../../assets/mascot/main_design.png")}
+        source={require("../../assets/mascot/main_design.webp")}
         style={{ width: "100%", height: 160 }}
         resizeMode="contain"
         accessibilityLabel="Brokely"

@@ -14,7 +14,7 @@ import { useTheme } from "./theme-context";
  * student's answers on the right in green. Answers are tapped (big replies) or typed.
  */
 
-const MASCOT = require("../../assets/mascot/main_design.png");
+const MASCOT = require("../../assets/mascot/main_design.webp");
 
 export function BrokelyAvatar({ size }: { size: number }) {
   const { colors, scheme } = useTheme();

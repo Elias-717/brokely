@@ -26,7 +26,7 @@ import { FirstVisit, MonthSoFar } from "../../src/ui/home-no-plan";
 import { useUndo } from "../../src/ui/undo";
 
 /** The full mascot picture (author's main design). */
-const MASCOT = require("../../assets/mascot/main_design.png");
+const MASCOT = require("../../assets/mascot/main_design.webp");
 
 /** A forecast bound is a whole RM10 step (R-10), so it reads best without sen. */
 const wholeRM = (amount: Sen) => `RM${Math.round(amount / 100)}`;

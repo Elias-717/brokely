@@ -434,7 +434,7 @@ function NothingYet() {
       action={<Button label="+ Add" onPress={() => router.push("/bills/edit")} />}
     >
       <Image
-        source={require("../../assets/mascot/main_design.png")}
+        source={require("../../assets/mascot/main_design.webp")}
         style={{ width: "100%", height: 170 }}
         resizeMode="contain"
         accessibilityLabel="Brokely"

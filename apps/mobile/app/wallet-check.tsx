@@ -304,7 +304,7 @@ function Result({
         footer={footer}
       >
         <Image
-          source={require("../assets/mascot/brokely_s1_happy.png")}
+          source={require("../assets/mascot/brokely_s1_happy.webp")}
           style={{ width: "100%", height: 160 }}
           resizeMode="contain"
           accessibilityLabel="Brokely, happy"

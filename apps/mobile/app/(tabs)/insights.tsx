@@ -211,7 +211,7 @@ function BrandNew() {
         style={{ padding: space.md, flexDirection: "row", alignItems: "center", gap: space.md }}
       >
         <Image
-          source={require("../../assets/mascot/main_design.png")}
+          source={require("../../assets/mascot/main_design.webp")}
           style={{ width: 56, height: 70 }}
           resizeMode="contain"
           accessibilityLabel="Brokely"

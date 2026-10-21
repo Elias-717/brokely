@@ -81,7 +81,7 @@ export default function PlanIsSet() {
               />
             </Svg>
             <Image
-              source={require("../../assets/mascot/main_design.png")}
+              source={require("../../assets/mascot/main_design.webp")}
               style={{ width: 280, height: 280 }}
               resizeMode="contain"
               accessibilityLabel="Brokely, pleased"
