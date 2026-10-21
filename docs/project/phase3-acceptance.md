@@ -73,4 +73,4 @@ Offline, signed out, a fresh install (or More → Your data → Delete all my da
 
 | Date | Build | Phone | Who | Notes |
 |---|---|---|---|---|
-| | | | | |
+| 22 Oct 2026 | release APK from `main` (534cb6b era) | Samsung Galaxy A26 | Author | All screen checks passed (author's report); automated tests 399/399 green. **Phase 3 closed.** |

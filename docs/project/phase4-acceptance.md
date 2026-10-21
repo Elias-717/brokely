@@ -41,3 +41,4 @@ Phase 4 closes.
 | Date | Commit | Devices | Who | Notes |
 |---|---|---|---|---|
 | 22 Oct 2026, 02:4x MYT | aa31b57 (API), APK built 02:24 | B = emulator Pixel_6 (release APK), server checked in Supabase | Claude | **AC-20 ✅** offline purchase "AC20 test" RM 7.50 survived a force-close; after reconnecting, two "Back up now" taps left exactly one copy on the server (version 1, one line), emulator "Backed up", nothing waiting. **AC-23 ✅ on the emulator and server** deleted offline, backed up: server has the delete marker (version 2) and it stayed gone after another sync; still to see on the phone (A). AC-21, AC-22, AC-24 need the phone and emulator together |
+| 22 Oct 2026 | release APK from `main` | Two phones (author's) | Author | AC-20, AC-21, AC-22, AC-23 and AC-24 passed on two real phones (author's report). **Phase 4 closed.** |
