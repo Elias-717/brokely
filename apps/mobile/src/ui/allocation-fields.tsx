@@ -36,10 +36,13 @@ export function AmountFieldGroups({
   categories,
   amounts,
   onChange,
+  hints,
 }: {
   categories: readonly Category[];
   amounts: Record<string, string>;
   onChange: (categoryId: string, text: string) => void;
+  /** A quiet line under a category's name, e.g. what was spent last plan (D-46 part 2). */
+  hints?: ReadonlyMap<string, string>;
 }) {
   const { colors } = useTheme();
   return (
@@ -65,9 +68,14 @@ export function AmountFieldGroups({
                     borderTopColor: colors.background,
                   }}
                 >
-                  <Text style={[type.strong, { flex: 1, color: colors.text }]}>
-                    {c.kind === "set_aside" ? `${c.name} · set aside` : c.name}
-                  </Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[type.strong, { color: colors.text }]}>
+                      {c.kind === "set_aside" ? `${c.name} · set aside` : c.name}
+                    </Text>
+                    {hints?.get(c.id) ? (
+                      <Text style={[type.small, { color: colors.muted }]}>{hints.get(c.id)}</Text>
+                    ) : null}
+                  </View>
                   <View style={{ width: 118 }}>
                     <Field
                       value={amounts[c.id] ?? ""}
@@ -119,11 +127,14 @@ export function AllocationFields({
   amounts,
   onChange,
   setAsideExtra,
+  hints,
 }: {
   categories: readonly Category[];
   amounts: Record<string, string>;
   onChange: (categoryId: string, text: string) => void;
   setAsideExtra?: ReactNode;
+  /** A quiet line under a category's name, e.g. what was spent last plan (D-46 part 2). */
+  hints?: ReadonlyMap<string, string>;
 }) {
   const { colors } = useTheme();
   return (
@@ -139,9 +150,14 @@ export function AllocationFields({
                 key={c.id}
                 style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}
               >
-                <Text style={[type.strong, { flex: 1, color: colors.text }]}>
-                  {c.name} {categoryEmoji(c.name)}
-                </Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={[type.strong, { color: colors.text }]}>
+                    {c.name} {categoryEmoji(c.name)}
+                  </Text>
+                  {hints?.get(c.id) ? (
+                    <Text style={[type.small, { color: colors.muted }]}>{hints.get(c.id)}</Text>
+                  ) : null}
+                </View>
                 <View style={{ width: 120 }}>
                   <Field
                     value={amounts[c.id] ?? ""}

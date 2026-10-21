@@ -41,6 +41,7 @@ import { db, repo } from "../src/db/client";
 import { useRead } from "../src/db/use-read";
 import { essentialMeta } from "../src/lib/essentials-meta";
 import { refusalText } from "../src/lib/messages";
+import { planHistory } from "../src/lib/plan-history";
 import { dayMonth, today } from "../src/lib/today";
 import {
   AmountFieldGroups,
@@ -54,6 +55,7 @@ import { Button, PageScreen, Sticker } from "../src/ui/components";
 import { pickDate } from "../src/ui/date-picker";
 import { TypeText } from "../src/ui/motion";
 import { PlanSplit } from "../src/ui/plan-split";
+import { SheetNote } from "../src/ui/sheet";
 import { Chip, Field } from "../src/ui/sheet-parts";
 import { fonts, MIN_TOUCH, radius, space, type } from "../src/ui/theme";
 import { useTheme } from "../src/ui/theme-context";
@@ -161,6 +163,9 @@ export default function GuidedSetup() {
   const budget = parseAmount(budgetText);
   const planDays = endDate >= startDate ? lengthInDays(cycleFromInclusive(startDate, endDate)) : 0;
   const monthDays = lastDayOfMonth(startDate);
+  // The student's own spending (last plan, or records kept without one) as hints in step 3
+  // (FR-PLN-13, AC-18, D-46 part 2).
+  const history = useRead((db) => planHistory(db, day, planDays), [day, planDays]);
   const { allocations, bad } = readAllocations(categories, amounts);
   const totals = budget !== null && budget > 0 ? planTotals(budget, allocations) : null;
   const parts = allocations.map((a) => ({ categoryId: a.categoryId, amountSen: a.amountSen }));
@@ -633,11 +638,22 @@ export default function GuidedSetup() {
 
       {step === 3 ? (
         <>
+          {history ? (
+            <SheetNote
+              title={`${history.title}: ${history.basis}`}
+              detail={`Under each amount: what you spent, and that pace over this plan's ${planDays} days. Days you didn't log count as nothing spent. Suggestions only.`}
+            />
+          ) : null}
           <AmountFieldGroups
             categories={categories.filter(
-              (c) => showAll || noneTyped || (amounts[c.id] ?? "").trim() !== "",
+              (c) =>
+                showAll ||
+                noneTyped ||
+                (amounts[c.id] ?? "").trim() !== "" ||
+                !!history?.hints.has(c.id),
             )}
             amounts={amounts}
+            hints={history?.hints}
             onChange={(id, text) => {
               setAmounts((now) => ({ ...now, [id]: text }));
               setAskOver(false);

@@ -20,7 +20,8 @@ import { Text, View } from "react-native";
 import { repo } from "../src/db/client";
 import { useRead } from "../src/db/use-read";
 import { refusalText } from "../src/lib/messages";
-import { dayMonth } from "../src/lib/today";
+import { planHistory } from "../src/lib/plan-history";
+import { dayMonth, today } from "../src/lib/today";
 import { AllocationFields, asTyped, readAllocations } from "../src/ui/allocation-fields";
 import { Button, Empty, PageScreen, Sticker } from "../src/ui/components";
 import { pickDate } from "../src/ui/date-picker";
@@ -69,6 +70,8 @@ function DraftForm({
   const { allocations, bad } = readAllocations(categories, amounts);
   const totals = budget !== null ? planTotals(budget, allocations) : null;
   const days = end >= start ? lengthInDays(cycleFromInclusive(start, end)) : 0;
+  // The student's own spending last plan, as hints under each amount (FR-PLN-13, D-46 part 2).
+  const history = useRead((db) => planHistory(db, today(), days), [days]);
 
   const approve = (acknowledged: boolean) => {
     if (budget === null || budget <= 0) return setProblem("Type a budget above zero.");
@@ -135,9 +138,16 @@ function DraftForm({
         />
       </Labelled>
 
+      {history ? (
+        <SheetNote
+          title={`${history.title}: ${history.basis}`}
+          detail={`Under each amount: what you spent, and that pace over these ${days} days. Days you didn't log count as nothing spent. Suggestions only; the amounts are yours.`}
+        />
+      ) : null}
       <AllocationFields
         categories={categories}
         amounts={amounts}
+        hints={history?.hints}
         onChange={(id, text) => {
           setAmounts((now) => ({ ...now, [id]: text }));
           setAskOver(false);
