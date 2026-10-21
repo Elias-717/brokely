@@ -39,7 +39,7 @@ export default function ResetPasswordScreen() {
   };
 
   return (
-    <PageScreen title="New password">
+    <PageScreen title="New password" keyboardSafe>
       <Card>
         {tokens ? (
           <>

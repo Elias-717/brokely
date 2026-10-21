@@ -7,6 +7,7 @@ import { repo } from "../src/db/client";
 import { useSync } from "../src/sync/sync-provider";
 import { Button, Sticker } from "../src/ui/components";
 import { KeyboardSafe } from "../src/ui/keyboard-safe";
+import { KeyboardScroll } from "../src/ui/keyboard-scroll";
 import { Appear, Float, TypeText } from "../src/ui/motion";
 import { useKeyboardOpen } from "../src/ui/use-keyboard";
 import { fonts, MIN_TOUCH, radius, space, type } from "../src/ui/theme";
@@ -38,14 +39,13 @@ export default function WelcomeScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <KeyboardSafe>
-        <ScrollView
+        <KeyboardScroll
           contentContainerStyle={{
             flexGrow: 1,
             justifyContent: "center",
             padding: space.lg,
             gap: space.lg,
           }}
-          keyboardShouldPersistTaps="handled"
         >
           <Appear>
             <Sticker style={{ padding: space.md, gap: space.xs, alignItems: "center" }}>
@@ -113,7 +113,7 @@ export default function WelcomeScreen() {
               }}
             />
           </View>
-        </ScrollView>
+        </KeyboardScroll>
         {/*
           Option A (D-75): the two first-time choices as buttons by importance, and one quiet
           line for returning students at the very bottom. While a name is being typed only

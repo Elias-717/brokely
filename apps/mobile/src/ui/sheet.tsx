@@ -15,6 +15,7 @@ import { useReduceMotion } from "./motion";
 import { useKeyboardHeight } from "./use-keyboard";
 import { fonts, radius, space, type } from "./theme";
 import { KeyboardSafe, useAvailableHeight } from "./keyboard-safe";
+import { KeyboardScroll } from "./keyboard-scroll";
 import { useTheme } from "./theme-context";
 
 /**
@@ -71,13 +72,12 @@ export function SheetShell({
         }
       >
         {children ? (
-          <ScrollView
+          <KeyboardScroll
             style={{ flexGrow: 0, flexShrink: 1 }}
             contentContainerStyle={{ gap: space.sm }}
-            keyboardShouldPersistTaps="handled"
           >
             {children}
-          </ScrollView>
+          </KeyboardScroll>
         ) : null}
         {footer}
       </SheetPanel>

@@ -38,6 +38,7 @@ import { SheetPanel } from "../../src/ui/sheet";
 import { Field } from "../../src/ui/sheet-parts";
 import { fonts, MIN_TOUCH, radius, space, type } from "../../src/ui/theme";
 import { KeyboardSafe } from "../../src/ui/keyboard-safe";
+import { KeyboardScroll } from "../../src/ui/keyboard-scroll";
 import { useTheme } from "../../src/ui/theme-context";
 import { useUndo } from "../../src/ui/undo";
 import { useKeyboardOpen } from "../../src/ui/use-keyboard";
@@ -258,11 +259,10 @@ function Sheet({
           </>
         }
       >
-        <ScrollView
+        <KeyboardScroll
           // Shrinks (and scrolls) when space is short, instead of pushing fields off screen.
           style={{ flexGrow: 0, flexShrink: 1 }}
           contentContainerStyle={{ gap: space.sm }}
-          keyboardShouldPersistTaps="handled"
         >
           {mode === "refund" ? (
             <View
@@ -359,7 +359,7 @@ function Sheet({
               ))}
             </View>
           ) : null}
-        </ScrollView>
+        </KeyboardScroll>
 
         {/* No keypad for a split, or while typing a note (it stays visible then). */}
         {(mode === "edit" && split) || keyboardOpen ? null : (

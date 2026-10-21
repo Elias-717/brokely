@@ -4,6 +4,7 @@ import { Pressable, ScrollView, Text, View, type ViewStyle } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import { KeyboardSafe } from "./keyboard-safe";
+import { KeyboardScroll } from "./keyboard-scroll";
 import { MIN_TOUCH, radius, space, type } from "./theme";
 import { useTheme } from "./theme-context";
 
@@ -227,12 +228,11 @@ export function PageScreen({
 }) {
   const { colors } = useTheme();
   const scroll = (
-    <ScrollView
+    <KeyboardScroll
       contentContainerStyle={{ padding: space.md, paddingTop: space.xs, gap: space.md }}
-      keyboardShouldPersistTaps="handled"
     >
       {children}
-    </ScrollView>
+    </KeyboardScroll>
   );
   return (
     <SafeAreaView

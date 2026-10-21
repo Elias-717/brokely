@@ -93,7 +93,7 @@ function DraftForm({
   };
 
   return (
-    <PageScreen title="Next plan">
+    <PageScreen title="Next plan" keyboardSafe>
       <Text style={[type.body, { color: colors.muted, marginTop: -space.sm }]}>
         Copied from your last plan. Change anything, then approve.
       </Text>

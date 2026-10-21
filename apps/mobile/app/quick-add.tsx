@@ -27,6 +27,7 @@ import { CategoryPicker } from "../src/ui/category-picker";
 import { Chip, Field } from "../src/ui/sheet-parts";
 import { fonts, MIN_TOUCH, radius, space, type } from "../src/ui/theme";
 import { KeyboardSafe } from "../src/ui/keyboard-safe";
+import { KeyboardScroll } from "../src/ui/keyboard-scroll";
 import { useTheme } from "../src/ui/theme-context";
 import { useMoneyTip } from "../src/ui/money-tip";
 import { useUndo } from "../src/ui/undo";
@@ -290,11 +291,10 @@ export default function QuickAdd() {
           </>
         }
       >
-        <ScrollView
+        <KeyboardScroll
           // Shrinks (and scrolls) when space is short, instead of pushing fields off screen.
           style={{ flexGrow: 0, flexShrink: 1 }}
           contentContainerStyle={{ gap: space.sm }}
-          keyboardShouldPersistTaps="handled"
         >
           {/* The note comes first, so saying what it was is the obvious next step (D-49). */}
           <View style={{ gap: space.xs }}>
@@ -492,7 +492,7 @@ export default function QuickAdd() {
               ) : null}
             </View>
           ) : null}
-        </ScrollView>
+        </KeyboardScroll>
 
         {/* Hidden while typing a note or name, so that field stays visible. */}
         {keyboardOpen ? null : (

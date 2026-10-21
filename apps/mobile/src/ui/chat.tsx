@@ -6,6 +6,7 @@ import { plain, type Line } from "../lib/brokely-lines";
 import { Appear, useReduceMotion } from "./motion";
 import { fonts, MIN_TOUCH, space, type } from "./theme";
 import { KeyboardSafe } from "./keyboard-safe";
+import { KeyboardScroll } from "./keyboard-scroll";
 import { useTheme } from "./theme-context";
 
 /**
@@ -61,7 +62,6 @@ export function ChatScreen({
   footer: ReactNode;
 }) {
   const { colors } = useTheme();
-  const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <KeyboardSafe>
@@ -124,8 +124,8 @@ export function ChatScreen({
             </Pressable>
           ) : null}
         </View>
-        <ScrollView
-          ref={scroll}
+        <KeyboardScroll
+          stickToEnd
           style={{ flex: 1 }}
           contentContainerStyle={{
             flexGrow: 1,
@@ -133,11 +133,9 @@ export function ChatScreen({
             padding: space.md,
             gap: space.sm,
           }}
-          onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: true })}
-          keyboardShouldPersistTaps="handled"
         >
           {children}
-        </ScrollView>
+        </KeyboardScroll>
         <View
           style={{
             paddingHorizontal: space.md,
