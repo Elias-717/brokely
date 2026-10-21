@@ -89,8 +89,14 @@ export default function PlanIsSet() {
           </View>
         </Bounce>
       </View>
-      <View style={{ paddingBottom: space.md }}>
+      <View style={{ paddingBottom: space.md, gap: space.xs }}>
         <Button label="Show me my plan" onPress={() => router.replace("/")} />
+        {/* The detailed way to plan, offered once the student has a plan (D-75). */}
+        <Button
+          label="Want to fine-tune it? Plan it step by step"
+          variant="link"
+          onPress={() => router.replace("/guided")}
+        />
       </View>
     </Screen>
   );

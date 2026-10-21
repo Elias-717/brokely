@@ -1,7 +1,7 @@
 import { NICKNAME_MAX, seedDefaultCategories, setNickname } from "@brokely/local-db";
 import { router } from "expo-router";
 import { useState } from "react";
-import { Image, ScrollView, Text, TextInput, View } from "react-native";
+import { Image, Keyboard, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { repo } from "../src/db/client";
 import { useSync } from "../src/sync/sync-provider";
@@ -9,13 +9,14 @@ import { Button, Sticker } from "../src/ui/components";
 import { KeyboardSafe } from "../src/ui/keyboard-safe";
 import { Appear, Float, TypeText } from "../src/ui/motion";
 import { useKeyboardOpen } from "../src/ui/use-keyboard";
-import { fonts, radius, space, type } from "../src/ui/theme";
+import { fonts, MIN_TOUCH, radius, space, type } from "../src/ui/theme";
 import { useTheme } from "../src/ui/theme-context";
 
 /**
- * S1 Welcome (FR-MAS-08, FR-PLN-19, FR-PLN-04, AC-55, D-23, D-34, D-47). Brokely's fixed greeting
- * types itself out in a speech bubble, the one picture gently floats, and an optional nickname
- * is kept on this phone only.
+ * S1 Welcome (FR-MAS-08, FR-PLN-19, FR-PLN-04, AC-55, D-23, D-34, D-47, D-72, D-75). Brokely's
+ * fixed greeting types itself out in a speech bubble, the one picture gently floats, and an
+ * optional nickname is kept on this phone only. Planning step by step is offered after quick
+ * start and in More, not here (D-75).
  * No XP, mood or growth; never promises the student won't run out of money.
  */
 export default function WelcomeScreen() {
@@ -26,7 +27,7 @@ export default function WelcomeScreen() {
   // While typing a name, Brokely steps aside so the box and "Let's go" fit above the keyboard.
   const typing = useKeyboardOpen();
 
-  const start = (next: "/quick-start" | "/guided" | "/") => {
+  const start = (next: "/quick-start" | "/") => {
     setNickname(repo, name); // blank stays blank (D-34)
     // Both paths offer the default categories (AC-52); this also ends the first run.
     const seeded = seedDefaultCategories(repo);
@@ -97,6 +98,7 @@ export default function WelcomeScreen() {
               autoCapitalize="words"
               autoComplete="off"
               returnKeyType="done"
+              onSubmitEditing={() => Keyboard.dismiss()}
               accessibilityLabel="What should I call you? Optional"
               style={{
                 height: 56,
@@ -112,26 +114,54 @@ export default function WelcomeScreen() {
             />
           </View>
         </ScrollView>
-        <View style={{ paddingHorizontal: space.lg, paddingBottom: space.lg, gap: space.sm }}>
+        {/*
+          Option A (D-75): the two first-time choices as buttons by importance, and one quiet
+          line for returning students at the very bottom. While a name is being typed only
+          "Let's go" stays, so the field and the button sit above the keyboard.
+        */}
+        <View style={{ paddingHorizontal: space.lg, paddingBottom: space.md, gap: space.sm }}>
           <Button label="Let's go" onPress={() => start("/quick-start")} />
-          <Button label="Plan it step by step" variant="link" onPress={() => start("/guided")} />
-          <Button
-            label="Just track my spending for now"
-            variant="link"
-            onPress={() => start("/")}
-          />
-          {typing || !canSignIn ? null : (
-            // Optional, for a returning student who doesn't want to plan again (D-72).
-            <Button
-              label="Already used Brokely? Sign in"
-              variant="link"
-              onPress={() => router.push({ pathname: "/sign-in", params: { from: "welcome" } })}
-            />
-          )}
           {typing ? null : (
-            <Text style={[type.small, { color: colors.muted, textAlign: "center" }]}>
-              No account needed, no bank login. Everything stays on this phone.
-            </Text>
+            <Appear delay={500}>
+              <View style={{ gap: space.sm }}>
+                <Button
+                  label="Just track my spending for now"
+                  variant="secondary"
+                  onPress={() => start("/")}
+                />
+                <Text style={[type.small, { color: colors.muted, textAlign: "center" }]}>
+                  No account needed, no bank login. Everything stays on this phone.
+                </Text>
+                {canSignIn ? (
+                  // Optional, for a returning student who doesn't want to plan again (D-72).
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Already used Brokely? Sign in"
+                    onPress={() =>
+                      router.push({ pathname: "/sign-in", params: { from: "welcome" } })
+                    }
+                    style={({ pressed }) => ({
+                      minHeight: MIN_TOUCH,
+                      justifyContent: "center",
+                      opacity: pressed ? 0.6 : 1,
+                    })}
+                  >
+                    <Text style={[type.body, { color: colors.muted, textAlign: "center" }]}>
+                      Already used Brokely?{" "}
+                      <Text
+                        style={{
+                          fontFamily: fonts.heavy,
+                          color: colors.text,
+                          textDecorationLine: "underline",
+                        }}
+                      >
+                        Sign in
+                      </Text>
+                    </Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            </Appear>
           )}
         </View>
       </KeyboardSafe>
