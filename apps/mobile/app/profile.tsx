@@ -1,5 +1,6 @@
 import {
   deleteAllData,
+  exportJson,
   getNickname,
   NICKNAME_MAX,
   setNickname,
@@ -10,10 +11,13 @@ import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { db, repo } from "../src/db/client";
 import { useRead } from "../src/db/use-read";
+import { shareExportFile } from "../src/lib/export-file";
+import { today } from "../src/lib/today";
 import { signOutHere } from "../src/sync/auth";
 import { accountFirstName, accountPhoto, signedInWith } from "../src/sync/profile";
 import { backupState } from "../src/sync/status";
 import { useSync } from "../src/sync/sync-provider";
+import { deleteAccountOnServer, OfflineError } from "../src/sync/transport";
 import { Avatar } from "../src/ui/avatar";
 import { Button, PageScreen, Sticker } from "../src/ui/components";
 import { Icon, type IconName } from "../src/ui/icons";
@@ -46,6 +50,36 @@ export default function ProfileScreen() {
   const startSignOut = async () => {
     await sync.sync(); // back up what's waiting first
     setSigningOut(syncCounts(db).waiting > 0 ? "blocked" : "confirm");
+  };
+
+  const [deleting, setDeleting] = useState<"idle" | "confirm" | "working">("idle");
+  const [deleteMessage, setDeleteMessage] = useState<string | null>(null);
+
+  const exportFirst = () =>
+    void shareExportFile(
+      `brokely-data-${today()}.json`,
+      "application/json",
+      exportJson(db, new Date().toISOString()),
+    );
+
+  /** FR-ACC-07: the account on the server first, then this phone. Nothing changes offline. */
+  const deleteMyAccount = async () => {
+    setDeleting("working");
+    setDeleteMessage(null);
+    try {
+      await deleteAccountOnServer();
+    } catch (error) {
+      setDeleting("confirm");
+      setDeleteMessage(
+        error instanceof OfflineError
+          ? "Connect to the internet to delete your account. Nothing was changed."
+          : "Brokely couldn't delete your account just now. Nothing was changed; please try again.",
+      );
+      return;
+    }
+    deleteAllData(db);
+    await signOutHere();
+    router.replace("/welcome");
   };
 
   const signOut = async () => {
@@ -188,6 +222,31 @@ export default function ProfileScreen() {
             Signing out removes your records from this phone. They stay safe in your account.
             Changes not backed up yet block it.
           </Text>
+          {/* FR-ACC-07: quieter than Sign out, and always confirmed first. */}
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => {
+              setDeleteMessage(null);
+              setDeleting("confirm");
+            }}
+            style={({ pressed }) => ({
+              minHeight: MIN_TOUCH,
+              justifyContent: "center",
+              opacity: pressed ? 0.6 : 1,
+            })}
+          >
+            <Text
+              style={{
+                fontFamily: fonts.heavy,
+                fontSize: 14,
+                color: colors.warning,
+                textAlign: "center",
+                textDecorationLine: "underline",
+              }}
+            >
+              Delete my account
+            </Text>
+          </Pressable>
         </View>
       ) : (
         <Button
@@ -203,6 +262,28 @@ export default function ProfileScreen() {
             Connect to the internet and try again, so nothing is lost.
           </Text>
           <Button label="OK" variant="secondary" onPress={() => setSigningOut("idle")} />
+        </Sticker>
+      ) : null}
+      {deleting !== "idle" ? (
+        <Sticker background={colors.warningCard} style={{ padding: space.md, gap: space.sm }}>
+          <Text style={[type.heading, { color: colors.text }]}>Delete your account?</Text>
+          <Text style={[type.body, { color: colors.text }]}>
+            Your account and everything backed up with it are removed for good, and so are the
+            records on this phone. This can't be undone.
+          </Text>
+          {deleteMessage ? (
+            <Text accessibilityLiveRegion="polite" style={[type.strong, { color: colors.text }]}>
+              {deleteMessage}
+            </Text>
+          ) : null}
+          <Button label="Export everything first" variant="secondary" onPress={exportFirst} />
+          <Button
+            label={deleting === "working" ? "Deleting…" : "Delete my account"}
+            variant="destructive"
+            disabled={deleting === "working"}
+            onPress={() => void deleteMyAccount()}
+          />
+          <Button label="Keep my account" variant="link" onPress={() => setDeleting("idle")} />
         </Sticker>
       ) : null}
       {signingOut === "confirm" ? (

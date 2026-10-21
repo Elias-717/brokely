@@ -62,6 +62,7 @@ async function call<T>(path: string, init: RequestInit = {}, retried = false): P
     throw new ServerError(response.status);
   }
   if (!response.ok) throw new Error(`Sync request refused (${response.status})`);
+  if (response.status === 204) return undefined as T; // done, nothing to read
   return (await response.json()) as T;
 }
 
@@ -71,6 +72,14 @@ export const apiTransport: SyncTransport = {
     call<PushResponse>("/v1/sync/push", { method: "POST", body: JSON.stringify(request) }),
   pull: (since, limit) => call<PullResponse>(`/v1/sync/pull?since=${since}&limit=${limit}`),
 };
+
+/**
+ * Deletes the student's account and everything backed up with it (FR-ACC-07). The server takes
+ * who it is from the sign-in token. Needs a connection; throws OfflineError without one.
+ */
+export async function deleteAccountOnServer(): Promise<void> {
+  await call<void>("/v1/account", { method: "DELETE" });
+}
 
 /** Whether the account already has records on the server (D-73 b): one change is enough. */
 export async function accountHasRecords(): Promise<boolean> {
