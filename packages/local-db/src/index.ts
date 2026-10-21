@@ -20,3 +20,4 @@ export type NewOutboxOperation = InferInsertModel<typeof schema.outboxOperations
 export * from "./repositories";
 export * from "./sync/engine";
 export * from "./sync/summary";
+export * from "./sync/plan-clash";

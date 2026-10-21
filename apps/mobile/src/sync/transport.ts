@@ -1,10 +1,19 @@
-import { summarizeChanges, type RecordSummary, type SyncTransport } from "@brokely/local-db";
+import {
+  accountPlans,
+  archiveAccountPlans,
+  deviceIdOf,
+  summarizeChanges,
+  type PlanCard,
+  type RecordSummary,
+  type SyncTransport,
+} from "@brokely/local-db";
 import {
   MAX_PULL_LIMIT,
   type PullChange,
   type PullResponse,
   type PushResponse,
 } from "@brokely/contracts";
+import { repo } from "../db/client";
 import { supabase } from "./auth";
 import { SYNC_API_URL } from "./config";
 
@@ -88,10 +97,10 @@ export async function accountHasRecords(): Promise<boolean> {
 }
 
 /**
- * What the account holds (D-73 b, S13d): every page of the account's changes, counted. Read
- * only; nothing is written to this phone until the student chooses.
+ * What the account holds (D-73 b, S13d) and its plans (D-83, S13l): every page of the account's
+ * changes, counted. Read only; nothing is written to this phone until the student chooses.
  */
-export async function accountSummary(): Promise<RecordSummary> {
+export async function accountSummary(): Promise<{ summary: RecordSummary; plans: PlanCard[] }> {
   const changes: PullChange[] = [];
   let since = 0;
   for (;;) {
@@ -100,5 +109,10 @@ export async function accountSummary(): Promise<RecordSummary> {
     since = page.nextSince;
     if (!page.hasMore) break;
   }
-  return summarizeChanges(changes);
+  return { summary: summarizeChanges(changes), plans: accountPlans(changes) };
+}
+
+/** "Keep this phone's plan" (D-83): archives the account's clashing plans on the server. */
+export function archiveOnServer(plans: readonly PlanCard[]): Promise<void> {
+  return archiveAccountPlans(repo, apiTransport, deviceIdOf(repo), plans);
 }

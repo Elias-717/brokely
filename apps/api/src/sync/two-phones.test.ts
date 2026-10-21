@@ -1,13 +1,18 @@
-import type { PullResponse, PushResponse } from "@brokely/contracts";
+import { MAX_PULL_LIMIT, type PullResponse, type PushResponse } from "@brokely/contracts";
 import { sen } from "@brokely/domain";
 import {
+  accountPlans,
+  archiveAccountPlans,
+  archiveUnsentPlan,
   checkInNoSpending,
   dayCheckIns,
   deleteTransaction,
   editTransaction,
   listCategories,
   listTransactions,
+  nextClash,
   outboxOperations,
+  phonePlans,
   quickStart,
   recordPurchase,
   renameCategory,
@@ -225,5 +230,53 @@ describe("two phones on one account", () => {
 
     const live = b.ctx.db.select().from(dayCheckIns).where(isNull(dayCheckIns.deletedAt)).all();
     expect(live.map((c) => [c.id, c.syncStatus])).toEqual([[fromA, "synced"]]);
+  });
+});
+
+describe("two plans for the same dates at sign-in (D-83)", () => {
+  /** Phone A backed up its November plan; phone B made its own before signing in. */
+  async function clash() {
+    const acct = await account();
+    const a = await phone(acct);
+    useTheApp(a);
+    await a.sync();
+    const b = await phone(acct);
+    useTheApp(b);
+    const { changes } = await acct.transport.pull(0, MAX_PULL_LIMIT);
+    const found = nextClash(phonePlans(b.ctx.db), accountPlans(changes), new Set());
+    expect(found?.account).toHaveLength(1);
+    return { acct, a, b, found: found! };
+  }
+
+  it("keeps the account's plan: the phone's is archived and every record still arrives", async () => {
+    const { a, b, found } = await clash();
+    unwrap(archiveUnsentPlan(b.ctx, found.phone.id));
+
+    expect(await b.sync()).toMatchObject({ conflicts: 0, failed: 0 });
+    expect(phonePlans(b.ctx.db).map((p) => p.id)).toEqual([found.account[0]!.id]);
+    expect(spending(b)).toHaveLength(4); // both phones' records stay (BR-05: they follow the dates)
+    await a.sync();
+    expect(spending(a)).toEqual(spending(b));
+    expect(phonePlans(a.ctx.db).map((p) => p.id)).toEqual([found.account[0]!.id]);
+  });
+
+  it("keeps the phone's plan: the account's is archived on the server and other phones follow", async () => {
+    const { acct, a, b, found } = await clash();
+    await archiveAccountPlans(b.ctx, acct.transport, randomUUID(), found.account);
+
+    expect(await b.sync()).toMatchObject({ conflicts: 0, failed: 0 });
+    expect(phonePlans(b.ctx.db).map((p) => p.id)).toEqual([found.phone.id]);
+    expect(spending(b)).toHaveLength(4);
+    await a.sync();
+    expect(phonePlans(a.ctx.db).map((p) => p.id)).toEqual([found.phone.id]);
+    expect(spending(a)).toEqual(spending(b));
+  });
+
+  it("refuses to archive an account plan that changed after the pull (S-04)", async () => {
+    const { acct, b, found } = await clash();
+    const stale = { ...found.account[0]!, version: found.account[0]!.version - 1 };
+    await expect(
+      archiveAccountPlans(b.ctx, acct.transport, randomUUID(), [stale]),
+    ).rejects.toThrow();
   });
 });

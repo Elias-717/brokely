@@ -1,14 +1,19 @@
-import type { LocalDate } from "@brokely/domain";
+import { formatRM, sen, type LocalDate } from "@brokely/domain";
 import {
+  archiveUnsentPlan,
   deleteAllData,
   exportJson,
   getNickname,
   linkedAccount,
   listCategories,
+  nextClash,
+  phonePlans,
   phoneSummary,
   seedDefaultCategories,
   setNickname,
   signInStep,
+  type PlanCard,
+  type PlanClash,
   type RecordSummary,
   type SignInStep,
 } from "@brokely/local-db";
@@ -34,6 +39,7 @@ import { useSync } from "../src/sync/sync-provider";
 import {
   accountHasRecords,
   accountSummary,
+  archiveOnServer,
   OfflineError,
   ServerError,
 } from "../src/sync/transport";
@@ -52,11 +58,27 @@ type Phase =
   | { kind: "email" } // S13b
   | { kind: "working"; text: string }
   | { kind: "check-email"; email: string; why: "confirm" | "reset" } // S13c
-  | { kind: "ask"; phone: RecordSummary; account: RecordSummary } // S13d
+  | { kind: "ask"; phone: RecordSummary; account: RecordSummary; plans: PlanCard[] } // S13d
+  | { kind: "plans"; clash: PlanClash; keep: "account" | "phone"; choices: PlanChoices } // S13l
   | { kind: "other-account" } // S13f
   | { kind: "confirm-erase"; back: Phase }; // S13e
 
 const RESEND_AFTER_S = 60;
+
+/**
+ * Answers so far to "Two plans for the same dates" (D-83). Nothing is written until the last
+ * answer: then the account's plans are archived on the server first (that can fail), then the
+ * phone's.
+ */
+type PlanChoices = {
+  phone: PlanCard[];
+  account: PlanCard[];
+  /** Plans already settled: they no longer clash. */
+  archived: string[];
+  onServer: PlanCard[];
+  onPhone: string[];
+  back: Phase;
+};
 
 function lastDay(endExclusive: string): LocalDate {
   const d = new Date(`${endExclusive}T00:00:00Z`);
@@ -161,7 +183,13 @@ export default function SignInScreen() {
       }
       if (step === "sync") return await finish(current);
       if (step === "other-account") return setPhase({ kind: "other-account" });
-      setPhase({ kind: "ask", phone: phoneSummary(db), account: await accountSummary() });
+      const account = await accountSummary();
+      setPhase({
+        kind: "ask",
+        phone: phoneSummary(db),
+        account: account.summary,
+        plans: account.plans,
+      });
     } catch (error) {
       setPhase({ kind: "start" });
       setMessage(
@@ -172,6 +200,47 @@ export default function SignInScreen() {
             : "Something went wrong while checking your account. Please try again.",
       );
     }
+  };
+
+  /** The next plan question (S13l), or, with every clash settled, the answers applied. */
+  const askNext = (choices: PlanChoices) => {
+    const clash = nextClash(choices.phone, choices.account, new Set(choices.archived));
+    if (clash) return setPhase({ kind: "plans", clash, keep: "account", choices });
+    void applyChoices(choices);
+  };
+
+  const keepPlan = ({ clash, keep, choices }: Extract<Phase, { kind: "plans" }>) =>
+    askNext(
+      keep === "account"
+        ? {
+            ...choices,
+            archived: [...choices.archived, clash.phone.id],
+            onPhone: [...choices.onPhone, clash.phone.id],
+          }
+        : {
+            ...choices,
+            archived: [...choices.archived, ...clash.account.map((a) => a.id)],
+            onServer: [...choices.onServer, ...clash.account],
+          },
+    );
+
+  const applyChoices = async (choices: PlanChoices) => {
+    if (!session) return;
+    setMessage(null);
+    setPhase({ kind: "working", text: "Setting up your plans…" });
+    try {
+      await archiveOnServer(choices.onServer);
+    } catch (error) {
+      setPhase(choices.back);
+      setMessage(
+        error instanceof OfflineError
+          ? "Brokely couldn't reach its server. Check your connection and try again."
+          : "Your account's plan changed on another phone just now. Please choose again.",
+      );
+      return;
+    }
+    for (const id of choices.onPhone) archiveUnsentPlan(repo, id);
+    await finish(session);
   };
 
   // Opened while signed in but not linked yet, e.g. back from the reset link. A sign-in from
@@ -519,12 +588,60 @@ export default function SignInScreen() {
           <Button
             label="Add this phone's records"
             variant="secondary"
-            onPress={() => session && void finish(session)}
+            onPress={() =>
+              askNext({
+                phone: phonePlans(db),
+                account: phase.plans,
+                archived: [],
+                onServer: [],
+                onPhone: [],
+                back: phase,
+              })
+            }
           />
           <Text style={[type.small, { color: colors.muted }]}>
-            Adding keeps both. A plan for the same dates as one in your account can't be added;
-            Brokely marks it for you to check.
+            Adding keeps both. If a plan has the same dates as one in your account, Brokely asks
+            which plan to keep.
           </Text>
+          {notice}
+        </>
+      ) : null}
+
+      {/* S13l: two plans for the same dates; records, bills and debts stay either way (D-83). */}
+      {phase.kind === "plans" ? (
+        <>
+          <Heading>
+            Two plans for {dayMonth(phase.clash.phone.start as LocalDate)} –{" "}
+            {dayMonth(lastDay(phase.clash.phone.endExclusive))}
+          </Heading>
+          <Body muted>
+            Your account and this phone each have a plan for these dates. Which one should stay?
+          </Body>
+          <View accessibilityRole="radiogroup" style={{ gap: space.sm }}>
+            <PlanChoice
+              title={
+                phase.clash.account.length === 1 ? "Your account's plan" : "Your account's plans"
+              }
+              plans={phase.clash.account}
+              selected={phase.keep === "account"}
+              onPress={() => setPhase({ ...phase, keep: "account" })}
+            />
+            <PlanChoice
+              title="This phone's plan"
+              plans={[phase.clash.phone]}
+              selected={phase.keep === "phone"}
+              onPress={() => setPhase({ ...phase, keep: "phone" })}
+            />
+          </View>
+          <Button
+            label={phase.keep === "account" ? "Keep my account's plan" : "Keep this phone's plan"}
+            onPress={() => keepPlan(phase)}
+          />
+          <Text style={[type.small, { color: colors.muted }]}>
+            All records, bills and debts from both stay either way. Only the other plan's budget and
+            amounts are put away.
+          </Text>
+          <Button label="Back" variant="link" onPress={() => setPhase(phase.choices.back)} />
         </>
       ) : null}
 
@@ -577,5 +694,74 @@ export default function SignInScreen() {
         </>
       ) : null}
     </PageScreen>
+  );
+}
+
+/** One side of S13l as a choice card: budget, categories planned, when it was approved. */
+function PlanChoice({
+  title,
+  plans,
+  selected,
+  onPress,
+}: {
+  title: string;
+  plans: readonly PlanCard[];
+  selected: boolean;
+  onPress: () => void;
+}) {
+  const { colors } = useTheme();
+  const one = plans.length === 1 ? plans[0]! : null;
+  const dates = (p: PlanCard) =>
+    `${dayMonth(p.start as LocalDate)} – ${dayMonth(lastDay(p.endExclusive))}`;
+  const budget = (p: PlanCard) =>
+    p.budgetSen === null ? "No budget yet" : formatRM(sen(p.budgetSen));
+  const lines = one
+    ? [
+        `${one.categories} ${one.categories === 1 ? "category" : "categories"} planned`,
+        ...(one.approvedAt
+          ? [`Approved ${dayMonth(one.approvedAt.slice(0, 10) as LocalDate)}`]
+          : []),
+      ]
+    : plans.map((p) => `${dates(p)} · ${budget(p)}`);
+  return (
+    <Pressable
+      accessibilityRole="radio"
+      accessibilityState={{ checked: selected }}
+      accessibilityLabel={`${title}. ${one ? `${budget(one)}. ` : ""}${lines.join(". ")}`}
+      onPress={onPress}
+      style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+    >
+      <Sticker
+        background={selected ? colors.cardTint : colors.card}
+        outline={selected ? colors.primary : colors.outline}
+        style={{ padding: space.md, gap: 2, borderWidth: selected ? 3 : 2 }}
+      >
+        <View style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}>
+          <Text style={{ flex: 1, fontFamily: fonts.heavy, fontSize: 17, color: colors.text }}>
+            {title}
+          </Text>
+          <View
+            style={{
+              width: 24,
+              height: 24,
+              borderRadius: 12,
+              borderWidth: selected ? 7 : 2,
+              borderColor: selected ? colors.primary : colors.outline,
+              backgroundColor: colors.card,
+            }}
+          />
+        </View>
+        {one ? (
+          <Text style={[type.heading, { fontSize: 26, lineHeight: 30, color: colors.text }]}>
+            {budget(one)}
+          </Text>
+        ) : null}
+        {lines.map((l) => (
+          <Text key={l} style={[type.body, { fontSize: 15, color: colors.muted }]}>
+            {l}
+          </Text>
+        ))}
+      </Sticker>
+    </Pressable>
   );
 }
