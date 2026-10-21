@@ -37,3 +37,16 @@ export function billTypeOf(categoryName: string): BillType {
     BILL_TYPES.find((t) => t.name === OTHER_BILLS)!
   );
 }
+
+/**
+ * Quick add on an empty Bills page (S6, D-77): the usual ones, one tap to a filled-in form.
+ * Name, kind and "monthly" only; never an amount, because prices differ (student plans, promos).
+ */
+export const BILL_PRESETS: readonly { label: string; emoji: string; type: string }[] = [
+  { label: "Phone plan", emoji: "📱", type: "Phone & Internet" },
+  { label: "Spotify", emoji: "🎧", type: "Subscriptions" },
+  { label: "Netflix", emoji: "📺", type: "Subscriptions" },
+  { label: "Bus pass", emoji: "🚌", type: "Transportation" },
+  { label: "Gym", emoji: "🏋️", type: "Subscriptions" },
+  { label: "Rent", emoji: "🏠", type: "Housing & Rent" },
+];

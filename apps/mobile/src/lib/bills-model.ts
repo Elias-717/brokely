@@ -1,4 +1,11 @@
-import { localDate, sen, type LocalDate, type RepeatRule, type Sen } from "@brokely/domain";
+import {
+  localDate,
+  sen,
+  type DateRange,
+  type LocalDate,
+  type RepeatRule,
+  type Sen,
+} from "@brokely/domain";
 import {
   findCycleOn,
   getTransaction,
@@ -42,6 +49,7 @@ export function describeRepeat(rule: RepeatRule, anchor: LocalDate): string {
 
 export interface BillItem {
   readonly id: string;
+  readonly billId: string;
   readonly name: string;
   readonly categoryName: string;
   readonly dueDate: LocalDate;
@@ -54,21 +62,36 @@ export interface BillItem {
 }
 
 export type BillsModel = {
-  readonly bills: readonly (BillView & { categoryName: string; describe: string })[];
+  readonly bills: readonly (BillView & {
+    categoryName: string;
+    describe: string;
+    /** Its first date still to come in this plan (late ones first), if any. */
+    next: LocalDate | null;
+  })[];
   /** Null without a plan: items only exist inside a cycle (FR-CAT-04). */
   readonly items: readonly BillItem[] | null;
+  /** The plan's dates, for "Plan ends 30 Nov". */
+  readonly range: DateRange | null;
+  /** The summary card (S6, D-77): what's still to come and what's paid in this plan. */
+  readonly summary: {
+    readonly stillToComeSen: Sen;
+    readonly upcoming: number;
+    readonly paidSen: Sen;
+    readonly next: BillItem | null;
+  } | null;
 };
 
 /** S6 Bills: this plan's bill dates and every live bill (FR-CAT-03…07). */
 export function readBills(db: Db, today: LocalDate): BillsModel {
   const nameOf = new Map(listCategories(db, { includeArchived: true }).map((c) => [c.id, c.name]));
-  const bills = listBills(db).map((b) => ({
+  const cycle = findCycleOn(db, today);
+  const plain = listBills(db).map((b) => ({
     ...b,
     categoryName: nameOf.get(b.categoryId) ?? "Other",
     describe: describeRepeat(b.repeat, localDate(b.anchorDate)),
+    next: null as LocalDate | null,
   }));
-  const cycle = findCycleOn(db, today);
-  if (!cycle) return { bills, items: null };
+  if (!cycle) return { bills: plain, items: null, range: null, summary: null };
 
   const items = listScheduledItems(db, {
     start: cycle.startDate,
@@ -77,6 +100,7 @@ export function readBills(db: Db, today: LocalDate): BillsModel {
     const paid = i.transactionId ? getTransaction(db, i.transactionId) : undefined;
     return {
       id: i.id,
+      billId: i.billId,
       name: i.billName,
       categoryName: nameOf.get(i.categoryId) ?? "Other",
       dueDate: localDate(i.dueDate),
@@ -87,5 +111,22 @@ export function readBills(db: Db, today: LocalDate): BillsModel {
       transactionId: i.transactionId,
     };
   });
-  return { bills, items };
+  const upcoming = items.filter((i) => i.status === "upcoming"); // oldest first
+  const nextOf = new Map<string, LocalDate>();
+  for (const i of upcoming) if (!nextOf.has(i.billId)) nextOf.set(i.billId, i.dueDate);
+  const bills = plain.map((b) => ({ ...b, next: nextOf.get(b.id) ?? null }));
+  // The next one: the oldest still unpaid if it's late, otherwise the first from today.
+  const next =
+    upcoming.find((i) => i.dueDate < today) ?? upcoming.find((i) => i.dueDate >= today) ?? null;
+  return {
+    bills,
+    items,
+    range: { start: localDate(cycle.startDate), endExclusive: localDate(cycle.endDateExclusive) },
+    summary: {
+      stillToComeSen: sen(upcoming.reduce((sum, i) => sum + i.amountSen, 0)),
+      upcoming: upcoming.length,
+      paidSen: sen(items.reduce((sum, i) => sum + (i.status === "paid" ? (i.paidSen ?? 0) : 0), 0)),
+      next,
+    },
+  };
 }

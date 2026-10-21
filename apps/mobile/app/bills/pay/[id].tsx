@@ -1,5 +1,10 @@
 import { formatRM, parseAmount, type LocalDate, type Sen } from "@brokely/domain";
-import { deleteTransaction, markBillPaid } from "@brokely/local-db";
+import {
+  deleteTransaction,
+  markBillPaid,
+  skipScheduledItem,
+  unskipScheduledItem,
+} from "@brokely/local-db";
 import { Redirect, router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
 import { Text } from "react-native";
@@ -57,6 +62,16 @@ function MarkPaidSheet({ item, day }: { item: BillItem; day: LocalDate }) {
     );
   };
 
+  // Skip lives here now, so the Bills list stays calm (D-77). Undo brings the date back.
+  const skip = () => {
+    const skipped = skipScheduledItem(repo, item.id);
+    if (!skipped.ok) return setProblem(refusalText(skipped.code, skipped.message));
+    router.back();
+    showUndo(`Skipped ${item.name} · ${dayMonth(item.dueDate)}`, () =>
+      unskipScheduledItem(repo, item.id),
+    );
+  };
+
   const changed = amount !== null && amount !== item.amountSen;
 
   return (
@@ -82,6 +97,7 @@ function MarkPaidSheet({ item, day }: { item: BillItem; day: LocalDate }) {
             onPress={save}
             disabled={!amount}
           />
+          <Button label="Skip this one" variant="link" onPress={skip} />
         </>
       }
     >

@@ -22,7 +22,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
 import { Text, View } from "react-native";
 import { db, repo } from "../../src/db/client";
-import { BILL_TYPES, billTypeOf, OTHER_BILLS } from "../../src/lib/bill-types";
+import { BILL_PRESETS, BILL_TYPES, billTypeOf, OTHER_BILLS } from "../../src/lib/bill-types";
 import { describeRepeat } from "../../src/lib/bills-model";
 import { refusalText } from "../../src/lib/messages";
 import { dayMonth, today } from "../../src/lib/today";
@@ -52,9 +52,11 @@ const asTyped = (amount: number) =>
   `${Math.floor(amount / 100)}.${String(amount % 100).padStart(2, "0")}`;
 
 export default function BillFormRoute() {
-  const { id } = useLocalSearchParams<{ id?: string }>();
+  const { id, preset } = useLocalSearchParams<{ id?: string; preset?: string }>();
   const bill = useMemo(() => (id ? getBill(db, id) : undefined), [id]);
-  return <BillForm bill={bill} />;
+  // Quick add on an empty Bills page opens the form filled in (D-77).
+  const filled = BILL_PRESETS.find((p) => p.label === preset);
+  return <BillForm bill={bill} preset={filled} />;
 }
 
 /**
@@ -62,7 +64,13 @@ export default function BillFormRoute() {
  * time, the kind of bill (which decides its spending category), how it repeats and from when. Changes apply to upcoming dates only; paid ones stay.
  * Stop keeps the history and offers Undo.
  */
-function BillForm({ bill }: { bill: BillView | undefined }) {
+function BillForm({
+  bill,
+  preset,
+}: {
+  bill: BillView | undefined;
+  preset?: (typeof BILL_PRESETS)[number];
+}) {
   const { colors } = useTheme();
   const showUndo = useUndo();
   const day = useMemo(() => today(), []);
@@ -71,11 +79,11 @@ function BillForm({ bill }: { bill: BillView | undefined }) {
   const cycle = useMemo(() => findCycleOn(db, day), [day]);
 
   const rule = bill?.repeat;
-  const [name, setName] = useState(bill?.name ?? "");
+  const [name, setName] = useState(bill?.name ?? preset?.label ?? "");
   const [amountText, setAmountText] = useState(bill ? asTyped(bill.amountSen) : "");
   // The kind of bill (D-57); a saved bill's kind comes from its category's name.
   const [typeName, setTypeName] = useState<string | null>(
-    currentCategory ? billTypeOf(currentCategory).name : null,
+    currentCategory ? billTypeOf(currentCategory).name : (preset?.type ?? null),
   );
   const [otherName, setOtherName] = useState(
     currentCategory && billTypeOf(currentCategory).name === OTHER_BILLS ? currentCategory : "",
@@ -150,7 +158,7 @@ function BillForm({ bill }: { bill: BillView | undefined }) {
   };
 
   return (
-    <PageScreen title={bill ? "Change" : "New bill or subscription"}>
+    <PageScreen title={bill ? "Change" : "New bill or subscription"} keyboardSafe>
       <Labelled label="Name">
         <Field
           value={name}
