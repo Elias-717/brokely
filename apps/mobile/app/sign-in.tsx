@@ -400,14 +400,7 @@ export default function SignInScreen() {
               <Text style={[type.small, { color: colors.muted, textAlign: "center" }]}>
                 No bank login, ever. We back up your records only.
               </Text>
-              {/* Notice before any data leaves the phone (PDPA s.7, D-92). */}
-              <View style={{ alignItems: "center" }}>
-                <Button
-                  label="How Brokely handles your data"
-                  variant="link"
-                  onPress={() => router.push("/privacy")}
-                />
-              </View>
+              <AgreeLine action="signing in" />
             </View>
           </Appear>
         </>
@@ -503,6 +496,7 @@ export default function SignInScreen() {
               We'll send one email to confirm it's you.
             </Text>
           ) : null}
+          {mode === "create" ? <AgreeLine action="creating an account" /> : null}
           {mode === "sign-in" ? (
             <Button label="Forgot password?" variant="link" onPress={() => setMode("forgot")} />
           ) : null}
@@ -773,5 +767,24 @@ function PlanChoice({
         ))}
       </Sticker>
     </Pressable>
+  );
+}
+
+/** Terms and notice before any data leaves the phone (PDPA s.7, D-92, D-93). */
+function AgreeLine({ action }: { action: string }) {
+  const { colors } = useTheme();
+  const link = { color: colors.text, textDecorationLine: "underline" as const };
+  return (
+    <Text style={[type.small, { color: colors.muted, textAlign: "center" }]}>
+      By {action} you agree to the{" "}
+      <Text accessibilityRole="link" onPress={() => router.push("/terms")} style={link}>
+        Terms of use
+      </Text>{" "}
+      and confirm you've read the{" "}
+      <Text accessibilityRole="link" onPress={() => router.push("/privacy")} style={link}>
+        Privacy notice
+      </Text>
+      .
+    </Text>
   );
 }

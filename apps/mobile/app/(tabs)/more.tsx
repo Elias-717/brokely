@@ -177,6 +177,11 @@ export default function MoreScreen() {
           onPress={() => router.push("/privacy")}
         />
         <Row
+          title="Terms of use"
+          detail="What Brokely is, and the rules for using it"
+          onPress={() => router.push("/terms")}
+        />
+        <Row
           title="Delete all my data"
           detail="From this phone; can't be undone"
           warning

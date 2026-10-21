@@ -30,6 +30,20 @@ describe("GET /privacy (PDPA s.7)", () => {
     expect(res.body).not.toContain("<script");
     await app.close();
   });
+
+  it("also serves the Terms of use and how to delete an account (D-93, Google Play)", async () => {
+    const app = buildApp();
+    const terms = await app.inject({ method: "GET", url: "/terms" });
+    expect(terms.statusCode).toBe(200);
+    expect(terms.body).toContain("Terms of use");
+    expect(terms.body).toContain("Terma penggunaan");
+    expect(terms.body).toContain("laws of Malaysia");
+    const deletion = await app.inject({ method: "GET", url: "/delete-account" });
+    expect(deletion.statusCode).toBe(200);
+    expect(deletion.body).toContain("Delete my account");
+    expect(deletion.body).toContain("eliassumairi@gmail.com");
+    await app.close();
+  });
 });
 
 describe("sync routes (sync-api §4, §5)", () => {

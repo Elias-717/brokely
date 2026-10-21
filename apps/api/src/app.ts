@@ -12,7 +12,7 @@ import { z } from "zod";
 import { deleteAccount } from "./account";
 import type { VerifyToken } from "./auth";
 import type { Db } from "./db/client";
-import { privacyPage } from "./privacy-page";
+import { legalPage, LEGAL_PAGES } from "./legal-pages";
 import { createRateLimit, PUSHES_PER_MINUTE } from "./rate-limit";
 import { pull } from "./sync/pull";
 import { push } from "./sync/push";
@@ -75,13 +75,16 @@ export function buildApp(
   });
 
   app.get("/health", async (): Promise<HealthResponse> => ({ status: "ok" }));
-  // The public privacy notice (PDPA s.7), linked from Google Play and the Google consent screen.
-  app.get("/privacy", async (_request, reply) =>
-    reply
-      .type("text/html; charset=utf-8")
-      .header("cache-control", "max-age=3600")
-      .send(privacyPage()),
-  );
+  // Public legal pages: the privacy notice (PDPA s.7), Terms of use and how to delete an account
+  // (Google Play), linked from the store listing and the Google consent screen (D-92, D-93).
+  for (const path of Object.keys(LEGAL_PAGES)) {
+    app.get(path, async (_request, reply) =>
+      reply
+        .type("text/html; charset=utf-8")
+        .header("cache-control", "max-age=3600")
+        .send(legalPage(path)),
+    );
+  }
   if (!deps) return app;
 
   /** The student from the sign-in token (S-02), or a 401 reply. */
