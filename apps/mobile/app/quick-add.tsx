@@ -19,7 +19,7 @@ import { categoriesByUse, guessHistory, recentNotesByCategory } from "../src/lib
 import { categoryEmoji } from "../src/lib/essentials-meta";
 import { refusalText } from "../src/lib/messages";
 import { dayMonth, occurredAtFor, today } from "../src/lib/today";
-import { Button } from "../src/ui/components";
+import { Button, Sticker } from "../src/ui/components";
 import { pickDate } from "../src/ui/date-picker";
 import { Keypad } from "../src/ui/keypad";
 import { SheetPanel } from "../src/ui/sheet";
@@ -59,10 +59,21 @@ const FROM_EMOJI: Record<string, string> = {
   Other: "✨",
 };
 
-const MORE: { kind: MoreKind; label: string }[] = [
-  { kind: "transfer", label: "Between my own wallets" },
-  { kind: "lent", label: "I lent money" },
-  { kind: "borrowed", label: "I borrowed money" },
+/** The More choices, each saying what it does (D-85). */
+const MORE: { kind: MoreKind; emoji: string; label: string; detail: string }[] = [
+  {
+    kind: "transfer",
+    emoji: "🔁",
+    label: "Between my own wallets",
+    detail: "e.g. bank to TNG · never spending",
+  },
+  { kind: "lent", emoji: "📤", label: "I lent money", detail: "Someone owes you · shows in Debts" },
+  {
+    kind: "borrowed",
+    emoji: "📥",
+    label: "I borrowed money",
+    detail: "You owe someone · shows in Debts",
+  },
 ];
 
 /**
@@ -256,7 +267,14 @@ export default function QuickAdd() {
           ? `Save borrowed · ${formatRM(amount)}`
           : mode === "in"
             ? `Save money in · ${formatRM(amount)}`
-            : `Save ${formatRM(amount)}`;
+            : // More: the button says what will happen (D-85).
+              moreKind === "transfer"
+              ? `Save transfer · ${formatRM(amount)}`
+              : !person.trim()
+                ? `Save ${formatRM(amount)}`
+                : moreKind === "lent"
+                  ? `Save · ${person.trim()} owes you ${formatRM(amount)}`
+                  : `Save · You owe ${person.trim()} ${formatRM(amount)}`;
 
   return (
     <KeyboardSafe style={{ justifyContent: "flex-end" }}>
@@ -402,16 +420,57 @@ export default function QuickAdd() {
             </View>
           ) : mode === "more" ? (
             <View style={{ gap: space.sm }}>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
-                {MORE.map((m) => (
-                  <Chip
-                    key={m.kind}
-                    label={m.label}
-                    selected={m.kind === moreKind}
-                    onPress={() => setMoreKind(m.kind)}
-                  />
-                ))}
-              </View>
+              <Sticker offset={2} rounded={14} style={{ padding: 0, overflow: "hidden" }}>
+                <View accessibilityRole="radiogroup">
+                  {MORE.map((m, i) => {
+                    const on = m.kind === moreKind;
+                    return (
+                      <Pressable
+                        key={m.kind}
+                        accessibilityRole="radio"
+                        accessibilityState={{ checked: on }}
+                        accessibilityLabel={`${m.label}. ${m.detail}`}
+                        onPress={() => {
+                          setMoreKind(m.kind);
+                          setProblem(null);
+                        }}
+                        style={({ pressed }) => ({
+                          minHeight: MIN_TOUCH + 8,
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: space.sm,
+                          paddingHorizontal: 12,
+                          paddingVertical: 9,
+                          backgroundColor: on ? colors.cardTint : colors.card,
+                          borderTopWidth: i === 0 ? 0 : 2,
+                          borderTopColor: colors.background,
+                          opacity: pressed ? 0.8 : 1,
+                        })}
+                      >
+                        <Text style={{ fontSize: 18 }}>{m.emoji}</Text>
+                        <View style={{ flex: 1 }}>
+                          <Text
+                            style={{ fontFamily: fonts.heavy, fontSize: 15, color: colors.text }}
+                          >
+                            {m.label}
+                          </Text>
+                          <Text style={[type.small, { color: colors.muted }]}>{m.detail}</Text>
+                        </View>
+                        <View
+                          style={{
+                            width: 22,
+                            height: 22,
+                            borderRadius: 11,
+                            borderWidth: on ? 7 : 2,
+                            borderColor: on ? colors.primary : colors.outline,
+                            backgroundColor: colors.card,
+                          }}
+                        />
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </Sticker>
               {moreKind !== "transfer" ? (
                 <Field
                   value={person}
@@ -421,11 +480,7 @@ export default function QuickAdd() {
                     moreKind === "lent" ? "Who did you lend to?" : "Who did you borrow from?"
                   }
                 />
-              ) : (
-                <Text style={[type.small, { color: colors.muted }]}>
-                  Moving money between your own wallets (e.g. bank to TNG) is never spending.
-                </Text>
-              )}
+              ) : null}
             </View>
           ) : null}
 
