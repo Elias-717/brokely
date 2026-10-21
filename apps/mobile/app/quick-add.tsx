@@ -22,7 +22,9 @@ import { dayMonth, occurredAtFor, today } from "../src/lib/today";
 import { Button, Sticker } from "../src/ui/components";
 import { pickDate } from "../src/ui/date-picker";
 import { Keypad } from "../src/ui/keypad";
-import { SheetPanel, SheetScroll } from "../src/ui/sheet";
+import { SheetPanel, SheetScroll, WhenFull } from "../src/ui/sheet";
+import { DebtExtras, MoneyInExtras, SpentExtras } from "../src/ui/sheet-extras";
+import { asTyped } from "../src/ui/allocation-fields";
 import { CategoryPicker } from "../src/ui/category-picker";
 import { Chip, Field } from "../src/ui/sheet-parts";
 import { fonts, MIN_TOUCH, radius, space, type } from "../src/ui/theme";
@@ -309,7 +311,8 @@ export default function QuickAdd() {
                 fontFamily: fonts.heading,
                 fontSize: 48,
                 lineHeight: 54,
-                color: colors.text,
+                color:
+                  mode === "spent" ? colors.expense : mode === "in" ? colors.income : colors.text,
                 fontVariant: ["tabular-nums"],
               }}
             >
@@ -558,6 +561,43 @@ export default function QuickAdd() {
               ) : null}
             </View>
           ) : null}
+          {/* Pulled up to full screen: help finishing this entry (D-87). */}
+          <WhenFull>
+            {mode === "spent" ? (
+              <SpentExtras
+                day={day}
+                category={picked ?? null}
+                typedSen={amount}
+                categoryName={(id) => categories.find((c) => c.id === id)?.name ?? "Other"}
+                onRepeat={(p) => {
+                  setAmountText(asTyped(p.amountSen));
+                  setCategoryId(p.categoryId);
+                  setPickedByHand(true);
+                  setNote(p.note);
+                  setSplit(false);
+                  setProblem(null);
+                }}
+              />
+            ) : mode === "in" ? (
+              <MoneyInExtras
+                day={day}
+                onRepeat={(r) => {
+                  setAmountText(asTyped(r.amountSen));
+                  setProblem(null);
+                  // Saved as "From family · note" or "From a friend · Ali · note".
+                  const [source = "", ...rest] = r.note.split(" · ");
+                  if (!FROM.includes(source)) return setNote(r.note);
+                  setFrom(source);
+                  if (source === FRIEND && rest.length > 1) {
+                    setPerson(rest[0]!);
+                    setNote(rest.slice(1).join(" · "));
+                  } else setNote(rest.join(" · "));
+                }}
+              />
+            ) : (
+              <DebtExtras />
+            )}
+          </WhenFull>
         </SheetScroll>
 
         {/* Hidden while typing a note or name, so that field stays visible. */}

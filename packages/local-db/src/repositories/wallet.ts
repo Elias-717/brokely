@@ -56,6 +56,17 @@ function compare(db: Db, last: WalletCheckRow, amountSen: Sen, now: string): Wal
   return { lastCheck: last, expectedSen, difference: walletDifference(amountSen, expectedSen) };
 }
 
+/** The student's earlier checks, newest first (shown in the full-screen Wallet check, D-87). */
+export function listWalletChecks(db: Db, limit = 3): WalletCheckRow[] {
+  return db
+    .select()
+    .from(walletChecks)
+    .where(live)
+    .orderBy(...newestFirst)
+    .limit(limit)
+    .all();
+}
+
 /** What the screen shows while the student types: null for the very first check (FR-WAL-02). */
 export function compareWithLastCheck(db: Db, amountSen: Sen, now: string): WalletComparison | null {
   const last = previousCheck(db, now);

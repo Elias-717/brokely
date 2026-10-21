@@ -89,6 +89,14 @@ const EXPAND_VELOCITY = 0.5;
 const SheetExpanded = createContext(false);
 
 /**
+ * Shown only while the sheet is pulled up to full screen (D-87), e.g. "Repeat a recent one".
+ * Its contents mount only then, so the usual sheet stays as quick as before.
+ */
+export function WhenFull({ children }: { children: ReactNode }) {
+  return useContext(SheetExpanded) ? <>{children}</> : null;
+}
+
+/**
  * The scrolling part of a sheet. Normally only as tall as its content; at full screen it fills
  * the space, so the keypad and Save stay at the bottom.
  */

@@ -16,7 +16,8 @@ import { dayMonth, occurredAtFor, today } from "../../../src/lib/today";
 import { Button } from "../../../src/ui/components";
 import { pickDate } from "../../../src/ui/date-picker";
 import { Keypad } from "../../../src/ui/keypad";
-import { DateButton, SheetAmount, SheetNote, SheetShell } from "../../../src/ui/sheet";
+import { DateButton, SheetAmount, SheetNote, SheetShell, WhenFull } from "../../../src/ui/sheet";
+import { BillExtras } from "../../../src/ui/sheet-extras";
 import { type } from "../../../src/ui/theme";
 import { useTheme } from "../../../src/ui/theme-context";
 import { useUndo } from "../../../src/ui/undo";
@@ -118,6 +119,9 @@ function MarkPaidSheet({ item, day }: { item: BillItem; day: LocalDate }) {
           if (chosen) setDate(chosen);
         }}
       />
+      <WhenFull>
+        <BillExtras billId={item.billId} dueDate={item.dueDate} />
+      </WhenFull>
     </SheetShell>
   );
 }

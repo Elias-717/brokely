@@ -7,7 +7,12 @@ import { checkInNoSpending, listCheckInDates, undoCheckIn } from "./check-ins";
 import type { RepoContext } from "./context";
 import { createDebt } from "./debts";
 import { listTransactions, recordMoneyIn, recordPurchase, recordTransaction } from "./transactions";
-import { compareWithLastCheck, logWalletDifference, recordWalletCheck } from "./wallet";
+import {
+  compareWithLastCheck,
+  listWalletChecks,
+  logWalletDifference,
+  recordWalletCheck,
+} from "./wallet";
 
 describe("check-in repository", () => {
   let ctx: RepoContext;
@@ -91,6 +96,20 @@ describe("wallet check repository (FR-WAL-01…04, R-13)", () => {
     setNow(THU_NOON);
     return first;
   };
+
+  it("lists earlier checks newest first, with what was counted (D-87)", () => {
+    mondayToThursday();
+    recordWalletCheck(ctx, {
+      amountSen: sen(18000),
+      localDate: "2026-11-19",
+      note: "Cash RM 30.00 · TNG RM 150.00",
+    });
+    expect(listWalletChecks(ctx.db).map((c) => [c.localDate, c.amountSen, c.note])).toEqual([
+      ["2026-11-19", 18000, "Cash RM 30.00 · TNG RM 150.00"],
+      ["2026-11-16", 20000, ""],
+    ]);
+    expect(listWalletChecks(ctx.db, 1)).toHaveLength(1);
+  });
 
   it("the first check only sets the starting point (AC-62, FR-WAL-02)", () => {
     const first = mondayToThursday();

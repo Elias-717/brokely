@@ -17,7 +17,8 @@ import { dayMonth, today, weekdayName } from "../src/lib/today";
 import { asTyped } from "../src/ui/allocation-fields";
 import { Button, Sticker } from "../src/ui/components";
 import { Keypad } from "../src/ui/keypad";
-import { SheetShell } from "../src/ui/sheet";
+import { SheetShell, WhenFull } from "../src/ui/sheet";
+import { WalletExtras } from "../src/ui/sheet-extras";
 import { Chip } from "../src/ui/sheet-parts";
 import { fonts, space, type } from "../src/ui/theme";
 import { useTheme } from "../src/ui/theme-context";
@@ -182,6 +183,9 @@ function Count({
           ? `Typing into ${PARTS.find((p) => p.key === active)!.label}. Know only the total? Tap All together.`
           : "Typing the total. Tap Cash, TNG or Bank to add them up instead."}
       </Text>
+      <WhenFull>
+        <WalletExtras />
+      </WhenFull>
     </SheetShell>
   );
 }
