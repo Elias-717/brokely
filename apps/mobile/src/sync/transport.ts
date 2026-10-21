@@ -44,7 +44,8 @@ async function call<T>(path: string, init: RequestInit = {}, retried = false): P
       headers: {
         ...init.headers,
         Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
+        // Only with a body: the server refuses "JSON" with nothing in it (400), e.g. a DELETE.
+        ...(init.body ? { "Content-Type": "application/json" } : {}),
       },
     });
   } catch (error) {
