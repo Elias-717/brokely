@@ -35,7 +35,9 @@ export function Screen({
       edges={["top", "left", "right"]}
     >
       {scroll ? (
-        <ScrollView contentContainerStyle={content}>{children}</ScrollView>
+        // flexGrow lets a child with flex: 1 fill the space left (e.g. a centred card on Home);
+        // content taller than the screen still scrolls.
+        <ScrollView contentContainerStyle={[content, { flexGrow: 1 }]}>{children}</ScrollView>
       ) : (
         <View style={[content, { flex: 1 }]}>{children}</View>
       )}
