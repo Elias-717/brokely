@@ -1,5 +1,10 @@
-import type { SyncTransport } from "@brokely/local-db";
-import type { PullResponse, PushResponse } from "@brokely/contracts";
+import { summarizeChanges, type RecordSummary, type SyncTransport } from "@brokely/local-db";
+import {
+  MAX_PULL_LIMIT,
+  type PullChange,
+  type PullResponse,
+  type PushResponse,
+} from "@brokely/contracts";
 import { supabase } from "./auth";
 import { SYNC_API_URL } from "./config";
 
@@ -70,4 +75,20 @@ export const apiTransport: SyncTransport = {
 /** Whether the account already has records on the server (D-73 b): one change is enough. */
 export async function accountHasRecords(): Promise<boolean> {
   return (await apiTransport.pull(0, 1)).changes.length > 0;
+}
+
+/**
+ * What the account holds (D-73 b, S13d): every page of the account's changes, counted. Read
+ * only; nothing is written to this phone until the student chooses.
+ */
+export async function accountSummary(): Promise<RecordSummary> {
+  const changes: PullChange[] = [];
+  let since = 0;
+  for (;;) {
+    const page = await apiTransport.pull(since, MAX_PULL_LIMIT);
+    changes.push(...page.changes);
+    since = page.nextSince;
+    if (!page.hasMore) break;
+  }
+  return summarizeChanges(changes);
 }

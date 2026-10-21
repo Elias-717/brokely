@@ -3,26 +3,23 @@ import {
   exportJson,
   exportTransactionsCsv,
   getMoneyTips,
-  getNickname,
   getSettings,
-  NICKNAME_MAX,
   setMoneyTipsEnabled,
-  setNickname,
   updateSettings,
   type Appearance,
 } from "@brokely/local-db";
 import { router, type Href } from "expo-router";
 import { useState } from "react";
-import { Pressable, Switch, Text, TextInput, View } from "react-native";
+import { Pressable, Switch, Text, View } from "react-native";
 import { db, repo } from "../../src/db/client";
-import { AccountRows } from "../../src/sync/account-rows";
+import { ProfileCard } from "../../src/sync/profile-card";
 import { signOutHere } from "../../src/sync/auth";
 import { useSync } from "../../src/sync/sync-provider";
 import { useRead } from "../../src/db/use-read";
 import { shareExportFile } from "../../src/lib/export-file";
 import { today } from "../../src/lib/today";
 import { Button, Card, Heading, Screen, Sticker, Title } from "../../src/ui/components";
-import { fonts, radius, space, type } from "../../src/ui/theme";
+import { space, type } from "../../src/ui/theme";
 import { useTheme } from "../../src/ui/theme-context";
 
 const CHOICES: { value: Appearance; label: string }[] = [
@@ -58,13 +55,12 @@ const WEEK_STARTS = [
 const phoneTimeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone ?? "Asia/Kuala_Lumpur";
 
 /**
- * S9 More: places (Plan, Bills, Debts, Wallet check), what Brokely calls you (D-34), Appearance
- * (D-32), settings (FR-ACC-05) and your data: export (FR-ACC-06) or delete everything (FR-ACC-07).
+ * S9 More: the profile card first (S13h, D-76: photo, name, backup; opens Profile, where the
+ * nickname and sign-out live), places (Plan, Bills, Debts, Wallet check), Appearance (D-32),
+ * settings (FR-ACC-05) and your data: export (FR-ACC-06) or delete everything (FR-ACC-07).
  */
 export default function MoreScreen() {
   const { colors, appearance, setAppearance } = useTheme();
-  const saved = useRead(getNickname);
-  const [name, setName] = useState(saved ?? "");
   const settings = useRead(getSettings);
   const tips = useRead(getMoneyTips);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -79,6 +75,8 @@ export default function MoreScreen() {
   return (
     <Screen>
       <Title>More</Title>
+      {/* The student first (S13h, D-76): photo, name, account and backup; opens Profile. */}
+      <ProfileCard />
       <Card style={{ padding: 0, gap: 0 }}>
         {PLACES.map((place, i) => (
           <Pressable
@@ -105,32 +103,6 @@ export default function MoreScreen() {
         ))}
       </Card>
       <Card>
-        <Heading>What Brokely calls you</Heading>
-        <TextInput
-          value={name}
-          onChangeText={setName}
-          onEndEditing={() => setNickname(repo, name)}
-          maxLength={NICKNAME_MAX}
-          placeholder="Your name or nickname (optional)"
-          placeholderTextColor={colors.muted}
-          autoCapitalize="words"
-          returnKeyType="done"
-          accessibilityLabel="What Brokely calls you"
-          style={{
-            height: 52,
-            borderWidth: 2,
-            borderColor: colors.outline,
-            borderRadius: radius.button,
-            backgroundColor: colors.background,
-            paddingHorizontal: space.md,
-            fontFamily: fonts.bold,
-            fontSize: 17,
-            color: colors.text,
-          }}
-        />
-        <Text style={[type.small, { color: colors.muted }]}>Kept on this phone only.</Text>
-      </Card>
-      <Card>
         <Heading>Appearance</Heading>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
           {CHOICES.map((choice) => (
@@ -146,8 +118,6 @@ export default function MoreScreen() {
       </Card>
       <Card>
         <Heading>Settings</Heading>
-        {/* Sign-in comes first in Settings (D-72). */}
-        <AccountRows />
         {/* Money tips after saving an expense (D-39, D-67); on by default. */}
         <View style={{ flexDirection: "row", alignItems: "center", gap: space.sm, minHeight: 48 }}>
           <View style={{ flex: 1 }}>

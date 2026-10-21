@@ -15,6 +15,7 @@ import { db, repo } from "../src/db/client";
 import { ThemeProvider, useTheme } from "../src/ui/theme-context";
 import { SyncProvider } from "../src/sync/sync-provider";
 import { MoneyTipProvider } from "../src/ui/money-tip";
+import { ToastProvider } from "../src/ui/toast";
 import { UndoProvider } from "../src/ui/undo";
 
 /**
@@ -56,7 +57,9 @@ export default function RootLayout() {
         <SyncProvider>
           <UndoProvider>
             <MoneyTipProvider>
-              <AppStack />
+              <ToastProvider>
+                <AppStack />
+              </ToastProvider>
             </MoneyTipProvider>
           </UndoProvider>
         </SyncProvider>
@@ -83,6 +86,9 @@ function AppStack() {
         <Stack.Screen name="welcome" />
         <Stack.Screen name="sign-in" />
         <Stack.Screen name="reset-password" />
+        <Stack.Screen name="welcome-back" />
+        <Stack.Screen name="profile" />
+        <Stack.Screen name="backup" />
         <Stack.Screen
           name="quick-add"
           options={{ presentation: "transparentModal", animation: "slide_from_bottom" }}

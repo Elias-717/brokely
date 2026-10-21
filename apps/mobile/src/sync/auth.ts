@@ -71,6 +71,14 @@ export async function createAccount(email: string, password: string): Promise<Au
   return error ? { ok: false, message: explain(error) } : { ok: true, session: data.session };
 }
 
+/** "Resend email" on Check your email (S13c): the confirmation link again. */
+export async function resendConfirmation(email: string): Promise<AuthResult> {
+  const { error } = await supabase.auth
+    .resend({ type: "signup", email: tidy(email), options: { emailRedirectTo: CONFIRMED_URL } })
+    .catch((e: Error) => ({ error: e }));
+  return error ? { ok: false, message: explain(error) } : { ok: true, session: null };
+}
+
 export async function sendPasswordReset(email: string): Promise<AuthResult> {
   const { error } = await supabase.auth
     .resetPasswordForEmail(tidy(email), { redirectTo: RESET_PASSWORD_URL })

@@ -31,6 +31,11 @@ export interface Colors {
   tabInactive: string;
   /** Warnings only; over pace is never red (rule 9). */
   warning: string;
+  /** A card that warns before something can't be undone, e.g. erasing this phone (S13e). */
+  warningCard: string;
+  /** The button for an action that can't be undone: mustard, never the friendly green (S13e). */
+  destructive: string;
+  onDestructive: string;
   /**
    * Chart slices in fixed order, then "Everything else" (FR-INS-03). Checked with the dataviz
    * validator against each mode's card colour: lightness, chroma, colour-blind separation.
@@ -62,6 +67,9 @@ export const lightColors: Colors = {
   tabActive: "#4E6127",
   tabInactive: "#5F665A",
   warning: "#8A5A00",
+  warningCard: "#F6E9CF",
+  destructive: "#E8B64C",
+  onDestructive: "#1A1D17",
   chart: ["#2a78d6", "#eda100", "#1baf7a", "#6250d6"],
   chartOther: "#898781",
   chartMeals: "#e34948",
@@ -88,6 +96,9 @@ export const darkColors: Colors = {
   tabActive: "#9DBF5E",
   tabInactive: "#9AA196",
   warning: "#E0B460",
+  warningCard: "#2E2716",
+  destructive: "#D9A441",
+  onDestructive: "#141614",
   chart: ["#3987e5", "#c98500", "#199e70", "#9085e9"],
   chartOther: "#898781",
   chartMeals: "#e66767",

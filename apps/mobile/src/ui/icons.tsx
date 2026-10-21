@@ -1,8 +1,22 @@
 import type { ColorValue } from "react-native";
 import Svg, { Circle, Path } from "react-native-svg";
 
-/** Stroke icons for the tab bar (D-31): the same shapes as the style mockups. */
-export type IconName = "home" | "records" | "plus" | "insights" | "more";
+/**
+ * Stroke icons (D-31): the tab bar, plus the backup states and edit (S13h–S13k).
+ * The cloud shapes follow the Figma designs.
+ */
+export type IconName =
+  | "home"
+  | "records"
+  | "plus"
+  | "insights"
+  | "more"
+  | "cloud"
+  | "cloud-check"
+  | "cloud-upload"
+  | "cloud-off"
+  | "cloud-alert"
+  | "pencil";
 
 export function Icon({
   name,
@@ -31,6 +45,36 @@ export function Icon({
         <Path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01" {...stroke} />
       )}
       {name === "plus" && <Path d="M12 5v14M5 12h14" {...stroke} />}
+      {name === "cloud" && (
+        <Path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" {...stroke} />
+      )}
+      {name === "cloud-check" && (
+        <Path
+          d="m17 15-5.5 5.5L9 18M5 17.743A7 7 0 1 1 15.71 10h1.79a4.5 4.5 0 0 1 1.5 8.742"
+          {...stroke}
+        />
+      )}
+      {name === "cloud-upload" && (
+        <Path
+          d="M12 13v8M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242M8 17l4-4 4 4"
+          {...stroke}
+        />
+      )}
+      {name === "cloud-off" && (
+        <Path
+          d="m2 2 20 20M5.782 5.782A7 7 0 0 0 9 19h8.5a4.5 4.5 0 0 0 1.307-.193M21.532 16.5A4.5 4.5 0 0 0 17.5 10h-1.79A7.008 7.008 0 0 0 10 5.07"
+          {...stroke}
+        />
+      )}
+      {name === "cloud-alert" && (
+        <Path d="M12 12v4M12 20h.01M17 18h.5a1 1 0 0 0 0-9h-1.79A7 7 0 1 0 7 17.708" {...stroke} />
+      )}
+      {name === "pencil" && (
+        <Path
+          d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"
+          {...stroke}
+        />
+      )}
       {name === "insights" && <Path d="M4 20V10M10 20V4M16 20v-7M22 20H2" {...stroke} />}
       {name === "more" && (
         <>

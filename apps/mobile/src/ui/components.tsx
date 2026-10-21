@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Pressable, ScrollView, Text, View, type ViewStyle } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
+import { KeyboardSafe } from "./keyboard-safe";
 import { MIN_TOUCH, radius, space, type } from "./theme";
 import { useTheme } from "./theme-context";
 
@@ -128,14 +129,16 @@ export function Button({
 }: {
   label: string;
   onPress: () => void;
-  variant?: "primary" | "secondary" | "link";
+  /** `destructive`: an action that can't be undone, in mustard (S13e). */
+  variant?: "primary" | "secondary" | "link" | "destructive";
   disabled?: boolean;
   /** For choices like Light / Dark: shows the picked one filled. */
   selected?: boolean;
 }) {
   const { colors } = useTheme();
   const filled = variant === "primary" || selected;
-  const textColor = filled ? colors.onPrimary : colors.text;
+  const destructive = variant === "destructive";
+  const textColor = destructive ? colors.onDestructive : filled ? colors.onPrimary : colors.text;
   const text = (
     <Text
       style={[
@@ -164,8 +167,8 @@ export function Button({
       ) : (
         <Sticker
           rounded={radius.button}
-          offset={filled ? 3 : 2}
-          background={filled ? colors.primary : colors.card}
+          offset={filled || destructive ? 3 : 2}
+          background={destructive ? colors.destructive : filled ? colors.primary : colors.card}
           style={{
             minHeight: MIN_TOUCH,
             paddingHorizontal: space.md,
@@ -188,12 +191,23 @@ export function PageScreen({
   title,
   children,
   action,
+  keyboardSafe,
 }: {
   title: string;
   children: ReactNode;
   action?: ReactNode;
+  /** Screens with text fields: keeps the content above the phone's keyboard (KeyboardSafe). */
+  keyboardSafe?: boolean;
 }) {
   const { colors } = useTheme();
+  const scroll = (
+    <ScrollView
+      contentContainerStyle={{ padding: space.md, paddingTop: space.xs, gap: space.md }}
+      keyboardShouldPersistTaps="handled"
+    >
+      {children}
+    </ScrollView>
+  );
   return (
     <SafeAreaView
       style={{ flex: 1, backgroundColor: colors.background }}
@@ -238,12 +252,7 @@ export function PageScreen({
         </Text>
         {action}
       </View>
-      <ScrollView
-        contentContainerStyle={{ padding: space.md, paddingTop: space.xs, gap: space.md }}
-        keyboardShouldPersistTaps="handled"
-      >
-        {children}
-      </ScrollView>
+      {keyboardSafe ? <KeyboardSafe>{scroll}</KeyboardSafe> : scroll}
     </SafeAreaView>
   );
 }
