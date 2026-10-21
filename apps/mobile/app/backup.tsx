@@ -1,7 +1,7 @@
 import { formatRM, sen } from "@brokely/domain";
 import { stuckChanges } from "@brokely/local-db";
-import { Redirect } from "expo-router";
-import { Text, View } from "react-native";
+import { Redirect, router } from "expo-router";
+import { Pressable, Text, View } from "react-native";
 import { useRead } from "../src/db/use-read";
 import { backupState } from "../src/sync/status";
 import { useSync } from "../src/sync/sync-provider";
@@ -12,8 +12,8 @@ import { useTheme } from "../src/ui/theme-context";
 
 /**
  * S13i Backup (FR-SYNC-06): opened from Profile. The state with its cloud, "Back up now", and
- * the changes that need a look, each with what it is and why. Resolving them side by side is the
- * conflict screen (FR-SYNC-08), which comes later; until then they're listed honestly.
+ * the changes that need a look, each with what it is and why. A change made on two phones opens
+ * S13m to choose which version stays (FR-SYNC-08); a refused one is listed with the reason.
  */
 export default function BackupScreen() {
   const { colors } = useTheme();
@@ -58,38 +58,65 @@ export default function BackupScreen() {
         <View style={{ gap: space.sm }}>
           <Heading>Needs a look ({stuck.length})</Heading>
           <Sticker style={{ padding: 0 }}>
-            {stuck.map((c, i) => (
-              <View
-                key={c.operationId}
-                accessible
-                accessibilityLabel={`${c.label}. ${c.kind}: ${c.reason}`}
-                style={{
-                  minHeight: 56,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 12,
-                  paddingHorizontal: space.md,
-                  paddingVertical: 10,
-                  borderTopWidth: i === 0 ? 0 : 2,
-                  borderTopColor: colors.background,
-                }}
-              >
-                <Icon name="cloud-alert" color={colors.warning} size={26} strokeWidth={2} />
-                <View style={{ flex: 1 }}>
-                  <Text style={[type.strong, { color: colors.text }]}>
-                    {c.label}
-                    {c.amountSen !== null ? ` · ${formatRM(sen(c.amountSen))}` : ""}
-                  </Text>
-                  <Text style={[type.small, { color: colors.muted }]}>
-                    {c.kind} · {c.reason}
-                  </Text>
+            {stuck.map((c, i) => {
+              const choosable = c.status === "conflict";
+              const row = (
+                <>
+                  <Icon name="cloud-alert" color={colors.warning} size={26} strokeWidth={2} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[type.strong, { color: colors.text }]}>
+                      {c.label}
+                      {c.amountSen !== null ? ` · ${formatRM(sen(c.amountSen))}` : ""}
+                    </Text>
+                    <Text style={[type.small, { color: colors.muted }]}>
+                      {c.kind} · {c.reason}
+                    </Text>
+                  </View>
+                  {choosable ? (
+                    <Text
+                      style={{ fontSize: 22, color: colors.muted }}
+                      importantForAccessibility="no"
+                    >
+                      ›
+                    </Text>
+                  ) : null}
+                </>
+              );
+              const style = {
+                minHeight: 56,
+                flexDirection: "row" as const,
+                alignItems: "center" as const,
+                gap: 12,
+                paddingHorizontal: space.md,
+                paddingVertical: 10,
+                borderTopWidth: i === 0 ? 0 : 2,
+                borderTopColor: colors.background,
+              };
+              return choosable ? (
+                <Pressable
+                  key={c.operationId}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${c.label}. ${c.kind}: ${c.reason}`}
+                  accessibilityHint="Choose which version stays"
+                  onPress={() => router.push(`/conflict/${c.operationId}`)}
+                  style={({ pressed }) => ({ ...style, opacity: pressed ? 0.7 : 1 })}
+                >
+                  {row}
+                </Pressable>
+              ) : (
+                <View
+                  key={c.operationId}
+                  accessible
+                  accessibilityLabel={`${c.label}. ${c.kind}: ${c.reason}`}
+                  style={style}
+                >
+                  {row}
                 </View>
-              </View>
-            ))}
+              );
+            })}
           </Sticker>
           <Text style={[type.small, { color: colors.muted }]}>
-            Your other records keep backing up. Choosing which version to keep comes in a later
-            update.
+            Tap one to choose which version stays. Your other records keep backing up.
           </Text>
         </View>
       ) : null}
