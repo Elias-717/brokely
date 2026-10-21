@@ -18,9 +18,12 @@ export interface DebtRow {
   readonly status: DebtView["summary"]["status"];
   readonly dueDate: LocalDate | null;
   readonly fromBefore: boolean;
+  readonly repaidSen: Sen;
+  /** How it started, e.g. "Their share of a split, 12 Nov" (S7, D-78). */
+  readonly origin: { readonly label: string; readonly date: LocalDate } | null;
 }
 
-const row = (d: DebtView): DebtRow => ({
+const row = (d: DebtView, origin: DebtRow["origin"] = null): DebtRow => ({
   id: d.id,
   direction: d.direction,
   name: d.counterparty,
@@ -29,11 +32,37 @@ const row = (d: DebtView): DebtRow => ({
   status: d.summary.status,
   dueDate: (d.dueDate as LocalDate | null) ?? null,
   fromBefore: d.notes === OPENING_DEBT_NOTE,
+  repaidSen: d.summary.repaidSen,
+  origin,
 });
+
+const OPENS = new Set(["lend", "borrow", "purchase"]);
 
 /** S7 Debts: open debts each way with totals, then settled ones (FR-DEBT-03). */
 export function readDebts(db: Db) {
-  const all = listDebts(db).map(row);
+  const debts = listDebts(db);
+  // The oldest opening entry of each debt: where it started.
+  const origins = new Map<string, DebtRow["origin"]>();
+  const opening = transactionsForDebts(
+    db,
+    debts.map((d) => d.id),
+  )
+    .filter((t) => OPENS.has(t.type))
+    .sort((a, b) => (a.localDate < b.localDate ? -1 : a.localDate > b.localDate ? 1 : 0));
+  for (const t of opening) {
+    for (const line of t.lines) {
+      if (line.kind !== "debt" || origins.has(line.debtId)) continue;
+      const debt = debts.find((d) => d.id === line.debtId);
+      const label =
+        t.type === "purchase"
+          ? t.note
+            ? `Their share of ${t.note}`
+            : "Their share of a split"
+          : t.note || LABELS[t.type]!(debt?.direction ?? "owed_to_me");
+      origins.set(line.debtId, { label, date: t.localDate });
+    }
+  }
+  const all = debts.map((d) => row(d, origins.get(d.id) ?? null));
   const open = all.filter((d) => d.status === "open");
   const owedToMe = open.filter((d) => d.direction === "owed_to_me");
   const iOwe = open.filter((d) => d.direction === "owed_by_me");
@@ -49,6 +78,8 @@ export function readDebts(db: Db) {
 /** What happened on a debt, newest first, in plain words. */
 export interface DebtEvent {
   readonly transactionId: string;
+  /** Money towards the student (↓) or away from them (↑), or a write-off (S7c timeline). */
+  readonly flow: "in" | "out" | "written_off";
   readonly date: LocalDate;
   readonly label: string;
   readonly amountSen: Sen;
@@ -72,6 +103,12 @@ export function readDebt(db: Db, id: string) {
       const line = t.lines.find((l) => l.kind === "debt" && l.debtId === id);
       return {
         transactionId: t.id,
+        flow:
+          t.type === "write_off"
+            ? "written_off"
+            : t.type === "repayment_received" || t.type === "borrow"
+              ? "in"
+              : "out",
         date: t.localDate,
         label: LABELS[t.type]?.(debt.direction) ?? t.type,
         amountSen: line ? line.amountSen : sen(0),
