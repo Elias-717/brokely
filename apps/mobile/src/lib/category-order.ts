@@ -1,4 +1,4 @@
-import { addDays, type LocalDate } from "@brokely/domain";
+import { addDays, type GuessHistory, type LocalDate } from "@brokely/domain";
 import {
   listCategories,
   listTransactions,
@@ -26,6 +26,26 @@ export function categoriesByUse(db: Db, today: LocalDate): CategoryRow[] {
   return listCategories(db).sort(
     (a, b) => (uses.get(b.id) ?? 0) - (uses.get(a.id) ?? 0) || a.sortOrder - b.sortOrder,
   );
+}
+
+/**
+ * What smart categorization learns from (D-84): the student's purchases with a note from the
+ * last year, newest first, at most `max`. Split purchases count for their spending line.
+ */
+export function guessHistory(db: Db, today: LocalDate, max = 500): GuessHistory {
+  const history: { note: string; categoryId: string }[] = [];
+  const recent = listTransactions(db, {
+    start: addDays(today, -365),
+    endExclusive: addDays(today, 1),
+  }).sort((a, b) => b.localDate.localeCompare(a.localDate));
+  for (const t of recent) {
+    const note = t.note.trim();
+    if (t.type !== "purchase" || !note || note === OPENING_SPEND_NOTE) continue;
+    const line = t.lines.find((l) => l.kind === "spending");
+    if (line?.kind === "spending") history.push({ note, categoryId: line.categoryId });
+    if (history.length >= max) break;
+  }
+  return history;
 }
 
 /**

@@ -1,4 +1,4 @@
-import { formatRM, parseAmount, sen, type LocalDate } from "@brokely/domain";
+import { formatRM, guessCategory, parseAmount, sen, type LocalDate } from "@brokely/domain";
 import {
   addCategory,
   createDebt,
@@ -15,7 +15,7 @@ import { useMemo, useState } from "react";
 import { Pressable, ScrollView, Switch, Text, View } from "react-native";
 import { repo } from "../src/db/client";
 import { useRead } from "../src/db/use-read";
-import { categoriesByUse, recentNotesByCategory } from "../src/lib/category-order";
+import { categoriesByUse, guessHistory, recentNotesByCategory } from "../src/lib/category-order";
 import { categoryEmoji } from "../src/lib/essentials-meta";
 import { refusalText } from "../src/lib/messages";
 import { dayMonth, occurredAtFor, today } from "../src/lib/today";
@@ -78,6 +78,7 @@ export default function QuickAdd() {
   const keyboardOpen = useKeyboardOpen();
   const categories = useRead((db) => categoriesByUse(db, day), [day]);
   const recentNotes = useRead((db) => recentNotesByCategory(db, day), [day]);
+  const history = useRead((db) => guessHistory(db, day), [day]);
 
   // Debts opens it on More → I lent / I borrowed (S7 "+ Add").
   const params = useLocalSearchParams<{ more?: MoreKind }>();
@@ -88,6 +89,8 @@ export default function QuickAdd() {
   const [problem, setProblem] = useState<string | null>(null);
   // Spent
   const [categoryId, setCategoryId] = useState<string | null>(null);
+  /** A category chosen by hand is never replaced by a guess (D-84). */
+  const [pickedByHand, setPickedByHand] = useState(false);
   const [split, setSplit] = useState(false);
   /** Under Other: the student's own category name (D-44). */
   const [customName, setCustomName] = useState("");
@@ -100,7 +103,14 @@ export default function QuickAdd() {
 
   const amount = parseAmount(amountText);
   const share = parseAmount(shareText);
-  const picked = categories.find((c) => c.id === categoryId) ?? categories[0];
+  // Smart categorization (D-84): the note suggests a category until one is picked by hand.
+  const guess = useMemo(
+    () => (mode === "spent" && !pickedByHand ? guessCategory(note, history, categories) : null),
+    [mode, pickedByHand, note, history, categories],
+  );
+  const picked =
+    categories.find((c) => c.id === (guess?.categoryId ?? categoryId)) ?? categories[0];
+  const guessed = guess !== null && picked?.id === guess.categoryId;
   const when = { localDate: date, occurredAt: occurredAtFor(date, day) };
   const cleanNote = note.trim();
   // One-tap notes typed recently for this category, e.g. "nasi lemak".
@@ -333,9 +343,15 @@ export default function QuickAdd() {
               selectedId={picked?.id ?? null}
               onSelect={(id) => {
                 setCategoryId(id);
+                setPickedByHand(true);
                 setCustomName("");
               }}
             />
+          ) : null}
+          {mode === "spent" && guessed ? (
+            <Text accessibilityLiveRegion="polite" style={[type.small, { color: colors.muted }]}>
+              ✨ Guessed from “{guess?.matched}” · tap Category to change
+            </Text>
           ) : null}
           {mode === "spent" && picked?.name === "Other" ? (
             <Field
