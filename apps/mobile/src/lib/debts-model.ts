@@ -62,7 +62,22 @@ export function readDebts(db: Db) {
       origins.set(line.debtId, { label, date: t.localDate });
     }
   }
-  const all = debts.map((d) => row(d, origins.get(d.id) ?? null));
+  // Newest activity first (author): a debt with a new repayment or loan moves to the top.
+  const latest = new Map<string, string>();
+  for (const t of transactionsForDebts(
+    db,
+    debts.map((d) => d.id),
+  )) {
+    for (const line of t.lines) {
+      if (line.kind !== "debt") continue;
+      const now = latest.get(line.debtId);
+      if (!now || t.occurredAt > now) latest.set(line.debtId, t.occurredAt);
+    }
+  }
+  const when = (d: (typeof debts)[number]) => latest.get(d.id) ?? d.createdAt;
+  const all = [...debts]
+    .sort((a, b) => (when(a) < when(b) ? 1 : when(a) > when(b) ? -1 : 0))
+    .map((d) => row(d, origins.get(d.id) ?? null));
   const open = all.filter((d) => d.status === "open");
   const owedToMe = open.filter((d) => d.direction === "owed_to_me");
   const iOwe = open.filter((d) => d.direction === "owed_by_me");
@@ -78,6 +93,8 @@ export function readDebts(db: Db) {
 /** What happened on a debt, newest first, in plain words. */
 export interface DebtEvent {
   readonly transactionId: string;
+  /** The exact moment, so entries from the same day keep their order (newest first). */
+  readonly occurredAt: string;
   /** Money towards the student (↓) or away from them (↑), or a write-off (S7c timeline). */
   readonly flow: "in" | "out" | "written_off";
   readonly date: LocalDate;
@@ -103,6 +120,7 @@ export function readDebt(db: Db, id: string) {
       const line = t.lines.find((l) => l.kind === "debt" && l.debtId === id);
       return {
         transactionId: t.id,
+        occurredAt: t.occurredAt,
         flow:
           t.type === "write_off"
             ? "written_off"
@@ -114,7 +132,11 @@ export function readDebt(db: Db, id: string) {
         amountSen: line ? line.amountSen : sen(0),
       };
     })
-    .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+    .sort((a, b) => {
+      const ka = `${a.date} ${a.occurredAt}`;
+      const kb = `${b.date} ${b.occurredAt}`;
+      return ka < kb ? 1 : ka > kb ? -1 : 0;
+    });
   return {
     ...row(debt),
     repaidSen: debt.summary.repaidSen,
