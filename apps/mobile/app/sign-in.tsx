@@ -400,6 +400,14 @@ export default function SignInScreen() {
               <Text style={[type.small, { color: colors.muted, textAlign: "center" }]}>
                 No bank login, ever. We back up your records only.
               </Text>
+              {/* Notice before any data leaves the phone (PDPA s.7, D-92). */}
+              <View style={{ alignItems: "center" }}>
+                <Button
+                  label="How Brokely handles your data"
+                  variant="link"
+                  onPress={() => router.push("/privacy")}
+                />
+              </View>
             </View>
           </Appear>
         </>

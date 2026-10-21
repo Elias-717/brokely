@@ -18,6 +18,20 @@ describe("GET /health", () => {
   });
 });
 
+describe("GET /privacy (PDPA s.7)", () => {
+  it("serves the privacy notice in English and Bahasa Malaysia, without scripts", async () => {
+    const app = buildApp();
+    const res = await app.inject({ method: "GET", url: "/privacy" });
+    expect(res.statusCode).toBe(200);
+    expect(res.headers["content-type"]).toContain("text/html");
+    expect(res.body).toContain("Privacy notice");
+    expect(res.body).toContain("Notis privasi");
+    expect(res.body).toContain("72 hours");
+    expect(res.body).not.toContain("<script");
+    await app.close();
+  });
+});
+
 describe("sync routes (sync-api §4, §5)", () => {
   let db: Db;
   let close: () => Promise<void>;

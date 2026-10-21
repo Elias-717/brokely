@@ -8,6 +8,7 @@ import {
   updateSettings,
   type Appearance,
 } from "@brokely/local-db";
+import Constants from "expo-constants";
 import { router, type Href } from "expo-router";
 import { useState, type ReactNode } from "react";
 import { Pressable, Switch, Text, View } from "react-native";
@@ -144,7 +145,7 @@ export default function MoreScreen() {
       </Sticker>
 
       {/* Your data (FR-ACC-06, FR-ACC-07): exports as rows; delete set apart in the warning colour. */}
-      <Sticker style={{ padding: 0, marginBottom: space.lg }}>
+      <Sticker style={{ padding: 0 }}>
         <View style={{ paddingHorizontal: space.md, paddingTop: 14, paddingBottom: 2, gap: 2 }}>
           <Heading>Your data</Heading>
           <Text style={[type.small, { color: colors.muted }]}>
@@ -169,6 +170,11 @@ export default function MoreScreen() {
               exportJson(db, new Date().toISOString()),
             )
           }
+        />
+        <Row
+          title="Privacy notice"
+          detail="What Brokely keeps, where, and your rights"
+          onPress={() => router.push("/privacy")}
         />
         <Row
           title="Delete all my data"
@@ -203,6 +209,12 @@ export default function MoreScreen() {
           </View>
         ) : null}
       </Sticker>
+      {/* The version, quietly at the very bottom (author). */}
+      <Text
+        style={[type.small, { color: colors.muted, textAlign: "center", marginBottom: space.lg }]}
+      >
+        Brokely {Constants.expoConfig?.version ?? ""}
+      </Text>
     </Screen>
   );
 }

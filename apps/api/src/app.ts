@@ -12,6 +12,7 @@ import { z } from "zod";
 import { deleteAccount } from "./account";
 import type { VerifyToken } from "./auth";
 import type { Db } from "./db/client";
+import { privacyPage } from "./privacy-page";
 import { createRateLimit, PUSHES_PER_MINUTE } from "./rate-limit";
 import { pull } from "./sync/pull";
 import { push } from "./sync/push";
@@ -74,6 +75,13 @@ export function buildApp(
   });
 
   app.get("/health", async (): Promise<HealthResponse> => ({ status: "ok" }));
+  // The public privacy notice (PDPA s.7), linked from Google Play and the Google consent screen.
+  app.get("/privacy", async (_request, reply) =>
+    reply
+      .type("text/html; charset=utf-8")
+      .header("cache-control", "max-age=3600")
+      .send(privacyPage()),
+  );
   if (!deps) return app;
 
   /** The student from the sign-in token (S-02), or a 401 reply. */
