@@ -11,7 +11,22 @@ import { useTheme } from "./theme-context";
  * shown as a reward, with ticks (no emojis on Home).
  */
 
-const BENEFITS = ["What's left, every day", "A daily guide", "Bill dates"] as const;
+const BENEFITS = ["What's left, every day", "A daily guide", "Bill dates and reminders"] as const;
+
+/** What a plan adds, as a plain list with ticks: information, not buttons (author). */
+function TickList() {
+  const { colors } = useTheme();
+  return (
+    <View style={{ gap: 6 }}>
+      {BENEFITS.map((b) => (
+        <View key={b} style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}>
+          <Tick size={20} />
+          <Text style={[type.strong, { color: colors.text }]}>{b}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
 
 function Tick({ size = 22 }: { size?: number }) {
   const { colors } = useTheme();
@@ -70,34 +85,7 @@ export function FirstVisit() {
           >
             WANT MORE? A PLAN ADDS
           </Text>
-          <View style={{ flexDirection: "row", gap: space.sm }}>
-            {BENEFITS.map((b) => (
-              <View
-                key={b}
-                style={{
-                  flex: 1,
-                  backgroundColor: colors.cardTint,
-                  borderRadius: 12,
-                  padding: 10,
-                  gap: 6,
-                  alignItems: "center",
-                }}
-              >
-                <Tick />
-                <Text
-                  style={{
-                    fontFamily: fonts.heavy,
-                    fontSize: 12,
-                    lineHeight: 16,
-                    color: colors.text,
-                    textAlign: "center",
-                  }}
-                >
-                  {b}
-                </Text>
-              </View>
-            ))}
-          </View>
+          <TickList />
           <Button
             label="Make a plan · about 1 minute"
             variant="secondary"
@@ -146,14 +134,7 @@ export function MonthSoFar({
       </View>
       <Sticker style={{ padding: space.md, gap: space.sm }}>
         <Text style={[type.heading, { color: colors.text }]}>Ready for a plan?</Text>
-        <View style={{ gap: 6 }}>
-          {[...BENEFITS.slice(0, 2), "Bill dates and reminders"].map((b) => (
-            <View key={b} style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}>
-              <Tick size={20} />
-              <Text style={[type.strong, { color: colors.text }]}>{b}</Text>
-            </View>
-          ))}
-        </View>
+        <TickList />
         <Button
           label="Make a plan · 1 min"
           variant="secondary"
