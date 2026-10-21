@@ -67,6 +67,32 @@ describe("cycle lifecycle (BR-27, D-18, FR-PLN-14, FR-PLN-17)", () => {
     expect(findCycleOn(ctx.db, "2026-11-15")?.id).toBe(cycleId);
   });
 
+  it("a completed plan stays editable: a late record and a raised amount both count (AC-49, D-19)", () => {
+    completeEndedCycles(ctx, "2026-12-01");
+    const late = recordPurchase(ctx, {
+      amountSen: sen(800),
+      categoryId: category("Meals"),
+      occurredAt: NOW,
+      localDate: "2026-11-20",
+    });
+    expect(late.ok).toBe(true);
+    const raised = revisePlan(ctx, {
+      cycleId,
+      budgetSen: sen(42000),
+      allocations: [{ categoryId: category("Meals"), amountSen: sen(30000) }],
+      shortfallAcknowledged: false,
+    });
+    expect(raised.ok).toBe(true);
+
+    expect(ctx.db.select().from(planningCycles).get()?.status).toBe("completed");
+    const summary = cycleSummary(ctx.db, cycleId)!;
+    expect(summary).toMatchObject({ originalBudgetSen: 40000, spentSen: 2050 });
+    // Original kept, newest amount as final, the late RM8 in the actual (FR-PLN-14).
+    expect(summary.lines).toEqual([
+      expect.objectContaining({ name: "Meals", originalSen: 0, finalSen: 30000, actualSen: 2050 }),
+    ]);
+  });
+
   it("the summary shows original → final → actual per category (FR-PLN-14)", () => {
     const summary = cycleSummary(ctx.db, cycleId)!;
     expect(summary).toMatchObject({
