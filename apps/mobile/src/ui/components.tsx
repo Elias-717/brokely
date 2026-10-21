@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import type { ReactNode } from "react";
+import { createContext, useContext, type ReactNode } from "react";
 import { Pressable, ScrollView, Text, View, type ViewStyle } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
@@ -67,6 +67,12 @@ export function Body({ children, muted }: { children: ReactNode; muted?: boolean
 }
 
 /**
+ * What a button sits on. A secondary button is light green so it never looks like a white text
+ * field (D-77), except on a light green card, where it stays white so it doesn't disappear.
+ */
+const Surface = createContext<"plain" | "tint">("plain");
+
+/**
  * The vintage "sticker": a thick outline plus a hard shadow offset down-right (D-31).
  * Android shadows are always soft, so the shadow is a second shape drawn behind.
  */
@@ -86,33 +92,36 @@ export function Sticker({
   rounded?: number;
 }) {
   const { colors } = useTheme();
+  const surface = background === colors.cardTint ? "tint" : "plain";
   return (
-    <View style={{ marginRight: offset, marginBottom: offset }}>
-      <View
-        style={{
-          position: "absolute",
-          top: offset,
-          left: offset,
-          right: -offset,
-          bottom: -offset,
-          borderRadius: rounded,
-          backgroundColor: colors.shadow,
-        }}
-      />
-      <View
-        style={[
-          {
-            borderWidth: 2,
-            borderColor: outline ?? colors.outline,
+    <Surface.Provider value={surface}>
+      <View style={{ marginRight: offset, marginBottom: offset }}>
+        <View
+          style={{
+            position: "absolute",
+            top: offset,
+            left: offset,
+            right: -offset,
+            bottom: -offset,
             borderRadius: rounded,
-            backgroundColor: background ?? colors.card,
-          },
-          style,
-        ]}
-      >
-        {children}
+            backgroundColor: colors.shadow,
+          }}
+        />
+        <View
+          style={[
+            {
+              borderWidth: 2,
+              borderColor: outline ?? colors.outline,
+              borderRadius: rounded,
+              backgroundColor: background ?? colors.card,
+            },
+            style,
+          ]}
+        >
+          {children}
+        </View>
       </View>
-    </View>
+    </Surface.Provider>
   );
 }
 
@@ -136,6 +145,7 @@ export function Button({
   selected?: boolean;
 }) {
   const { colors } = useTheme();
+  const surface = useContext(Surface);
   const filled = variant === "primary" || selected;
   const destructive = variant === "destructive";
   const textColor = destructive ? colors.onDestructive : filled ? colors.onPrimary : colors.text;
@@ -168,7 +178,15 @@ export function Button({
         <Sticker
           rounded={radius.button}
           offset={filled || destructive ? 3 : 2}
-          background={destructive ? colors.destructive : filled ? colors.primary : colors.card}
+          background={
+            destructive
+              ? colors.destructive
+              : filled
+                ? colors.primary
+                : surface === "tint"
+                  ? colors.card
+                  : colors.cardTint
+          }
           style={{
             minHeight: MIN_TOUCH,
             paddingHorizontal: space.md,

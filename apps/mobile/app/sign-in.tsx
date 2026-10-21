@@ -39,6 +39,7 @@ import {
 } from "../src/sync/transport";
 import { Body, Button, Heading, PageScreen, Sticker } from "../src/ui/components";
 import { GoogleButton } from "../src/ui/google-button";
+import { Tabs } from "../src/ui/tabs";
 import { Appear, Float, TypeText } from "../src/ui/motion";
 import { TextField } from "../src/ui/text-field";
 import { fonts, MIN_TOUCH, space, type } from "../src/ui/theme";
@@ -339,40 +340,17 @@ export default function SignInScreen() {
           {mode === "forgot" ? (
             <Heading>Reset your password</Heading>
           ) : (
-            <Sticker style={{ padding: 4, flexDirection: "row", gap: 4 }} rounded={14} offset={2}>
-              {(["sign-in", "create"] as const).map((m) => {
-                const on = mode === m;
-                return (
-                  <Pressable
-                    key={m}
-                    accessibilityRole="tab"
-                    accessibilityState={{ selected: on }}
-                    onPress={() => {
-                      setMode(m);
-                      setMessage(null);
-                    }}
-                    style={{
-                      flex: 1,
-                      minHeight: MIN_TOUCH - 4,
-                      borderRadius: 10,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      backgroundColor: on ? colors.primary : "transparent",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontFamily: fonts.heavy,
-                        fontSize: 15,
-                        color: on ? colors.onPrimary : colors.text,
-                      }}
-                    >
-                      {m === "sign-in" ? "Sign in" : "Create account"}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </Sticker>
+            <Tabs
+              tabs={[
+                { key: "sign-in", label: "Sign in" },
+                { key: "create", label: "Create account" },
+              ]}
+              value={mode === "create" ? "create" : "sign-in"}
+              onChange={(m) => {
+                setMode(m);
+                setMessage(null);
+              }}
+            />
           )}
           <TextField
             label="Email"
