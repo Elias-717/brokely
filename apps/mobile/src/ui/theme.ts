@@ -33,6 +33,9 @@ export interface Colors {
   warning: string;
   /** A card that warns before something can't be undone, e.g. erasing this phone (S13e). */
   warningCard: string;
+  /** Amounts in Records (D-80): spending in red (with −), money in and refunds in green (with +). */
+  expense: string;
+  income: string;
   /** The button for an action that can't be undone: mustard, never the friendly green (S13e). */
   destructive: string;
   onDestructive: string;
@@ -68,6 +71,8 @@ export const lightColors: Colors = {
   tabInactive: "#5F665A",
   warning: "#8A5A00",
   warningCard: "#F6E9CF",
+  expense: "#B3261E",
+  income: "#4E6127",
   destructive: "#E8B64C",
   onDestructive: "#1A1D17",
   chart: ["#2a78d6", "#eda100", "#1baf7a", "#6250d6"],
@@ -97,6 +102,8 @@ export const darkColors: Colors = {
   tabInactive: "#9AA196",
   warning: "#E0B460",
   warningCard: "#2E2716",
+  expense: "#F28B82",
+  income: "#9DBF5E",
   destructive: "#D9A441",
   onDestructive: "#141614",
   chart: ["#3987e5", "#c98500", "#199e70", "#9085e9"],

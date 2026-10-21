@@ -173,13 +173,15 @@ function Row({ row, onPress }: { row: RecordRow; onPress: () => void }) {
   const isCheckIn = row.kind === "check-in";
   const title = isCheckIn ? "No spending today" : row.title;
   const detail = isCheckIn ? "Check-in · tap to undo" : row.detail;
+  // Spending red, money in and refunds green, debts and transfers grey (D-80). The colour
+  // follows the sign (− / +), so the sign still says it to anyone who can't see the colour.
   const amountColor =
     row.kind === "transaction"
-      ? row.style === "money-in"
-        ? colors.tabActive
-        : row.style === "not-spending"
-          ? colors.muted
-          : colors.text
+      ? row.amount.startsWith("−")
+        ? colors.expense
+        : row.amount.startsWith("+")
+          ? colors.income
+          : colors.muted
       : colors.text;
   return (
     <Pressable
