@@ -1,11 +1,11 @@
 import { router } from "expo-router";
-import { useMemo, useRef, type ReactNode } from "react";
+import { createContext, useContext, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Animated,
   Keyboard,
+  LayoutAnimation,
   PanResponder,
   Pressable,
-  ScrollView,
   Text,
   useWindowDimensions,
   View,
@@ -71,14 +71,7 @@ export function SheetShell({
           </View>
         }
       >
-        {children ? (
-          <KeyboardScroll
-            style={{ flexGrow: 0, flexShrink: 1 }}
-            contentContainerStyle={{ gap: space.sm }}
-          >
-            {children}
-          </KeyboardScroll>
-        ) : null}
+        {children ? <SheetScroll>{children}</SheetScroll> : null}
         {footer}
       </SheetPanel>
     </KeyboardSafe>
@@ -88,13 +81,37 @@ export function SheetShell({
 /** How far down (dp) or how fast (dp/ms) a drag must go to close the sheet. */
 const CLOSE_DISTANCE = 120;
 const CLOSE_VELOCITY = 0.8;
+/** How far up (dp) or how fast a drag must go to open the sheet to full screen (D-86). */
+const EXPAND_DISTANCE = 40;
+const EXPAND_VELOCITY = 0.5;
+
+/** Whether the sheet is pulled up to full screen: its scrolling part then fills the room. */
+const SheetExpanded = createContext(false);
 
 /**
- * The sliding part of every bottom sheet. Dragging down on its top part (the handle bar and
- * whatever `top` holds, e.g. the title or amount) moves the sheet with the finger; past a
- * threshold, or with a quick flick, it slides away and closes; otherwise it springs back.
- * Taps still reach buttons in `top`: the drag only starts once the finger moves down.
- * The handle is also a "Close" button for screen readers.
+ * The scrolling part of a sheet. Normally only as tall as its content; at full screen it fills
+ * the space, so the keypad and Save stay at the bottom.
+ */
+export function SheetScroll({ children }: { children: ReactNode }) {
+  const expanded = useContext(SheetExpanded);
+  return (
+    <KeyboardScroll
+      // Shrinks (and scrolls) when space is short, instead of pushing fields off screen.
+      style={{ flexGrow: expanded ? 1 : 0, flexShrink: 1 }}
+      contentContainerStyle={{ gap: space.sm }}
+    >
+      {children}
+    </KeyboardScroll>
+  );
+}
+
+/**
+ * The sliding part of every bottom sheet. On its top part (the handle bar and whatever `top`
+ * holds, e.g. the title or amount): dragging up opens it to full screen; dragging down from
+ * full screen brings it back to its usual size, and from there it moves with the finger and,
+ * past a threshold or with a quick flick, slides away and closes (D-86). Taps still reach
+ * buttons in `top`: a drag only starts once the finger moves. For screen readers the handle is
+ * a "Close" button with actions to make the sheet full screen or smaller.
  */
 export function SheetPanel({ top, children }: { top?: ReactNode; children?: ReactNode }) {
   const { colors } = useTheme();
@@ -107,23 +124,40 @@ export function SheetPanel({ top, children }: { top?: ReactNode; children?: Reac
   const available = useAvailableHeight();
   const maxHeight = (available > 0 ? available : screenHeight - keyboard) - insets.top - space.md;
   const offset = useRef(new Animated.Value(0)).current;
+  const [expanded, setExpanded] = useState(false);
+  const expandedRef = useRef(false);
+
+  const resize = (to: boolean) => {
+    if (!reduce) LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    expandedRef.current = to;
+    setExpanded(to);
+  };
 
   const drag = useMemo(
     () =>
       PanResponder.create({
-        onMoveShouldSetPanResponder: (_, g) => g.dy > 6 && Math.abs(g.dy) > Math.abs(g.dx),
+        onMoveShouldSetPanResponder: (_, g) =>
+          Math.abs(g.dy) > 6 && Math.abs(g.dy) > Math.abs(g.dx),
         onPanResponderGrant: () => Keyboard.dismiss(),
-        onPanResponderMove: (_, g) => offset.setValue(Math.max(0, g.dy)),
+        // Only a downward drag follows the finger; from full screen it first shrinks back.
+        onPanResponderMove: (_, g) => {
+          if (!expandedRef.current) offset.setValue(Math.max(0, g.dy));
+        },
         onPanResponderRelease: (_, g) => {
-          if (g.dy > CLOSE_DISTANCE || g.vy > CLOSE_VELOCITY) {
+          const up = g.dy < -EXPAND_DISTANCE || g.vy < -EXPAND_VELOCITY;
+          const down = g.dy > 0 && (g.dy > CLOSE_DISTANCE || g.vy > CLOSE_VELOCITY);
+          if (up && !expandedRef.current) resize(true);
+          else if (expandedRef.current && (g.dy > EXPAND_DISTANCE || g.vy > EXPAND_VELOCITY)) {
+            resize(false);
+          } else if (down && !expandedRef.current) {
             Animated.timing(offset, {
               toValue: 1000,
               duration: reduce ? 0 : 180,
               useNativeDriver: true,
             }).start(() => router.back());
-          } else {
-            Animated.spring(offset, { toValue: 0, useNativeDriver: true }).start();
+            return;
           }
+          Animated.spring(offset, { toValue: 0, useNativeDriver: true }).start();
         },
         onPanResponderTerminate: () =>
           Animated.spring(offset, { toValue: 0, useNativeDriver: true }).start(),
@@ -135,6 +169,7 @@ export function SheetPanel({ top, children }: { top?: ReactNode; children?: Reac
     <Animated.View
       style={{
         maxHeight,
+        height: expanded ? maxHeight : undefined,
         backgroundColor: colors.background,
         borderTopWidth: 2,
         borderColor: colors.outline,
@@ -151,7 +186,13 @@ export function SheetPanel({ top, children }: { top?: ReactNode; children?: Reac
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Close"
-          accessibilityHint="Or slide the top of the sheet down"
+          accessibilityHint="Or slide the top of the sheet down. Slide it up for full screen"
+          accessibilityActions={[
+            expanded
+              ? { name: "decrement", label: "Make the sheet smaller" }
+              : { name: "increment", label: "Make the sheet full screen" },
+          ]}
+          onAccessibilityAction={(e) => resize(e.nativeEvent.actionName === "increment")}
           onPress={() => router.back()}
           style={{ alignItems: "center", justifyContent: "center", height: 24 }}
         >
@@ -167,7 +208,7 @@ export function SheetPanel({ top, children }: { top?: ReactNode; children?: Reac
         </Pressable>
         {top}
       </View>
-      {children}
+      <SheetExpanded.Provider value={expanded}>{children}</SheetExpanded.Provider>
     </Animated.View>
   );
 }

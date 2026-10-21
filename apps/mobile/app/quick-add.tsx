@@ -22,12 +22,11 @@ import { dayMonth, occurredAtFor, today } from "../src/lib/today";
 import { Button, Sticker } from "../src/ui/components";
 import { pickDate } from "../src/ui/date-picker";
 import { Keypad } from "../src/ui/keypad";
-import { SheetPanel } from "../src/ui/sheet";
+import { SheetPanel, SheetScroll } from "../src/ui/sheet";
 import { CategoryPicker } from "../src/ui/category-picker";
 import { Chip, Field } from "../src/ui/sheet-parts";
 import { fonts, MIN_TOUCH, radius, space, type } from "../src/ui/theme";
 import { KeyboardSafe } from "../src/ui/keyboard-safe";
-import { KeyboardScroll } from "../src/ui/keyboard-scroll";
 import { useTheme } from "../src/ui/theme-context";
 import { useMoneyTip } from "../src/ui/money-tip";
 import { useUndo } from "../src/ui/undo";
@@ -319,11 +318,7 @@ export default function QuickAdd() {
           </>
         }
       >
-        <KeyboardScroll
-          // Shrinks (and scrolls) when space is short, instead of pushing fields off screen.
-          style={{ flexGrow: 0, flexShrink: 1 }}
-          contentContainerStyle={{ gap: space.sm }}
-        >
+        <SheetScroll>
           {/* The note comes first, so saying what it was is the obvious next step (D-49). */}
           <View style={{ gap: space.xs }}>
             <Field
@@ -563,7 +558,7 @@ export default function QuickAdd() {
               ) : null}
             </View>
           ) : null}
-        </KeyboardScroll>
+        </SheetScroll>
 
         {/* Hidden while typing a note or name, so that field stays visible. */}
         {keyboardOpen ? null : (
