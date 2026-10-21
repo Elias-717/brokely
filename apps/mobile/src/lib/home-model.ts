@@ -31,6 +31,36 @@ import {
   type TransactionView,
 } from "@brokely/local-db";
 
+/** This calendar month without a plan: spending (same rules as a plan), records, top category. */
+function monthSoFar(db: Db, today: LocalDate) {
+  const [y, m] = today.split("-").map(Number) as [number, number];
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const month = {
+    start: localDate(`${y}-${pad(m)}-01`),
+    endExclusive: localDate(m === 12 ? `${y + 1}-01-01` : `${y}-${pad(m + 1)}-01`),
+  };
+  const transactions = listTransactions(db, month);
+  const directions = new Map(listDebts(db).map((d) => [d.id, d.direction]));
+  const spent = spendingByCategory(transactions, (id) => directions.get(id));
+  let top: string | null = null;
+  let topSen = 0;
+  for (const [id, amount] of spent) {
+    if (amount > topSen) {
+      topSen = amount;
+      top = id;
+    }
+  }
+  const names = new Map(listCategories(db, { includeArchived: true }).map((c) => [c.id, c.name]));
+  return {
+    hasRecords: transactions.length > 0 || listTransactions(db).length > 0,
+    month: {
+      spentSen: sen([...spent.values()].reduce((sum, v) => sum + v, 0)),
+      records: transactions.length,
+      top: top ? (names.get(top) ?? null) : null,
+    },
+  };
+}
+
 /** Everything Home shows, worked out from the phone database with the domain rules. */
 export type HomeModel =
   | {
@@ -39,6 +69,17 @@ export type HomeModel =
       readonly ended: { readonly id: string; readonly lastDay: LocalDate } | null;
       /** A next plan started but not approved yet (AC-48). */
       readonly draftId: string | null;
+      /**
+       * Tracking without a plan (FR-PLN-04, D-78): whether anything was ever added (a first
+       * visit gets Brokely's welcome; after that, the month so far), and this month's numbers.
+       */
+      readonly hasRecords: boolean;
+      readonly month: {
+        readonly spentSen: Sen;
+        readonly records: number;
+        /** The category with the most spending this month, if any. */
+        readonly top: string | null;
+      };
     }
   | {
       readonly kind: "plan";
@@ -102,6 +143,7 @@ export function readHome(db: Db, today: LocalDate): HomeModel {
         ? { id: ended.id, lastDay: addDays(localDate(ended.endDateExclusive), -1) }
         : null,
       draftId: getDraftCycle(db)?.cycle.id ?? null,
+      ...monthSoFar(db, today),
     };
   }
 

@@ -13,6 +13,7 @@ import {
 import { dayMonth, today } from "../../src/lib/today";
 import { Body, Button, Heading, Screen, Sticker, Title } from "../../src/ui/components";
 import { Doughnut, type Slice } from "../../src/ui/doughnut";
+import { ProgressBar } from "../../src/ui/progress-bar";
 import { fonts, space, type } from "../../src/ui/theme";
 import { useTheme } from "../../src/ui/theme-context";
 
@@ -230,7 +231,7 @@ function BrandNew() {
       </Sticker>
       <Button label="Make a plan" onPress={() => router.push("/quick-start")} />
       <Button
-        label="Log something first"
+        label="Add something first"
         variant="secondary"
         onPress={() => router.push("/quick-add")}
       />
@@ -315,7 +316,7 @@ function GettingStarted({ model }: { model: PlanModel }) {
         "Log your first spending",
         "Your chart starts with it",
         <View style={{ marginTop: space.xs }}>
-          <Button label="+ Log spending" onPress={() => router.push("/quick-add")} />
+          <Button label="+ Add spending" onPress={() => router.push("/quick-add")} />
         </View>,
       )}
       {step("later", "Daily average", "Shows after your first logged day")}
@@ -354,33 +355,6 @@ function ForecastWaiting({
     </>
   ) : (
     <Body muted>Not enough data yet. It shows once you've logged at least 70% of days.</Body>
-  );
-}
-
-function ProgressBar({ fraction, label }: { fraction: number; label: string }) {
-  const { colors } = useTheme();
-  return (
-    <View style={{ gap: 4, marginTop: space.xs }} accessible accessibilityLabel={label}>
-      <View
-        style={{
-          height: 12,
-          borderRadius: 6,
-          borderWidth: 1.5,
-          borderColor: colors.outline,
-          backgroundColor: colors.card,
-          overflow: "hidden",
-        }}
-      >
-        <View
-          style={{
-            width: `${Math.max(4, Math.min(100, fraction * 100))}%`,
-            height: "100%",
-            backgroundColor: colors.primary,
-          }}
-        />
-      </View>
-      <Text style={[type.small, { color: colors.muted }]}>{label}</Text>
-    </View>
   );
 }
 

@@ -289,7 +289,7 @@ function EmptyRecords({ filter }: { filter: RecordFilter }) {
           : "Records of this kind will show up here."}
       </Text>
       {all ? (
-        <Button label="Log my first spending" onPress={() => router.push("/quick-add")} />
+        <Button label="+ Add my first spending" onPress={() => router.push("/quick-add")} />
       ) : null}
     </View>
   );

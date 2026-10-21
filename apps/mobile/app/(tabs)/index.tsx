@@ -22,6 +22,7 @@ import { Button, Screen, Sticker } from "../../src/ui/components";
 import { ProgressRing } from "../../src/ui/progress-ring";
 import { fonts, radius, space, type } from "../../src/ui/theme";
 import { useTheme } from "../../src/ui/theme-context";
+import { FirstVisit, MonthSoFar } from "../../src/ui/home-no-plan";
 import { useUndo } from "../../src/ui/undo";
 
 /** The full mascot picture (author's main design). */
@@ -71,7 +72,13 @@ export default function HomeScreen() {
           <Text style={[type.body, { color: colors.muted, fontSize: 15 }]}>
             {homeStatus[home.status]}
           </Text>
-        ) : null}
+        ) : (
+          <Text style={[type.body, { color: colors.muted, fontSize: 15 }]}>
+            {home.month.records > 0
+              ? `${home.month.records} ${home.month.records === 1 ? "record" : "records"} this month`
+              : "Tracking mode"}
+          </Text>
+        )}
       </View>
     </View>
   );
@@ -106,20 +113,10 @@ export default function HomeScreen() {
               />
             </Sticker>
           ) : null}
-          {home.draftId || home.ended ? null : (
-            <Sticker style={{ padding: space.md, gap: space.sm }}>
-              <Text style={[type.heading, { color: colors.text }]}>No plan yet</Text>
-              <Text style={[type.body, { color: colors.muted }]}>
-                You can log spending without one. When you're ready, Brokely will set one up with
-                you in a minute.
-              </Text>
-              <Button label="Make a plan" onPress={() => router.push("/quick-start")} />
-              <Button
-                label="Plan step by step"
-                variant="link"
-                onPress={() => router.push("/guided")}
-              />
-            </Sticker>
+          {home.draftId || home.ended ? null : home.hasRecords ? (
+            <MonthSoFar month={home.month} />
+          ) : (
+            <FirstVisit />
           )}
         </View>
       </Screen>
@@ -270,7 +267,7 @@ export default function HomeScreen() {
       <Sticker style={{ padding: space.md, gap: space.sm }}>
         <SectionHeader
           title="Spent so far"
-          action={home.spentByCategory.length > 0 ? "View all" : "+ Log spending"}
+          action={home.spentByCategory.length > 0 ? "View all" : "+ Add spending"}
           onAction={() => router.push(home.spentByCategory.length > 0 ? "/records" : "/quick-add")}
         />
         {home.spentByCategory.length === 0 ? (
