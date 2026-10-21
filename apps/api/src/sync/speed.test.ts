@@ -36,7 +36,7 @@ const unwrap = <T>(r: { ok: true; value: T } | { ok: false; message: string }): 
 };
 
 /** Upper bounds that fail the test if a change makes a backup slower. */
-const MAX_QUERIES_PER_PUSHED_CHANGE = 8;
+const MAX_QUERIES_PER_PUSHED_CHANGE = 3;
 const MAX_QUERIES_PER_PULL_PAGE = 20;
 
 describe("speed check (sync-api §4, §5)", () => {

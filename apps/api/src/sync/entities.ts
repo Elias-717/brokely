@@ -51,7 +51,7 @@ export type SyncedTable = typeof walletChecks;
 export type SyncedRow = SyncedTable["$inferSelect"] & Record<string, unknown>;
 
 /** A row another record points to, checked before writing (step 5, REFERENCE_MISSING). */
-interface Reference {
+export interface Reference {
   readonly table: SyncedTable;
   readonly id: string;
   readonly what: string;
@@ -77,8 +77,17 @@ export interface EntityHandler<E extends EntityName> {
   check?(ctx: WriteContext<E>): Promise<RuleResult>;
   /** Business rules for a delete. */
   checkDelete?(tx: Db, userId: string, row: SyncedRow): Promise<RuleResult>;
-  /** Replaces the aggregate's parts (S-01), after the parent row is written. */
-  writeParts?(tx: Db, userId: string, entityId: string, data: Data<E>): Promise<void>;
+  /**
+   * Replaces the aggregate's parts (S-01), after the parent row is written. `fresh`: the row
+   * was just created, so it has no old parts to remove (one round trip fewer).
+   */
+  writeParts?(
+    tx: Db,
+    userId: string,
+    entityId: string,
+    data: Data<E>,
+    fresh: boolean,
+  ): Promise<void>;
   /**
    * Natural-key merge (S-05, S-06): a create that matches a row the student already has,
    * created elsewhere, becomes a `duplicate` of that row instead of a second copy.
@@ -324,8 +333,8 @@ const planRevision: EntityHandler<"plan_revision"> = {
   async checkDelete(_tx, _userId, row) {
     return row.approvedAt ? fail("REVISION_IMMUTABLE", "An approved plan can't be deleted") : OK;
   },
-  async writeParts(tx, userId, entityId, data) {
-    await tx.delete(allocations).where(eq(allocations.revisionId, entityId));
+  async writeParts(tx, userId, entityId, data, fresh) {
+    if (!fresh) await tx.delete(allocations).where(eq(allocations.revisionId, entityId));
     if (data.allocations.length === 0) return;
     await tx
       .insert(allocations)
@@ -510,8 +519,10 @@ const transaction: EntityHandler<"transaction"> = {
     }
     return OK;
   },
-  async writeParts(tx, userId, entityId, data) {
-    await tx.delete(transactionLines).where(eq(transactionLines.transactionId, entityId));
+  async writeParts(tx, userId, entityId, data, fresh) {
+    if (!fresh) {
+      await tx.delete(transactionLines).where(eq(transactionLines.transactionId, entityId));
+    }
     if (data.lines.length === 0) return;
     await tx.insert(transactionLines).values(
       data.lines.map((l) => ({

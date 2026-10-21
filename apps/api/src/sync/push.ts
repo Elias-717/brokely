@@ -5,22 +5,148 @@ import {
   type PushResult,
   type SyncErrorCode,
 } from "@brokely/contracts";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, getTableName, inArray, isNull, sql } from "drizzle-orm";
 import type { Db } from "../db/client";
 import { processedOperations } from "../db/schema";
-import { checkReferences, handlers, type SyncedRow } from "./entities";
+import {
+  checkReferences,
+  handlers,
+  type Reference,
+  type SyncedRow,
+  type SyncedTable,
+} from "./entities";
 
 /**
- * POST /v1/sync/push, one operation at a time (sync-api §4).
+ * POST /v1/sync/push (sync-api §4). The database is tens of milliseconds away, so round trips
+ * are what make a backup slow (speed check, D-89). The whole batch runs in one transaction under
+ * the per-student lock, which keeps one student's writes in server_seq order so pull never
+ * skips a row that commits late (S-08, S-09). What every change needs to know (already applied?
+ * the row it changes, the rows it points to) is read for the whole batch in a few queries.
  *
- * Each operation runs in its own database transaction (S-03), so one bad change never blocks
- * the rest, and holds a per-student lock. The lock makes one student's writes commit in
- * server_seq order, so pull can never skip a row that commits late (S-08, S-09).
+ * A rule the database itself enforces (overlapping plans, a category name used twice) fails the
+ * whole transaction; then nothing of the batch is kept and it runs again one change per
+ * transaction (S-03), so only that change is refused and the others are applied.
  */
 export async function push(db: Db, userId: string, operations: readonly unknown[]) {
-  const results: PushResult[] = [];
-  for (const raw of operations) results.push(await pushOne(db, userId, raw));
-  return results;
+  try {
+    return await pushBatch(db, userId, operations);
+  } catch (error) {
+    if (!constraintRefusal(error)) throw error;
+    const results: PushResult[] = [];
+    for (const raw of operations) results.push(await pushOne(db, userId, raw));
+    return results;
+  }
+}
+
+/**
+ * What the batch already knows: rows read up front (null when missing) and which rows the
+ * student has live, kept up to date as the batch writes. Unknown keys fall back to a query.
+ */
+interface BatchCache {
+  readonly rows: Map<string, SyncedRow | null>;
+  readonly live: Set<string>;
+}
+
+const rowKey = (entity: EntityName, id: string) => `${entity}:${id}`;
+const liveKey = (table: SyncedTable, id: string) => `${getTableName(table)}:${id}`;
+
+async function pushBatch(db: Db, userId: string, operations: readonly unknown[]) {
+  const parsed = operations.map((raw) => {
+    const operationId = (raw as { operationId: string }).operationId;
+    const result = PushOperationSchema.safeParse(raw);
+    if (result.success) return { operationId, op: result.data as PushOperation, refused: null };
+    const message = result.error.issues[0]?.message ?? "Invalid change";
+    return { operationId, op: null, refused: rejected(operationId, "VALIDATION_FAILED", message) };
+  });
+
+  return db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${userId}, 0))`);
+    // Step 1 for the whole batch: already applied? Answer as before (FR-SYNC-05).
+    const done = new Map<string, PushResult>();
+    const found = await tx
+      .select({ operationId: processedOperations.operationId, result: processedOperations.result })
+      .from(processedOperations)
+      .where(
+        and(
+          eq(processedOperations.userId, userId),
+          inArray(
+            processedOperations.operationId,
+            parsed.map((p) => p.operationId),
+          ),
+        ),
+      );
+    for (const r of found) done.set(r.operationId, r.result as PushResult);
+    const cache = await prefetch(
+      tx,
+      userId,
+      parsed.flatMap((p) => (p.op && !done.has(p.operationId) ? [p.op] : [])),
+    );
+
+    const results: PushResult[] = [];
+    const remember: { userId: string; operationId: string; result: PushResult }[] = [];
+    for (const p of parsed) {
+      const prior = done.get(p.operationId);
+      if (prior) {
+        results.push({ ...prior, status: "duplicate" } as PushResult);
+        continue;
+      }
+      if (!p.op) {
+        results.push(p.refused!);
+        continue;
+      }
+      const result = await apply(tx, userId, p.op, cache);
+      // Only successes are remembered; a refused change is checked afresh if sent again.
+      if (result.status === "applied" || result.status === "duplicate") {
+        remember.push({ userId, operationId: p.operationId, result });
+        done.set(p.operationId, result);
+      }
+      results.push(result);
+    }
+    if (remember.length > 0) await tx.insert(processedOperations).values(remember);
+    return results;
+  });
+}
+
+/** The rows the batch changes and the rows it points to: one query per table. */
+async function prefetch(tx: Db, userId: string, ops: readonly PushOperation[]) {
+  const cache: BatchCache = { rows: new Map(), live: new Set() };
+  const byEntity = new Map<EntityName, Set<string>>();
+  for (const op of ops) {
+    byEntity.set(op.entity, (byEntity.get(op.entity) ?? new Set()).add(op.entityId));
+  }
+  for (const [entity, ids] of byEntity) {
+    const table = handlers[entity].table;
+    const rows = (await tx
+      .select()
+      .from(table)
+      .where(inArray(table.id, [...ids]))) as SyncedRow[];
+    const byId = new Map(rows.map((r) => [r.id, r]));
+    for (const id of ids) cache.rows.set(rowKey(entity, id), byId.get(id) ?? null);
+  }
+
+  const refs = new Map<SyncedTable, Set<string>>();
+  for (const op of ops) {
+    if (op.op !== "upsert") continue;
+    for (const ref of handlers[op.entity].references?.(op.data as never) ?? []) {
+      refs.set(ref.table, (refs.get(ref.table) ?? new Set()).add(ref.id));
+    }
+  }
+  for (const [table, ids] of refs) {
+    const live = await tx
+      .select({ id: table.id })
+      .from(table)
+      .where(and(inArray(table.id, [...ids]), eq(table.userId, userId), isNull(table.deletedAt)));
+    for (const r of live) cache.live.add(liveKey(table, r.id));
+  }
+  return cache;
+}
+
+/** Step 5 from what the batch knows, without a query per reference. */
+function missingIn(cache: BatchCache, references: readonly Reference[]): string | undefined {
+  for (const ref of references) {
+    if (!cache.live.has(liveKey(ref.table, ref.id))) return `The ${ref.what} is not on the server`;
+  }
+  return undefined;
 }
 
 const NEXT_SEQ = sql`nextval('brokely.server_seq')`;
@@ -51,7 +177,7 @@ async function pushOne(db: Db, userId: string, raw: unknown): Promise<PushResult
         );
       if (done) return { ...(done.result as PushResult), status: "duplicate" } as PushResult;
 
-      const result = await apply(tx, userId, op);
+      const result = await apply(tx, userId, op, null);
       // Only successes are remembered; a refused change is checked afresh if sent again.
       if (result.status === "applied" || result.status === "duplicate") {
         await tx.insert(processedOperations).values({ userId, operationId, result });
@@ -65,12 +191,29 @@ async function pushOne(db: Db, userId: string, raw: unknown): Promise<PushResult
   }
 }
 
-async function apply(tx: Db, userId: string, op: PushOperation): Promise<PushResult> {
+async function apply(
+  tx: Db,
+  userId: string,
+  op: PushOperation,
+  cache: BatchCache | null,
+): Promise<PushResult> {
   const { operationId, entityId } = op;
   const handler = handlers[op.entity];
   const table = handler.table;
-  const [found] = await tx.select().from(table).where(eq(table.id, entityId));
-  const row = found as SyncedRow | undefined;
+  const key = rowKey(op.entity, entityId);
+  let row: SyncedRow | undefined;
+  if (cache?.rows.has(key)) row = cache.rows.get(key) ?? undefined;
+  else {
+    const [found] = await tx.select().from(table).where(eq(table.id, entityId));
+    row = found as SyncedRow | undefined;
+  }
+  /** After a write: a second change to the same row reads it afresh; references follow. */
+  const wrote = (live: boolean) => {
+    if (!cache) return;
+    cache.rows.delete(key);
+    if (live) cache.live.add(liveKey(table, entityId));
+    else cache.live.delete(liveKey(table, entityId));
+  };
 
   // Step 3: another student's row looks exactly like a missing one (FR-ACC-04).
   if (row && row.userId !== userId) {
@@ -93,6 +236,7 @@ async function apply(tx: Db, userId: string, op: PushOperation): Promise<PushRes
       } as never)
       .where(eq(table.id, entityId))
       .returning({ version: table.version, serverSeq: table.serverSeq });
+    wrote(false);
     return { operationId, status: "applied", ...written! };
   }
 
@@ -113,7 +257,10 @@ async function apply(tx: Db, userId: string, op: PushOperation): Promise<PushRes
   }
 
   // Step 5: what it points to exists for this student.
-  const missing = await checkReferences(tx, userId, handler.references?.(op.data as never) ?? []);
+  const references = handler.references?.(op.data as never) ?? [];
+  const missing = cache
+    ? missingIn(cache, references)
+    : await checkReferences(tx, userId, references);
   if (missing) return rejected(operationId, "REFERENCE_MISSING", missing);
 
   // Step 6: business rules, the same functions the phone runs (sync-api §6).
@@ -144,7 +291,8 @@ async function apply(tx: Db, userId: string, op: PushOperation): Promise<PushRes
         .insert(table)
         .values({ ...columns, id: entityId, userId, version: 1, serverSeq: NEXT_SEQ } as never)
         .returning({ version: table.version, serverSeq: table.serverSeq });
-  await handler.writeParts?.(tx, userId, entityId, op.data as never);
+  await handler.writeParts?.(tx, userId, entityId, op.data as never, !row);
+  wrote(true);
   return { operationId, status: "applied", ...written! };
 }
 

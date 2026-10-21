@@ -112,6 +112,27 @@ describe("sync routes (sync-api §4, §5)", () => {
     ]);
   });
 
+  it("a change the database refuses mid-batch is refused alone; the rest are applied (S-03, D-89)", async () => {
+    const op = (name: string) => ({
+      ...category,
+      operationId: randomUUID(),
+      entityId: randomUUID(),
+      data: { ...category.data, name },
+    });
+    const res = await app().inject({
+      method: "POST",
+      url: "/v1/sync/push",
+      headers: auth,
+      // Two live categories can't share a name: the second "Gym" breaks a database rule.
+      payload: { deviceId: randomUUID(), operations: [op("Gym"), op("Gym"), op("Books")] },
+    });
+    expect(res.json().results.map((r: { status: string }) => r.status)).toEqual([
+      "applied",
+      "rejected",
+      "applied",
+    ]);
+  });
+
   it("reports the round trip to the database for the speed check, without signing in", async () => {
     const res = await app().inject({ method: "GET", url: "/health/db" });
     expect(res.statusCode).toBe(200);
