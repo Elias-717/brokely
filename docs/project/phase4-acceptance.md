@@ -28,8 +28,13 @@ Phase 4 closes.
   check, D-89).
 - The phone and emulator both show the "You're backed up 🥦" toast after the first sign-in.
 
+## Findings during the run
+
+- **Time zone setting is not used for "today".** `today()` follows the phone's clock; the stored setting (More → Time zone) changes nothing. Same result on a real phone in Malaysia; on the GMT emulator, "today" was still 21 Oct while the setting said Kuala Lumpur (22 Oct), so a plan starting 22 Oct didn't show. Decide: use the setting for "today", or remove it.
+- **The Undo bar is still invisible to the screen reader dump** (`uiautomator`), as noted before; check it by eye on the phone.
+
 ## Run log
 
 | Date | Commit | Devices | Who | Notes |
 |---|---|---|---|---|
-| | | | | |
+| 22 Oct 2026, 02:4x MYT | aa31b57 (API), APK built 02:24 | B = emulator Pixel_6 (release APK), server checked in Supabase | Claude | **AC-20 ✅** offline purchase "AC20 test" RM 7.50 survived a force-close; after reconnecting, two "Back up now" taps left exactly one copy on the server (version 1, one line), emulator "Backed up", nothing waiting. **AC-23 ✅ on the emulator and server** deleted offline, backed up: server has the delete marker (version 2) and it stayed gone after another sync; still to see on the phone (A). AC-21, AC-22, AC-24 need the phone and emulator together |
