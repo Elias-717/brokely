@@ -7,6 +7,9 @@ Each one is also covered by automated tests (`apps/api/src/sync/two-phones.test.
 **Devices:** A = Samsung Galaxy A26 (reference phone, NFR-06) · B = Android emulator Pixel_6.
 **Build:** release APK (`apps/mobile/android`, `.\gradlew assembleRelease`) on both, same commit.
 **Account:** one test account signed in on both (Google or email), unless a test says otherwise.
+**Clocks:** both devices on Malaysia time. The emulator starts on GMT; set it with
+`adb -s emulator-5554 shell service call alarm 3 s16 Asia/Kuala_Lumpur`, or "today" differs and the
+two devices show different plans for the same data (seen 22 Oct; sync itself was fine).
 **Server:** live API on Azure (`/health` 200) and Supabase `swkakkylbsewewulxgra`.
 
 Mark each result ✅ pass / ❌ fail, with the date and a note. A failure gets an issue and is fixed before
