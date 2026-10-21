@@ -1,6 +1,7 @@
 import {
   formatRM,
   inclusiveEnd,
+  lengthInDays,
   localDate,
   parseAmount,
   planTotals,
@@ -17,18 +18,20 @@ import {
 } from "@brokely/local-db";
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
-import { Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { repo } from "../src/db/client";
 import { useRead } from "../src/db/use-read";
 import { refusalText } from "../src/lib/messages";
 import { dayMonth, today } from "../src/lib/today";
-import { AllocationFields, asTyped, readAllocations } from "../src/ui/allocation-fields";
-import { Button, Empty, Heading, PageScreen, Sticker } from "../src/ui/components";
-import { SheetNote } from "../src/ui/sheet";
-import { Chip, Field, Labelled } from "../src/ui/sheet-parts";
-import { space, type } from "../src/ui/theme";
+import { asTyped, readAllocations } from "../src/ui/allocation-fields";
+import { Button, Empty, PageScreen, Sticker } from "../src/ui/components";
+import { Chip, Field } from "../src/ui/sheet-parts";
+import { fonts, space, type } from "../src/ui/theme";
 import { useTheme } from "../src/ui/theme-context";
 import { useUndo } from "../src/ui/undo";
+
+type Plan = NonNullable<ReturnType<typeof getPlan>>;
+type Category = ReturnType<typeof listCategories>[number];
 
 const NEW_KINDS: { kind: CategoryKind; label: string; detail: string }[] = [
   { kind: "essential", label: "Essential", detail: "Something you need, like rent or a bus pass." },
@@ -40,23 +43,28 @@ const NEW_KINDS: { kind: CategoryKind; label: string; detail: string }[] = [
   },
 ];
 
+/** Essentials first, then optional and set-asides (FR-PLN-05, FR-PLN-12). */
+const GROUPS: { title: string; kinds: readonly CategoryKind[] }[] = [
+  { title: "Essentials", kinds: ["essential"] },
+  { title: "Optional · set aside", kinds: ["optional", "set_aside"] },
+];
+
 /**
- * S9 Current plan (FR-PLN-08…12, D-03, D-28): budget and every category's amount. Saving makes a
- * new revision and keeps the original; a plan over budget asks once "Approve anyway?".
- * Set-asides (Emergency, Savings, or your own label) are planned but not spending (FR-PLN-12).
+ * S9 Your plan (FR-PLN-08…12, D-03, D-28, D-81). Opening it shows the plan: a summary with the
+ * budget's split as a bar, the categories as rows, the unused ones folded. "Change amounts" is a
+ * deliberate step with a live total pinned at the top; saving makes a new version and keeps the
+ * original; a plan over budget asks once "Approve anyway?". Set-asides (Emergency, Savings, or
+ * your own label) are planned but not spending (FR-PLN-12).
  */
 export default function PlanScreen() {
   const day = useMemo(() => today(), []);
+  const [editing, setEditing] = useState(false);
   const data = useRead(
     (db) => {
       const cycle = findCycleOn(db, day);
       const plan = cycle ? getPlan(db, cycle.id) : undefined;
       if (!cycle || !plan) return null;
-      return {
-        plan,
-        revisions: listRevisions(db, cycle.id),
-        categories: listCategories(db),
-      };
+      return { plan, revisions: listRevisions(db, cycle.id), categories: listCategories(db) };
     },
     [day],
   );
@@ -69,26 +77,232 @@ export default function PlanScreen() {
       </PageScreen>
     );
   }
-  // Re-mount the form when a new revision arrives, so the fields start from it.
-  return <PlanForm key={data.plan.revision.id} {...data} />;
+  return editing ? (
+    // Re-mount on a new revision, so the fields start from it.
+    <ChangeAmounts key={data.plan.revision.id} {...data} onDone={() => setEditing(false)} />
+  ) : (
+    <PlanView {...data} day={day} onChange={() => setEditing(true)} />
+  );
 }
 
-function PlanForm({
+function amountsOf(plan: Plan) {
+  return new Map(plan.allocations.map((a) => [a.categoryId, a.amountSen]));
+}
+
+/** View: what the plan is, at a glance. */
+function PlanView({
   plan,
   revisions,
   categories,
+  day,
+  onChange,
 }: {
-  plan: NonNullable<ReturnType<typeof getPlan>>;
+  plan: Plan;
   revisions: ReturnType<typeof listRevisions>;
-  categories: ReturnType<typeof listCategories>;
+  categories: readonly Category[];
+  day: string;
+  onChange: () => void;
+}) {
+  const { colors, scheme } = useTheme();
+  const [showUnused, setShowUnused] = useState(false);
+  const amounts = amountsOf(plan);
+  const range = {
+    start: localDate(plan.cycle.startDate),
+    endExclusive: localDate(plan.cycle.endDateExclusive),
+  };
+  const daysLeft = Math.max(
+    0,
+    lengthInDays({ start: localDate(day), endExclusive: range.endExclusive }),
+  );
+  const budget = sen(plan.revision.budgetSen);
+  const original = revisions[0];
+  const byKind = (kind: CategoryKind) =>
+    categories.filter((c) => c.kind === kind).reduce((sum, c) => sum + (amounts.get(c.id) ?? 0), 0);
+  const essentials = byKind("essential");
+  const optional = byKind("optional");
+  const setAside = byKind("set_aside");
+  const planned = essentials + optional + setAside;
+  const left = budget - planned;
+  // The bar is the budget, or everything planned when that's more (then nothing is left).
+  const whole = Math.max(budget, planned, 1);
+  const parts = [
+    { label: "Essentials", value: essentials, color: colors.card },
+    { label: "Optional", value: optional, color: colors.heroRing },
+    { label: "Set aside", value: setAside, color: colors.destructive },
+    { label: "Not planned", value: Math.max(0, left), color: colors.heroTile },
+  ];
+  const used = categories.filter((c) => (amounts.get(c.id) ?? 0) > 0);
+  const unused = categories.filter((c) => (amounts.get(c.id) ?? 0) === 0);
+
+  return (
+    <PageScreen title="Your plan">
+      <View
+        accessible
+        accessibilityLabel={`Budget ${formatRM(budget)} for ${dayMonth(range.start)} to ${dayMonth(inclusiveEnd(range))}, ${daysLeft} days left. ${parts
+          .filter((p) => p.value > 0)
+          .map((p) => `${p.label} ${formatRM(sen(p.value))}`)
+          .join(", ")}${left < 0 ? `. ${formatRM(sen(-left))} over budget` : ""}`}
+        style={{
+          backgroundColor: colors.hero,
+          borderRadius: 24,
+          borderWidth: scheme === "dark" ? 1 : 2,
+          borderColor: colors.heroOutline,
+          padding: 18,
+          gap: space.xs,
+        }}
+      >
+        <Text style={{ fontFamily: fonts.heavy, fontSize: 14, color: colors.onHero }}>
+          {dayMonth(range.start)} – {dayMonth(inclusiveEnd(range))} · {daysLeft}{" "}
+          {daysLeft === 1 ? "day" : "days"} left
+        </Text>
+        <Text style={[type.amount, { color: colors.onHero, fontSize: 40, lineHeight: 44 }]}>
+          {formatRM(budget)}
+        </Text>
+        <Text style={[type.small, { color: colors.onHero }]}>
+          Budget · version {plan.revision.revisionNo}
+          {original && original.revisionNo !== plan.revision.revisionNo
+            ? `, started at ${formatRM(sen(original.budgetSen))}`
+            : ""}
+        </Text>
+        <View
+          style={{
+            flexDirection: "row",
+            height: 14,
+            borderRadius: 7,
+            borderWidth: 1.5,
+            borderColor: colors.onHero,
+            overflow: "hidden",
+            marginTop: space.xs,
+          }}
+        >
+          {parts
+            .filter((p) => p.value > 0)
+            .map((p) => (
+              <View key={p.label} style={{ flex: p.value / whole, backgroundColor: p.color }} />
+            ))}
+        </View>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", columnGap: 10, rowGap: 2 }}>
+          {parts
+            .filter((p) => p.value > 0)
+            .map((p) => (
+              <View key={p.label} style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+                <View
+                  style={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: 5,
+                    borderWidth: 1,
+                    borderColor: colors.onHero,
+                    backgroundColor: p.color,
+                  }}
+                />
+                <Text style={[type.small, { color: colors.onHero }]}>
+                  {p.label} {formatRM(sen(p.value))}
+                </Text>
+              </View>
+            ))}
+          {left < 0 ? (
+            <Text style={[type.small, { color: colors.onHero }]}>
+              · {formatRM(sen(-left))} over budget
+            </Text>
+          ) : null}
+        </View>
+      </View>
+
+      {used.length === 0 ? (
+        <Empty>No amounts yet. Tap Change amounts to plan your categories.</Empty>
+      ) : (
+        GROUPS.map((g) => {
+          const rows = used.filter((c) => g.kinds.includes(c.kind));
+          if (rows.length === 0) return null;
+          return (
+            <View key={g.title} style={{ gap: space.xs }}>
+              <GroupLabel>{g.title}</GroupLabel>
+              <Sticker style={{ padding: 0 }}>
+                {rows.map((c, i) => (
+                  <AmountRow
+                    key={c.id}
+                    name={c.kind === "set_aside" ? `${c.name} · set aside` : c.name}
+                    amount={formatRM(amounts.get(c.id) ?? sen(0))}
+                    first={i === 0}
+                  />
+                ))}
+              </Sticker>
+            </View>
+          );
+        })
+      )}
+
+      {unused.length > 0 ? (
+        <>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ expanded: showUnused }}
+            onPress={() => setShowUnused((s) => !s)}
+            style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+          >
+            <Sticker
+              rounded={14}
+              offset={2}
+              style={{
+                minHeight: 52,
+                paddingHorizontal: space.md,
+                flexDirection: "row",
+                alignItems: "center",
+              }}
+            >
+              <Text style={{ flex: 1, fontFamily: fonts.heavy, fontSize: 15, color: colors.text }}>
+                Not in this plan · {unused.length} {unused.length === 1 ? "category" : "categories"}
+              </Text>
+              <Text style={{ fontFamily: fonts.heavy, fontSize: 14, color: colors.text }}>
+                {showUnused ? "Hide" : "Show"}
+              </Text>
+            </Sticker>
+          </Pressable>
+          {showUnused ? (
+            <Sticker style={{ padding: 0, opacity: 0.8 }}>
+              {unused.map((c, i) => (
+                <AmountRow key={c.id} name={c.name} amount={formatRM(sen(0))} first={i === 0} />
+              ))}
+            </Sticker>
+          ) : null}
+        </>
+      ) : null}
+
+      <Button label="Change amounts" onPress={onChange} />
+      <View style={{ marginBottom: space.lg }}>
+        <Button
+          label="Plan step by step"
+          variant="secondary"
+          onPress={() => router.push("/guided")}
+        />
+      </View>
+    </PageScreen>
+  );
+}
+
+/** Change amounts: a live total on top, only the plan's categories, Save at the bottom. */
+function ChangeAmounts({
+  plan,
+  categories,
+  onDone,
+}: {
+  plan: Plan;
+  revisions: ReturnType<typeof listRevisions>;
+  categories: readonly Category[];
+  onDone: () => void;
 }) {
   const { colors } = useTheme();
   const showUndo = useUndo();
-  const current = new Map(plan.allocations.map((a) => [a.categoryId, a.amountSen]));
+  const current = amountsOf(plan);
   const [budgetText, setBudgetText] = useState(asTyped(plan.revision.budgetSen));
   const [amounts, setAmounts] = useState<Record<string, string>>(() =>
     Object.fromEntries(categories.map((c) => [c.id, asTyped(current.get(c.id) ?? 0)])),
   );
+  const [showAll, setShowAll] = useState(false);
+  // Categories added here, shown even before they get an amount.
+  const [added, setAdded] = useState<string[]>([]);
+  const [adding, setAdding] = useState(false);
   const [askOver, setAskOver] = useState(false);
   const [newName, setNewName] = useState("");
   const [newKind, setNewKind] = useState<CategoryKind>("optional");
@@ -97,12 +311,14 @@ function PlanForm({
   const budget = parseAmount(budgetText);
   const { allocations, bad } = readAllocations(categories, amounts);
   const totals = budget !== null ? planTotals(budget, allocations) : null;
-
-  const original = revisions[0];
-  const range = {
-    start: localDate(plan.cycle.startDate),
-    endExclusive: localDate(plan.cycle.endDateExclusive),
-  };
+  const plannedSen = totals ? sen(totals.plannedSpendingSen + totals.setAsideSen) : null;
+  const shown = categories.filter(
+    (c) =>
+      showAll ||
+      (current.get(c.id) ?? 0) > 0 ||
+      added.includes(c.id) ||
+      (amounts[c.id] ?? "").trim() !== "",
+  );
 
   const save = (acknowledged: boolean) => {
     if (budget === null || budget <= 0) return setProblem("Type a budget above zero.");
@@ -123,7 +339,7 @@ function PlanForm({
       shortfallAcknowledged: acknowledged,
     });
     if (!saved.ok) return setProblem(refusalText(saved.code, saved.message));
-    setAskOver(false);
+    onDone();
     // Undo is one more revision with the old numbers; history is never rewritten (D-03).
     showUndo(`Plan saved · ${formatRM(budget)}`, () =>
       revisePlan(repo, { cycleId: plan.cycle.id, ...before }),
@@ -134,80 +350,158 @@ function PlanForm({
   const addOne = () => {
     const name = newName.trim();
     if (!name) return setProblem("Type a name for the new category.");
-    const added = addCategory(repo, { name, kind: newKind });
-    if (!added.ok) return setProblem(refusalText(added.code, added.message));
+    const result = addCategory(repo, { name, kind: newKind });
+    if (!result.ok) return setProblem(refusalText(result.code, result.message));
+    setAdded((now) => [...now, result.value.id]);
     setNewName("");
+    setAdding(false);
     setProblem(null);
   };
 
-  return (
-    <PageScreen title="Your plan">
-      <Text style={[type.small, { color: colors.muted, marginTop: -space.sm }]}>
-        {dayMonth(range.start)} – {dayMonth(inclusiveEnd(range))} · version{" "}
-        {plan.revision.revisionNo}
-        {original && original.revisionNo !== plan.revision.revisionNo
-          ? ` · first approved with ${formatRM(original.budgetSen)}`
-          : ""}
+  const over = totals !== null && totals.shortfallSen > 0;
+  const live = (
+    <Sticker
+      background={over ? colors.warningCard : colors.cardTint}
+      style={{ paddingVertical: 12, paddingHorizontal: space.md, gap: 2 }}
+    >
+      <Text accessibilityLiveRegion="polite" style={[type.heading, { color: colors.text }]}>
+        {totals === null
+          ? "Type your budget"
+          : over
+            ? `${formatRM(totals.shortfallSen)} over budget`
+            : totals.unallocatedSen === 0
+              ? "Every ringgit has a plan"
+              : `${formatRM(totals.unallocatedSen)} left to plan`}
       </Text>
-
-      <Button
-        label="Plan step by step instead"
-        variant="link"
-        onPress={() => router.push("/guided")}
-      />
-
-      <Labelled label="Budget for this plan (RM)">
-        <Field
-          value={budgetText}
-          onChange={setBudgetText}
-          placeholder="0.00"
-          label="Budget"
-          numeric
-        />
-      </Labelled>
-
-      <AllocationFields
-        categories={categories}
-        amounts={amounts}
-        onChange={(id, text) => {
-          setAmounts((now) => ({ ...now, [id]: text }));
-          setAskOver(false);
-        }}
-      />
-
-      <Sticker style={{ padding: space.md, gap: space.sm }}>
-        <Heading>Add a category</Heading>
-        <Field
-          value={newName}
-          onChange={setNewName}
-          placeholder="e.g. Gym, Trip home, Course books"
-          label="New category name"
-        />
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
-          {NEW_KINDS.map((k) => (
-            <Chip
-              key={k.kind}
-              label={k.label}
-              selected={newKind === k.kind}
-              onPress={() => setNewKind(k.kind)}
-            />
-          ))}
-        </View>
+      {plannedSen !== null && budget !== null ? (
         <Text style={[type.small, { color: colors.muted }]}>
-          {NEW_KINDS.find((k) => k.kind === newKind)?.detail}
+          Planned {formatRM(plannedSen)} of {formatRM(budget)}
         </Text>
-        <Button label="Add category" variant="secondary" onPress={addOne} />
+      ) : null}
+    </Sticker>
+  );
+
+  const footer =
+    askOver && totals ? (
+      <Sticker background={colors.warningCard} style={{ padding: space.md, gap: space.sm }}>
+        <Text style={[type.strong, { color: colors.text }]}>
+          Your plan is {formatRM(totals.shortfallSen)} over budget. Approve anyway?
+        </Text>
+        <Button label="Approve anyway" onPress={() => save(true)} />
+        <Button label="Change it" variant="secondary" onPress={() => setAskOver(false)} />
+      </Sticker>
+    ) : (
+      <View style={{ gap: space.xs }}>
+        <Button label="Save as new version" onPress={() => save(false)} />
+        <Button label="Cancel" variant="link" onPress={onDone} />
+      </View>
+    );
+
+  return (
+    <PageScreen title="Change amounts" keyboardSafe pinned={live} footer={footer}>
+      <Sticker
+        style={{
+          minHeight: 60,
+          paddingVertical: 8,
+          paddingHorizontal: space.md,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: space.sm,
+        }}
+      >
+        <Text style={[type.heading, { flex: 1, color: colors.text }]}>Budget</Text>
+        <View style={{ width: 130 }}>
+          <Field
+            value={budgetText}
+            onChange={(t) => {
+              setBudgetText(t);
+              setAskOver(false);
+            }}
+            placeholder="0.00"
+            label="Budget"
+            numeric
+          />
+        </View>
       </Sticker>
 
-      {totals ? (
-        <SheetNote
-          title={
-            totals.shortfallSen > 0
-              ? `${formatRM(totals.shortfallSen)} over your budget`
-              : `${formatRM(totals.unallocatedSen)} not planned yet`
-          }
-          detail={`Spending ${formatRM(totals.plannedSpendingSen)} · set aside ${formatRM(totals.setAsideSen)} · budget ${formatRM(budget!)}`}
+      {GROUPS.map((g) => {
+        const rows = shown.filter((c) => g.kinds.includes(c.kind));
+        if (rows.length === 0) return null;
+        return (
+          <View key={g.title} style={{ gap: space.xs }}>
+            <GroupLabel>{g.title}</GroupLabel>
+            <Sticker style={{ padding: 0 }}>
+              {rows.map((c, i) => (
+                <View
+                  key={c.id}
+                  style={{
+                    minHeight: 56,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: space.sm,
+                    paddingVertical: 6,
+                    paddingHorizontal: space.md,
+                    borderTopWidth: i === 0 ? 0 : 2,
+                    borderTopColor: colors.background,
+                  }}
+                >
+                  <Text style={[type.strong, { flex: 1, color: colors.text }]}>
+                    {c.kind === "set_aside" ? `${c.name} · set aside` : c.name}
+                  </Text>
+                  <View style={{ width: 118 }}>
+                    <Field
+                      value={amounts[c.id] ?? ""}
+                      onChange={(text) => {
+                        setAmounts((now) => ({ ...now, [c.id]: text }));
+                        setAskOver(false);
+                      }}
+                      placeholder="0.00"
+                      label={`${c.name} amount`}
+                      numeric
+                    />
+                  </View>
+                </View>
+              ))}
+            </Sticker>
+          </View>
+        );
+      })}
+
+      <View style={{ flexDirection: "row", flexWrap: "wrap", columnGap: space.md }}>
+        <Button
+          label={showAll ? "Show fewer" : "Show all categories"}
+          variant="link"
+          onPress={() => setShowAll((s) => !s)}
         />
+        {adding ? null : (
+          <Button label="+ Add a category" variant="link" onPress={() => setAdding(true)} />
+        )}
+      </View>
+
+      {adding ? (
+        <Sticker style={{ padding: space.md, gap: space.sm }}>
+          <Field
+            value={newName}
+            onChange={setNewName}
+            placeholder="e.g. Gym, Trip home, Course books"
+            label="New category name"
+          />
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
+            {NEW_KINDS.map((k) => (
+              <Chip
+                key={k.kind}
+                label={k.label}
+                selected={newKind === k.kind}
+                onPress={() => setNewKind(k.kind)}
+              />
+            ))}
+          </View>
+          <Text style={[type.small, { color: colors.muted }]}>
+            {NEW_KINDS.find((k) => k.kind === newKind)?.detail}
+          </Text>
+          <Button label="Add category" variant="secondary" onPress={addOne} />
+          <Button label="Cancel" variant="link" onPress={() => setAdding(false)} />
+        </Sticker>
       ) : null}
 
       {problem ? (
@@ -215,22 +509,51 @@ function PlanForm({
           {problem}
         </Text>
       ) : null}
-      {askOver && totals ? (
-        <Sticker background={colors.cardTint} style={{ padding: space.md, gap: space.sm }}>
-          <Text style={[type.strong, { color: colors.text }]}>
-            Your plan is {formatRM(totals.shortfallSen)} over budget. Approve anyway?
-          </Text>
-          <View style={{ flexDirection: "row", gap: space.sm }}>
-            <Button label="Approve anyway" onPress={() => save(true)} />
-            <Button label="Change it" variant="secondary" onPress={() => setAskOver(false)} />
-          </View>
-        </Sticker>
-      ) : (
-        <Button label="Save as new version" onPress={() => save(false)} />
-      )}
-      <Text style={[type.small, { color: colors.muted, paddingBottom: space.lg }]}>
+      <Text style={[type.small, { color: colors.muted }]}>
         Saving keeps your earlier versions, so the end-of-plan summary can show where you started.
       </Text>
     </PageScreen>
+  );
+}
+
+function GroupLabel({ children }: { children: string }) {
+  const { colors } = useTheme();
+  return (
+    <Text
+      accessibilityRole="header"
+      style={{ fontFamily: fonts.heavy, fontSize: 13, letterSpacing: 0.5, color: colors.muted }}
+    >
+      {children.toUpperCase()}
+    </Text>
+  );
+}
+
+function AmountRow({ name, amount, first }: { name: string; amount: string; first: boolean }) {
+  const { colors } = useTheme();
+  return (
+    <View
+      style={{
+        minHeight: 48,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: space.sm,
+        paddingVertical: 11,
+        paddingHorizontal: space.md,
+        borderTopWidth: first ? 0 : 2,
+        borderTopColor: colors.background,
+      }}
+    >
+      <Text style={[type.strong, { flex: 1, color: colors.text }]}>{name}</Text>
+      <Text
+        style={{
+          fontFamily: fonts.heavy,
+          fontSize: 16,
+          color: colors.text,
+          fontVariant: ["tabular-nums"],
+        }}
+      >
+        {amount}
+      </Text>
+    </View>
   );
 }

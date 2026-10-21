@@ -212,12 +212,18 @@ export function PageScreen({
   children,
   action,
   keyboardSafe,
+  pinned,
+  footer,
 }: {
   title: string;
   children: ReactNode;
   action?: ReactNode;
   /** Screens with text fields: keeps the content above the phone's keyboard (KeyboardSafe). */
   keyboardSafe?: boolean;
+  /** Stays under the title while the content scrolls, e.g. a live total. */
+  pinned?: ReactNode;
+  /** Stays at the bottom (above the keyboard with `keyboardSafe`), e.g. a Save button. */
+  footer?: ReactNode;
 }) {
   const { colors } = useTheme();
   const scroll = (
@@ -272,7 +278,24 @@ export function PageScreen({
         </Text>
         {action}
       </View>
-      {keyboardSafe ? <KeyboardSafe>{scroll}</KeyboardSafe> : scroll}
+      {pinned ? (
+        <View style={{ paddingHorizontal: space.md, paddingBottom: space.sm }}>{pinned}</View>
+      ) : null}
+      {keyboardSafe ? (
+        <KeyboardSafe>
+          {scroll}
+          {footer ? (
+            <View style={{ padding: space.md, paddingTop: space.sm }}>{footer}</View>
+          ) : null}
+        </KeyboardSafe>
+      ) : (
+        <>
+          {scroll}
+          {footer ? (
+            <View style={{ padding: space.md, paddingTop: space.sm }}>{footer}</View>
+          ) : null}
+        </>
+      )}
     </SafeAreaView>
   );
 }
