@@ -3,14 +3,14 @@
  * text for the app (More → Privacy) and the public page (GET /privacy on the API), so both always
  * say the same. Written notice in English and Bahasa Malaysia; the English text prevails.
  *
- * DRAFT until the author approves it: fill in OWNER and CONTACT, and have the Malay reviewed by a
- * native speaker. Review: docs/project/privacy-review.md.
+ * Owner and contact set by the author (22 Oct). The Malay still needs a native speaker's check.
+ * Review: docs/project/privacy-review.md.
  */
 
 /** Who is responsible for the data (the "data user"/controller). Set by the author. */
-export const PRIVACY_OWNER = "[OWNER NAME]";
+export const PRIVACY_OWNER = "Elias Al-Sumairi";
 /** Where students send questions, access/correction requests and complaints. */
-export const PRIVACY_CONTACT = "[CONTACT EMAIL]";
+export const PRIVACY_CONTACT = "eliassumairi@gmail.com";
 /** Shown on the notice; change it whenever the text changes. */
 export const PRIVACY_NOTICE_DATE = "22 October 2026";
 
