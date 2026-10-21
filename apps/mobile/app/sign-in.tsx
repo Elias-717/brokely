@@ -390,7 +390,9 @@ export default function SignInScreen() {
               {withGoogle ? (
                 <>
                   <GoogleButton onPress={() => void continueWithGoogle()} />
-                  <Button label="Use email instead" variant="link" onPress={changeEmail} />
+                  <View style={{ alignItems: "center" }}>
+                    <Button label="Use email instead" variant="link" onPress={changeEmail} />
+                  </View>
                 </>
               ) : (
                 <Button label="Continue with email" onPress={changeEmail} />

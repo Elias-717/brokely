@@ -129,9 +129,6 @@ export default function WelcomeScreen() {
                   variant="secondary"
                   onPress={() => start("/")}
                 />
-                <Text style={[type.small, { color: colors.muted, textAlign: "center" }]}>
-                  No account needed, no bank login. Everything stays on this phone.
-                </Text>
                 {canSignIn ? (
                   // Optional, for a returning student who doesn't want to plan again (D-72).
                   <Pressable

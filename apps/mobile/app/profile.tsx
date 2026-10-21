@@ -20,6 +20,7 @@ import { useSync } from "../src/sync/sync-provider";
 import { deleteAccountOnServer, OfflineError } from "../src/sync/transport";
 import { Avatar } from "../src/ui/avatar";
 import { Button, PageScreen, Sticker } from "../src/ui/components";
+import { ModalSheet } from "../src/ui/sheet";
 import { Icon, type IconName } from "../src/ui/icons";
 import { TextField } from "../src/ui/text-field";
 import { fonts, MIN_TOUCH, space, type } from "../src/ui/theme";
@@ -255,51 +256,55 @@ export default function ProfileScreen() {
         />
       )}
 
-      {signingOut === "blocked" ? (
-        <Sticker background={colors.warningCard} style={{ padding: space.md, gap: space.sm }}>
-          <Text style={[type.strong, { color: colors.text }]}>
-            {sync.waiting} {sync.waiting === 1 ? "change isn't" : "changes aren't"} backed up yet.
-            Connect to the internet and try again, so nothing is lost.
-          </Text>
-          <Button label="OK" variant="secondary" onPress={() => setSigningOut("idle")} />
-        </Sticker>
-      ) : null}
-      {deleting !== "idle" ? (
-        <Sticker background={colors.warningCard} style={{ padding: space.md, gap: space.sm }}>
-          <Text style={[type.heading, { color: colors.text }]}>Delete your account?</Text>
+      {/* Confirmations open as sheets over the screen, never below the fold (author). */}
+      <ModalSheet
+        visible={signingOut === "blocked"}
+        onClose={() => setSigningOut("idle")}
+        title="Not backed up yet"
+      >
+        <Text style={[type.body, { color: colors.text }]}>
+          {sync.waiting} {sync.waiting === 1 ? "change isn't" : "changes aren't"} backed up yet.
+          Connect to the internet and try again, so nothing is lost.
+        </Text>
+        <Button label="OK" variant="secondary" onPress={() => setSigningOut("idle")} />
+      </ModalSheet>
+      <ModalSheet
+        visible={signingOut === "confirm"}
+        onClose={() => setSigningOut("idle")}
+        title="Sign out?"
+      >
+        <Text style={[type.body, { color: colors.text }]}>
+          Your records leave this phone; they stay safe in your account and come back when you sign
+          in again.
+        </Text>
+        <Button label="Sign out" onPress={() => void signOut()} />
+        <Button label="Stay signed in" variant="secondary" onPress={() => setSigningOut("idle")} />
+      </ModalSheet>
+      <ModalSheet
+        visible={deleting !== "idle"}
+        onClose={() => (deleting === "working" ? undefined : setDeleting("idle"))}
+        title="Delete your account?"
+      >
+        <Sticker background={colors.warningCard} style={{ padding: space.md }}>
           <Text style={[type.body, { color: colors.text }]}>
             Your account and everything backed up with it are removed for good, and so are the
             records on this phone. This can't be undone.
           </Text>
-          {deleteMessage ? (
-            <Text accessibilityLiveRegion="polite" style={[type.strong, { color: colors.text }]}>
-              {deleteMessage}
-            </Text>
-          ) : null}
-          <Button label="Export everything first" variant="secondary" onPress={exportFirst} />
-          <Button
-            label={deleting === "working" ? "Deleting…" : "Delete my account"}
-            variant="destructive"
-            disabled={deleting === "working"}
-            onPress={() => void deleteMyAccount()}
-          />
-          <Button label="Keep my account" variant="link" onPress={() => setDeleting("idle")} />
         </Sticker>
-      ) : null}
-      {signingOut === "confirm" ? (
-        <Sticker background={colors.cardTint} style={{ padding: space.md, gap: space.sm }}>
-          <Text style={[type.strong, { color: colors.text }]}>
-            Sign out? Your records leave this phone; they stay safe in your account and come back
-            when you sign in again.
+        {deleteMessage ? (
+          <Text accessibilityLiveRegion="polite" style={[type.strong, { color: colors.text }]}>
+            {deleteMessage}
           </Text>
-          <Button label="Sign out" onPress={() => void signOut()} />
-          <Button
-            label="Stay signed in"
-            variant="secondary"
-            onPress={() => setSigningOut("idle")}
-          />
-        </Sticker>
-      ) : null}
+        ) : null}
+        <Button label="Export everything first" variant="secondary" onPress={exportFirst} />
+        <Button
+          label={deleting === "working" ? "Deleting…" : "Delete my account"}
+          variant="destructive"
+          disabled={deleting === "working"}
+          onPress={() => void deleteMyAccount()}
+        />
+        <Button label="Keep my account" variant="link" onPress={() => setDeleting("idle")} />
+      </ModalSheet>
     </PageScreen>
   );
 }

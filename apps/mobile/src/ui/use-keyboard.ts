@@ -19,6 +19,24 @@ export function useKeyboardOpen(): boolean {
   return open;
 }
 
+/**
+ * Where the open keyboard's top edge is on screen, in dp from the top; null when closed. More
+ * reliable than its height: some keyboards (Samsung's toolbar and bottom bar on edge-to-edge
+ * screens) report a height that leaves part of them out.
+ */
+export function useKeyboardTop(): number | null {
+  const [top, setTop] = useState<number | null>(null);
+  useEffect(() => {
+    const shown = Keyboard.addListener("keyboardDidShow", (e) => setTop(e.endCoordinates.screenY));
+    const hidden = Keyboard.addListener("keyboardDidHide", () => setTop(null));
+    return () => {
+      shown.remove();
+      hidden.remove();
+    };
+  }, []);
+  return top;
+}
+
 /** The open keyboard's height in dp, 0 when closed; used to keep sheets inside the screen. */
 export function useKeyboardHeight(): number {
   const [height, setHeight] = useState(0);

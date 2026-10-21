@@ -4,6 +4,7 @@ import {
   Animated,
   Keyboard,
   LayoutAnimation,
+  Modal,
   PanResponder,
   Pressable,
   Text,
@@ -96,17 +97,24 @@ export function WhenFull({ children }: { children: ReactNode }) {
   return useContext(SheetExpanded) ? <>{children}</> : null;
 }
 
+/** How far the sheet's content is scrolled: a downward drag closes it only from the top. */
+const SheetScrollTop = createContext<{ y: number } | null>(null);
+
 /**
  * The scrolling part of a sheet. Normally only as tall as its content; at full screen it fills
  * the space, so the keypad and Save stay at the bottom.
  */
 export function SheetScroll({ children }: { children: ReactNode }) {
   const expanded = useContext(SheetExpanded);
+  const scroll = useContext(SheetScrollTop);
   return (
     <KeyboardScroll
       // Shrinks (and scrolls) when space is short, instead of pushing fields off screen.
       style={{ flexGrow: expanded ? 1 : 0, flexShrink: 1 }}
       contentContainerStyle={{ gap: space.sm }}
+      onScroll={(e) => {
+        if (scroll) scroll.y = e.nativeEvent.contentOffset.y;
+      }}
     >
       {children}
     </KeyboardScroll>
@@ -114,14 +122,78 @@ export function SheetScroll({ children }: { children: ReactNode }) {
 }
 
 /**
- * The sliding part of every bottom sheet. On its top part (the handle bar and whatever `top`
- * holds, e.g. the title or amount): dragging up opens it to full screen; dragging down from
- * full screen brings it back to its usual size, and from there it moves with the finger and,
- * past a threshold or with a quick flick, slides away and closes (D-86). Taps still reach
- * buttons in `top`: a drag only starts once the finger moves. For screen readers the handle is
- * a "Close" button with actions to make the sheet full screen or smaller.
+ * A sheet over the current screen without a route of its own, e.g. "Sign out?" on Profile.
+ * Closes on the dimmed area, a slide down, or the phone's back button.
  */
-export function SheetPanel({ top, children }: { top?: ReactNode; children?: ReactNode }) {
+export function ModalSheet({
+  visible,
+  onClose,
+  title,
+  children,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  title: string;
+  children: ReactNode;
+}) {
+  const { colors } = useTheme();
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      statusBarTranslucent
+      navigationBarTranslucent
+      onRequestClose={onClose}
+    >
+      <KeyboardSafe style={{ justifyContent: "flex-end" }}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Close"
+          onPress={onClose}
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(5,6,5,0.55)",
+          }}
+        />
+        <SheetPanel
+          onClose={onClose}
+          top={
+            <Text style={[type.heading, { color: colors.text }]} accessibilityRole="header">
+              {title}
+            </Text>
+          }
+        >
+          <View style={{ gap: space.sm }}>{children}</View>
+        </SheetPanel>
+      </KeyboardSafe>
+    </Modal>
+  );
+}
+
+/**
+ * The sliding part of every bottom sheet. A clearly vertical drag anywhere on it, wherever the
+ * finger lands (author): up opens it to full screen; down from full screen brings it back to
+ * its usual size, and from there it moves with the finger and, past a threshold or with a
+ * quick flick, slides away and closes (D-86). A downward drag closes only while the content is
+ * scrolled to the top, so scrolling still works; taps and sideways swipes (chips) are never
+ * taken, since a drag starts only once the finger moves. For screen readers the handle is a
+ * "Close" button with actions to make the sheet full screen or smaller.
+ */
+export function SheetPanel({
+  top,
+  children,
+  onClose,
+}: {
+  top?: ReactNode;
+  children?: ReactNode;
+  /** Closing it; a sheet with a route of its own goes back. */
+  onClose?: () => void;
+}) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const reduce = useReduceMotion();
@@ -134,6 +206,16 @@ export function SheetPanel({ top, children }: { top?: ReactNode; children?: Reac
   const offset = useRef(new Animated.Value(0)).current;
   const [expanded, setExpanded] = useState(false);
   const expandedRef = useRef(false);
+  const scroll = useRef({ y: 0 }).current;
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  const close = () => (closeRef.current ? closeRef.current() : router.back());
+
+  /** Whether a move is a sheet drag rather than a tap, a sideways swipe or a scroll. */
+  const isSheetDrag = (dx: number, dy: number) => {
+    if (Math.abs(dy) < 8 || Math.abs(dy) < Math.abs(dx) * 1.5) return false;
+    return dy > 0 ? scroll.y <= 0 : !expandedRef.current;
+  };
 
   const resize = (to: boolean) => {
     if (!reduce) LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -144,8 +226,9 @@ export function SheetPanel({ top, children }: { top?: ReactNode; children?: Reac
   const drag = useMemo(
     () =>
       PanResponder.create({
-        onMoveShouldSetPanResponder: (_, g) =>
-          Math.abs(g.dy) > 6 && Math.abs(g.dy) > Math.abs(g.dx),
+        // Taken before the content's own handlers, wherever the finger landed.
+        onMoveShouldSetPanResponderCapture: (_, g) => isSheetDrag(g.dx, g.dy),
+        onMoveShouldSetPanResponder: (_, g) => isSheetDrag(g.dx, g.dy),
         onPanResponderGrant: () => Keyboard.dismiss(),
         // Only a downward drag follows the finger; from full screen it first shrinks back.
         onPanResponderMove: (_, g) => {
@@ -162,7 +245,10 @@ export function SheetPanel({ top, children }: { top?: ReactNode; children?: Reac
               toValue: 1000,
               duration: reduce ? 0 : 180,
               useNativeDriver: true,
-            }).start(() => router.back());
+            }).start(() => {
+              close();
+              offset.setValue(0); // a modal sheet stays mounted and may open again
+            });
             return;
           }
           Animated.spring(offset, { toValue: 0, useNativeDriver: true }).start();
@@ -189,8 +275,9 @@ export function SheetPanel({ top, children }: { top?: ReactNode; children?: Reac
         gap: space.sm,
         transform: [{ translateY: offset }],
       }}
+      {...drag.panHandlers}
     >
-      <View {...drag.panHandlers} style={{ gap: space.sm }}>
+      <View style={{ gap: space.sm }}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Close"
@@ -201,7 +288,7 @@ export function SheetPanel({ top, children }: { top?: ReactNode; children?: Reac
               : { name: "increment", label: "Make the sheet full screen" },
           ]}
           onAccessibilityAction={(e) => resize(e.nativeEvent.actionName === "increment")}
-          onPress={() => router.back()}
+          onPress={close}
           style={{ alignItems: "center", justifyContent: "center", height: 24 }}
         >
           <View
@@ -216,7 +303,9 @@ export function SheetPanel({ top, children }: { top?: ReactNode; children?: Reac
         </Pressable>
         {top}
       </View>
-      <SheetExpanded.Provider value={expanded}>{children}</SheetExpanded.Provider>
+      <SheetExpanded.Provider value={expanded}>
+        <SheetScrollTop.Provider value={scroll}>{children}</SheetScrollTop.Provider>
+      </SheetExpanded.Provider>
     </Animated.View>
   );
 }
