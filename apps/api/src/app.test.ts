@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { buildApp } from "./app";
+import { rowsOf } from "./db/client";
 import type { Db } from "./db/client";
 import { addUsers, createTestDb } from "./db/test-db";
 
@@ -136,6 +137,65 @@ describe("error logs (NFR-17)", () => {
     expect(log).toContain('"code":"42P01"'); // relation does not exist: enough to act on
     expect(log).not.toContain(student); // the query's parameters stay out
     expect(log).not.toContain("select ");
+    await app.close();
+    await close();
+  });
+});
+
+describe("DELETE /v1/account (FR-ACC-07)", () => {
+  it("removes the student's sign-in and every backed-up row, and nobody else's", async () => {
+    const { db, close } = await createTestDb();
+    const me = randomUUID();
+    const other = randomUUID();
+    await addUsers(db, me, other);
+    const tokens: Record<string, string> = { mine: me, theirs: other };
+    const app = buildApp({ db, verifyToken: async (t) => tokens[t] ?? null });
+    const category = (name: string) => ({
+      deviceId: randomUUID(),
+      operations: [
+        {
+          operationId: randomUUID(),
+          entity: "category",
+          entityId: randomUUID(),
+          op: "upsert",
+          baseVersion: null,
+          data: { name, kind: "essential", sortOrder: 0, archivedAt: null },
+        },
+      ],
+    });
+    for (const [token, name] of [
+      ["mine", "Meals"],
+      ["theirs", "Laundry"],
+    ] as const) {
+      await app.inject({
+        method: "POST",
+        url: "/v1/sync/push",
+        headers: { authorization: `Bearer ${token}` },
+        payload: category(name),
+      });
+    }
+
+    const denied = await app.inject({ method: "DELETE", url: "/v1/account" });
+    expect(denied.statusCode).toBe(401);
+    const deleted = await app.inject({
+      method: "DELETE",
+      url: "/v1/account",
+      headers: { authorization: "Bearer mine" },
+    });
+    expect(deleted.statusCode).toBe(204);
+
+    const users = rowsOf<{ id: string }>(await db.execute(sql`select id from auth.users`));
+    expect(users.map((u) => u.id)).toEqual([other]);
+    const left = rowsOf<{ user_id: string; name: string }>(
+      await db.execute(sql`select user_id, name from brokely.categories`),
+    );
+    expect(left).toEqual([{ user_id: other, name: "Laundry" }]);
+    const ops = rowsOf<{ n: number }>(
+      await db.execute(
+        sql`select count(*)::int as n from brokely.processed_operations where user_id = ${me}`,
+      ),
+    );
+    expect(ops[0]?.n).toBe(0);
     await app.close();
     await close();
   });
