@@ -114,6 +114,98 @@ export function syncCounts(db: Db): { waiting: number; needsAttention: number } 
   };
 }
 
+// ── Conflicts (FR-SYNC-08, AC-21) ───────────────────────────────────────────
+
+/** A change refused because the record changed on another phone first. */
+export interface Conflict {
+  readonly operationId: string;
+  readonly entity: EntityName;
+  readonly entityId: string;
+  /** This phone's change as it would be sent; null when it deletes the record. */
+  readonly mine: Record<string, unknown> | null;
+  /** The server's latest copy; null when the record was deleted there. */
+  readonly latest: Record<string, unknown> | null;
+  readonly latestVersion: number;
+}
+
+type ServerRow = Extract<PushResult, { status: "conflict" }>["current"];
+
+function serverRowOf(op: OutboxRow): ServerRow | null {
+  try {
+    return op.lastError ? (JSON.parse(op.lastError) as ServerRow) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Every waiting conflict, oldest first, with both versions side by side. */
+export function listConflicts(db: Db): Conflict[] {
+  return db
+    .select()
+    .from(outboxOperations)
+    .where(eq(outboxOperations.status, "conflict"))
+    .orderBy(sql`rowid`)
+    .all()
+    .flatMap((op) => {
+      const current = serverRowOf(op);
+      if (!current) return [];
+      return [
+        {
+          operationId: op.operationId,
+          entity: op.entity as EntityName,
+          entityId: op.entityId,
+          mine: op.op === "delete" ? null : ((op.payload ?? {}) as Record<string, unknown>),
+          latest: current.deletedAt ? null : (current.data ?? null),
+          latestVersion: current.version,
+        },
+      ];
+    });
+}
+
+/**
+ * The student's choice for one conflict (FR-SYNC-08). Nothing is lost until they choose:
+ * - `mine`: the change is sent again, now based on the latest version, so it replaces it on
+ *   every phone (an upsert also brings back a record deleted elsewhere, S-07);
+ * - `latest`: this phone's waiting changes to the record are dropped and the server's copy is
+ *   written here, exactly as a pull would.
+ * Returns false when there is no such conflict (already resolved).
+ */
+export function resolveConflict(ctx: RepoContext, operationId: string, keep: "mine" | "latest") {
+  return ctx.db.transaction((tx) => {
+    const op = tx
+      .select()
+      .from(outboxOperations)
+      .where(
+        and(eq(outboxOperations.operationId, operationId), eq(outboxOperations.status, "conflict")),
+      )
+      .get();
+    const current = op ? serverRowOf(op) : null;
+    if (!op || !current) return false;
+    const entity = op.entity as EntityName;
+    const table = entityTables[entity];
+
+    if (keep === "mine") {
+      tx.update(outboxOperations)
+        .set({ status: "pending", baseVersion: current.version, lastError: null })
+        .where(eq(outboxOperations.operationId, operationId))
+        .run();
+      tx.update(table).set({ syncStatus: "pending" }).where(eq(table.id, op.entityId)).run();
+      return true;
+    }
+
+    tx.delete(outboxOperations)
+      .where(
+        and(eq(outboxOperations.entity, op.entity), eq(outboxOperations.entityId, op.entityId)),
+      )
+      .run();
+    const local = tx.select().from(table).where(eq(table.id, op.entityId)).get();
+    const userId = readState(tx, SYNC_KEYS.account) ?? local?.userId ?? "";
+    tx.run(sql`PRAGMA defer_foreign_keys = ON`);
+    applyChange(tx, { ...current, entity } as PullChange, userId, ctx.now());
+    return true;
+  });
+}
+
 /**
  * When the newest change still waiting to be sent was made. The app syncs a few seconds after a
  * change newer than its last sync, so a sync's own writes never start another (sync-api §7).

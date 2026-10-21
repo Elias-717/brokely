@@ -111,6 +111,42 @@ describe("sync routes (sync-api §4, §5)", () => {
       "applied",
     ]);
   });
+
+  it("reports the round trip to the database for the speed check, without signing in", async () => {
+    const res = await app().inject({ method: "GET", url: "/health/db" });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().roundTripMs).toBeGreaterThanOrEqual(0);
+  });
+
+  it("allows 60 pushes a minute per student, then asks the phone to wait (sync-api §9)", async () => {
+    const other = randomUUID();
+    await addUsers(db, other);
+    let clock = Date.parse("2026-11-02T04:00:00Z");
+    const server = buildApp({
+      db,
+      verifyToken: async (t) => ({ ...tokens, "other-token": other })[t] ?? null,
+      now: () => clock,
+    });
+    const push = (headers: Record<string, string>) =>
+      server.inject({
+        method: "POST",
+        url: "/v1/sync/push",
+        headers,
+        payload: { deviceId: randomUUID(), operations: [category] }, // a repeat is a duplicate
+      });
+
+    for (let i = 0; i < 60; i++) {
+      expect((await push(auth)).statusCode).toBe(200);
+      clock += 500; // 60 pushes over 30 seconds
+    }
+    const limited = await push(auth);
+    expect(limited.statusCode).toBe(429);
+    expect(Number(limited.headers["retry-after"])).toBe(30); // the first push leaves the window
+    expect((await push({ authorization: "Bearer other-token" })).statusCode).toBe(200);
+
+    clock += 30_000;
+    expect((await push(auth)).statusCode).toBe(200);
+  });
 });
 
 describe("error logs (NFR-17)", () => {

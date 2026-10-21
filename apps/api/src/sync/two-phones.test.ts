@@ -9,6 +9,7 @@ import {
   deleteTransaction,
   editTransaction,
   listCategories,
+  listConflicts,
   listTransactions,
   nextClash,
   outboxOperations,
@@ -16,6 +17,7 @@ import {
   quickStart,
   recordPurchase,
   renameCategory,
+  resolveConflict,
   seedDefaultCategories,
   syncNow,
   type RepoContext,
@@ -185,6 +187,56 @@ describe("two phones on one account", () => {
     const [op] = b.ctx.db.select().from(outboxOperations).all();
     expect(op?.status).toBe("conflict");
     expect(JSON.parse(op!.lastError!)).toMatchObject({ data: { name: "Laundry & ironing" } });
+  });
+
+  /** A and B rename the same category; A backs up first, so B holds a conflict. */
+  async function renamedOnBoth() {
+    const acct = await account();
+    const a = await phone(acct);
+    const { laundry } = useTheApp(a);
+    await a.sync();
+    const b = await phone(acct);
+    await b.sync();
+    unwrap(renameCategory(a.ctx, laundry, "Laundry & ironing"));
+    unwrap(renameCategory(b.ctx, laundry, "Dobi"));
+    await a.sync();
+    await b.sync();
+    return { a, b, laundry };
+  }
+  const nameOn = (p: Phone, id: string) => listCategories(p.ctx.db).find((c) => c.id === id);
+
+  it("shows both versions of a conflict side by side (FR-SYNC-08, AC-21)", async () => {
+    const { b, laundry } = await renamedOnBoth();
+    const [conflict, ...more] = listConflicts(b.ctx.db);
+    expect(more).toEqual([]);
+    expect(conflict).toMatchObject({
+      entity: "category",
+      entityId: laundry,
+      mine: { name: "Dobi" },
+      latest: { name: "Laundry & ironing" },
+    });
+  });
+
+  it("'Use mine' re-applies the change on top of the latest, and every phone gets it (AC-21)", async () => {
+    const { a, b, laundry } = await renamedOnBoth();
+    expect(resolveConflict(b.ctx, listConflicts(b.ctx.db)[0]!.operationId, "mine")).toBe(true);
+
+    expect(await b.sync()).toMatchObject({ conflicts: 0, failed: 0 });
+    expect(listConflicts(b.ctx.db)).toEqual([]);
+    await a.sync();
+    expect(nameOn(a, laundry)).toMatchObject({ name: "Dobi", syncStatus: "synced" });
+    expect(nameOn(b, laundry)).toMatchObject({ name: "Dobi", syncStatus: "synced" });
+  });
+
+  it("'Keep the latest' drops this phone's change and takes the server's (AC-21)", async () => {
+    const { b, laundry } = await renamedOnBoth();
+    expect(resolveConflict(b.ctx, listConflicts(b.ctx.db)[0]!.operationId, "latest")).toBe(true);
+
+    expect(b.ctx.db.select().from(outboxOperations).all()).toEqual([]);
+    expect(nameOn(b, laundry)).toMatchObject({ name: "Laundry & ironing", syncStatus: "synced" });
+    expect(await b.sync()).toMatchObject({ pushed: 0, conflicts: 0, failed: 0 });
+    // A second tap on an old screen changes nothing.
+    expect(resolveConflict(b.ctx, "00000000-0000-4000-8000-000000000000", "mine")).toBe(false);
   });
 
   it("adds a phone that started on its own: its default categories merge into the account's (D-73 b)", async () => {

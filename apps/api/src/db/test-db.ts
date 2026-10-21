@@ -14,7 +14,10 @@ const migrationsFolder = fileURLToPath(new URL("../../drizzle", import.meta.url)
  * Supabase's own pieces the migrations rely on (the `auth.users` table, the Data API roles) are
  * stubbed first.
  */
-export async function createTestDb(): Promise<{ db: Db; close: () => Promise<void> }> {
+export async function createTestDb(
+  /** Called for every query, e.g. to count database round trips (speed check). */
+  onQuery?: () => void,
+): Promise<{ db: Db; close: () => Promise<void> }> {
   const client = new PGlite({ extensions: { btree_gist } });
   await client.exec(`
     CREATE SCHEMA auth;
@@ -22,7 +25,10 @@ export async function createTestDb(): Promise<{ db: Db; close: () => Promise<voi
     CREATE ROLE anon;
     CREATE ROLE authenticated;
   `);
-  const db = drizzle(client, { schema });
+  const db = drizzle(client, {
+    schema,
+    ...(onQuery ? { logger: { logQuery: () => onQuery() } } : {}),
+  });
   await migrate(db, { migrationsFolder });
   return { db: db as unknown as Db, close: () => client.close() };
 }

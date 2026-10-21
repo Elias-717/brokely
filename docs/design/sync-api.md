@@ -1,6 +1,6 @@
 # Brokely — Sync API Design v0.1
 
-Status: **server side of push and pull built** in `apps/api` (Phase 4, 21 Oct 2026; tables applied to Supabase). Not yet built: the phone's sync loop (§7), account linking (§8), `DELETE /v1/account`, rate limits. Implements SRS v1.2 FR-SYNC-01…10, FR-ACC-01…07 and decision D-06.
+Status: **server side of push and pull built** in `apps/api` (Phase 4, 21 Oct 2026; tables applied to Supabase). Since built: the phone's sync loop (§7), account linking (§8), `DELETE /v1/account`, the push limit (§9) and the conflict choice (FR-SYNC-08: `listConflicts` / `resolveConflict` in `packages/local-db/src/sync/engine.ts`). Implements SRS v1.2 FR-SYNC-01…10, FR-ACC-01…07 and decision D-06.
 Data model: [`erd.md`](erd.md). Shared request/response schemas will live in `packages/contracts` (Zod).
 
 ## 1. Purpose and shape
@@ -199,7 +199,7 @@ whose server copy is a delete marker brings it back (S-05) instead of answering 
 
 - HTTPS only, TLS 1.2+ (NFR-08). Access token in the `Authorization` header; stored on the phone with expo-secure-store (NFR-09).
 - Every query is filtered by the token's `user_id` (S-02, NFR-10).
-- Rate limit per user (e.g. 60 push requests per minute); body limit 1 MB.
+- Rate limit per user: **60 push requests per minute** (built: `apps/api/src/rate-limit.ts`, in memory per running copy; `429` with `Retry-After`, and the phone backs off); body limit 1 MB.
 - Logs never contain amounts, notes, counterparty names or merchant names (NFR-17).
 - `DELETE /v1/account` deletes all of the user's rows and sign-in identity; backups expire within 30 days (NFR-14).
 

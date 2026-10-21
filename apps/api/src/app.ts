@@ -6,11 +6,13 @@ import {
   type PullResponse,
   type PushResponse,
 } from "@brokely/contracts";
+import { sql } from "drizzle-orm";
 import Fastify, { type FastifyInstance, type FastifyRequest } from "fastify";
 import { z } from "zod";
 import { deleteAccount } from "./account";
 import type { VerifyToken } from "./auth";
 import type { Db } from "./db/client";
+import { createRateLimit, PUSHES_PER_MINUTE } from "./rate-limit";
 import { pull } from "./sync/pull";
 import { push } from "./sync/push";
 
@@ -32,6 +34,8 @@ export function errorSummary(error: unknown): Record<string, unknown> {
 export interface AppDeps {
   readonly db: Db;
   readonly verifyToken: VerifyToken;
+  /** The clock for the push limit; tests move it forward. */
+  readonly now?: () => number;
 }
 
 /**
@@ -79,12 +83,42 @@ export function buildApp(
     return deps!.verifyToken(header.slice("Bearer ".length));
   }
 
+  // Speed check: the round trip from this server to the database, the main cost of a backup
+  // (each pushed change makes a few). The middle of five tiny reads; no data is touched.
+  app.get("/health/db", async () => {
+    const times: number[] = [];
+    for (let i = 0; i < 5; i++) {
+      const start = performance.now();
+      await deps.db.execute(sql`select 1`);
+      times.push(performance.now() - start);
+    }
+    times.sort((a, b) => a - b);
+    return { roundTripMs: Math.round(times[2]! * 10) / 10 };
+  });
+
+  const pushLimit = createRateLimit(PUSHES_PER_MINUTE, 60_000, deps.now);
+
   app.post("/v1/sync/push", async (request, reply): Promise<PushResponse | void> => {
     const userId = await student(request);
     if (!userId) return reply.code(401).send({ error: "Sign in again" });
+    // At most 60 pushes a minute per student (sync-api §9); the phone backs off on 429.
+    const wait = pushLimit.take(userId);
+    if (wait > 0) {
+      return reply
+        .code(429)
+        .header("retry-after", String(wait))
+        .send({ error: "Too many backups at once; try again soon" });
+    }
     const body = PushEnvelopeSchema.safeParse(request.body);
     if (!body.success) return reply.code(400).send({ error: "Malformed batch" });
-    return { results: await push(deps.db, userId, body.data.operations) };
+    const start = performance.now();
+    const results = await push(deps.db, userId, body.data.operations);
+    // Speed check in the server log: how many changes, how long. Counts only (NFR-17).
+    request.log.info(
+      { changes: results.length, pushMs: Math.round(performance.now() - start) },
+      "push timed",
+    );
+    return { results };
   });
 
   app.get("/v1/sync/pull", async (request, reply): Promise<PullResponse | void> => {
