@@ -4,8 +4,10 @@ import {
   completeEndedCycles,
   dismissCard,
   getNickname,
+  getMascotIntroSeen,
   getSeenMascotStage,
   postponeCard,
+  setMascotIntroSeen,
   setSeenMascotStage,
   undoCheckIn,
 } from "@brokely/local-db";
@@ -23,7 +25,7 @@ import { dayMonth, today } from "../../src/lib/today";
 import { AnimatedAmount } from "../../src/ui/animated-amount";
 import { BrokelyAvatar } from "../../src/ui/chat";
 import { Button, Screen, Sticker } from "../../src/ui/components";
-import { GrewCelebration, MascotImage } from "../../src/ui/mascot-image";
+import { GrewCelebration, GrowIntroPopup, MascotImage } from "../../src/ui/mascot-image";
 import { ProgressRing } from "../../src/ui/progress-ring";
 import { fonts, radius, space, type } from "../../src/ui/theme";
 import { useTheme } from "../../src/ui/theme-context";
@@ -64,6 +66,10 @@ export default function HomeScreen() {
     if (seenStage === null) setSeenMascotStage(repo, mascot.stage);
   }, [seenStage, mascot.stage]);
   const grew = seenStage !== null && mascot.stage > seenStage;
+  // How Brokely grows, once, as soon as a day is logged (D-122): after the first record or
+  // "No spending today", or on the first Home visit of a phone signed into older records.
+  const introSeen = useRead(getMascotIntroSeen);
+  const showIntro = !introSeen && !grew && mascot.loggedDays > 0;
   const showUndo = useUndo();
   const { width } = useWindowDimensions();
   // The ring stays smaller than the amount beside it, also on narrow phones (D-58).
@@ -103,6 +109,13 @@ export default function HomeScreen() {
           )}
         </View>
       </Pressable>
+      {showIntro ? (
+        <GrowIntroPopup
+          first
+          loggedDays={mascot.loggedDays}
+          onClose={() => setMascotIntroSeen(repo)}
+        />
+      ) : null}
       {grew ? (
         <GrewCelebration
           stage={mascot.stage}

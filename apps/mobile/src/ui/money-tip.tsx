@@ -1,4 +1,4 @@
-import { getMoneyTips, recordTipShown } from "@brokely/local-db";
+import { getMascotIntroSeen, getMoneyTips, recordTipShown } from "@brokely/local-db";
 import {
   createContext,
   useCallback,
@@ -49,6 +49,8 @@ export function MoneyTipProvider({ children }: { children: ReactNode }) {
     const state = getMoneyTips(db);
     const day = today();
     if (!state.enabled) return;
+    // The first logged day brings "How Brokely grows" on Home instead (D-122).
+    if (!getMascotIntroSeen(db)) return;
     if (state.day === day && state.shownToday >= TIPS_PER_DAY) return;
     const chosen = pickTip(categoryName, state.seen);
     recordTipShown(repo, {

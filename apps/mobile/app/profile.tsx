@@ -1,10 +1,8 @@
 import {
   deleteAllData,
   exportJson,
-  getMascotIntroSeen,
   getNickname,
   NICKNAME_MAX,
-  setMascotIntroSeen,
   setNickname,
   syncCounts,
 } from "@brokely/local-db";
@@ -23,7 +21,7 @@ import { useSync } from "../src/sync/sync-provider";
 import { deleteAccountOnServer, OfflineError } from "../src/sync/transport";
 import { Avatar } from "../src/ui/avatar";
 import { Button, PageScreen, Sticker } from "../src/ui/components";
-import { GrowIntroCard } from "../src/ui/mascot-image";
+import { GrowIntroPopup } from "../src/ui/mascot-image";
 import { ModalSheet } from "../src/ui/sheet";
 import { Icon, type IconName } from "../src/ui/icons";
 import { TextField } from "../src/ui/text-field";
@@ -36,12 +34,9 @@ import { useTheme } from "../src/ui/theme-context";
  * sign out with its rule: only once everything is backed up, and it clears this phone.
  */
 export default function ProfileScreen() {
-  const introSeen = useRead(getMascotIntroSeen);
-  // Days logged, for the growth path on the intro card (D-120); read only while it shows.
-  const loggedDays = useRead(
-    (d) => (introSeen ? 0 : readMascot(d, today(), false).loggedDays),
-    [introSeen],
-  );
+  // Days logged and stage, for the "How Brokely grows" row and its card (D-120, D-122).
+  const mascot = useRead((d) => readMascot(d, today(), false));
+  const [showGrow, setShowGrow] = useState(false);
   const { colors } = useTheme();
   const sync = useSync();
   const nickname = useRead(getNickname);
@@ -146,10 +141,10 @@ export default function ProfileScreen() {
         </Text>
       </View>
 
-      {/* Once: how Brokely grows, with the three stages (D-110) */}
-      {introSeen ? null : (
-        <GrowIntroCard loggedDays={loggedDays} onDone={() => setMascotIntroSeen(repo)} />
-      )}
+      {/* How Brokely grows: shown once on Home after day 1 (D-122), here any time. */}
+      {showGrow ? (
+        <GrowIntroPopup loggedDays={mascot.loggedDays} onClose={() => setShowGrow(false)} />
+      ) : null}
 
       {editing ? (
         <Sticker style={{ padding: space.md, gap: space.sm }}>
@@ -186,6 +181,14 @@ export default function ProfileScreen() {
               setEditing(true);
             },
             false,
+          )}
+          {row(
+            "sprout",
+            colors.primary,
+            "How Brokely grows",
+            `${mascot.loggedDays} ${mascot.loggedDays === 1 ? "day" : "days"} logged · stage ${mascot.stage} of 3`,
+            () => setShowGrow(true),
+            true,
           )}
           {signedIn
             ? row(

@@ -16,7 +16,8 @@ export type IconName =
   | "cloud-upload"
   | "cloud-off"
   | "cloud-alert"
-  | "pencil";
+  | "pencil"
+  | "sprout";
 
 export function Icon({
   name,
@@ -72,6 +73,12 @@ export function Icon({
       {name === "pencil" && (
         <Path
           d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"
+          {...stroke}
+        />
+      )}
+      {name === "sprout" && (
+        <Path
+          d="M7 20h10M10 20c5.5-2.5.8-6.4 3-10M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8zM14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"
           {...stroke}
         />
       )}

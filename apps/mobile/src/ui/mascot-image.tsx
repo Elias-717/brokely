@@ -166,7 +166,17 @@ function nextStep(days: number): string {
  * the three pictures grow from left to right on a numbered track that fills with the days the
  * student has logged; stages not reached yet are faded.
  */
-export function GrowIntroCard({ loggedDays, onDone }: { loggedDays: number; onDone: () => void }) {
+export function GrowIntroCard({
+  loggedDays,
+  onDone,
+  title = "Watch Brokely grow",
+  doneLabel = "Got it",
+}: {
+  loggedDays: number;
+  onDone: () => void;
+  title?: string;
+  doneLabel?: string;
+}) {
   const { colors } = useTheme();
   const reached = (i: number) => loggedDays >= STAGES[i]!.from;
   const fill = `${pathProgress(loggedDays) * 100}%` as const;
@@ -174,7 +184,7 @@ export function GrowIntroCard({ loggedDays, onDone }: { loggedDays: number; onDo
     <Sticker background={colors.cardTint} style={{ padding: space.md, gap: space.md }}>
       <View style={{ gap: space.xs }}>
         <Text accessibilityRole="header" style={[type.heading, { color: colors.text }]}>
-          Watch Brokely grow
+          {title}
         </Text>
         <Text style={[type.body, { color: colors.text }]}>
           Brokely grows every day you log something, or tap “No spending today”. Log 3 days in a row
@@ -296,7 +306,53 @@ export function GrowIntroCard({ loggedDays, onDone }: { loggedDays: number; onDo
         </Text>
       </View>
 
-      <Button label="Got it" onPress={onDone} />
+      <Button label={doneLabel} onPress={onDone} />
     </Sticker>
+  );
+}
+
+/**
+ * The grow card as a pop-up (D-122): over Home once, right after the first record or "No
+ * spending today" (so it greets day 1), and from Profile → How Brokely grows any time.
+ */
+export function GrowIntroPopup({
+  loggedDays,
+  onClose,
+  first,
+}: {
+  loggedDays: number;
+  onClose: () => void;
+  /** The one-time greeting after the first logged day. */
+  first?: boolean;
+}) {
+  const title =
+    first && loggedDays === 1
+      ? "That's day 1!"
+      : first
+        ? `${loggedDays} days logged!`
+        : "How Brokely grows";
+  return (
+    <Modal visible transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Close"
+        onPress={onClose}
+        style={{
+          flex: 1,
+          backgroundColor: "rgba(0,0,0,0.5)",
+          justifyContent: "center",
+          padding: space.md,
+        }}
+      >
+        <Pressable onPress={() => undefined}>
+          <GrowIntroCard
+            loggedDays={loggedDays}
+            onDone={onClose}
+            title={title}
+            doneLabel={first ? "Got it" : "Close"}
+          />
+        </Pressable>
+      </Pressable>
+    </Modal>
   );
 }
