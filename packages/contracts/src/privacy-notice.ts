@@ -12,7 +12,7 @@ export const PRIVACY_OWNER = "Elias Al-Sumairi";
 /** Where students send questions, access/correction requests and complaints. */
 export const PRIVACY_CONTACT = "eliassumairi@gmail.com";
 /** Shown on the notice; change it whenever the text changes. */
-export const PRIVACY_NOTICE_DATE = "22 October 2026";
+export const PRIVACY_NOTICE_DATE = "23 October 2026";
 
 export interface NoticeSection {
   readonly title: string;
@@ -60,7 +60,7 @@ const en: PrivacyNotice = {
       paragraphs: [
         "Supabase stores your account and backed-up records in a data centre in Singapore. Brokely's sync server runs on Microsoft Azure in Hong Kong: your records pass through it to Supabase, and its logs only hold technical details (time, address called, result), never amounts, notes or names. Google is involved only if you sign in with Google.",
         "Singapore and Hong Kong are outside Malaysia. Both have their own personal data protection laws, these providers protect the data under contract, and everything travels encrypted (HTTPS). By creating an account you agree to this transfer.",
-        "If you have Android's own Google backup turned on, Android may also copy Brokely's phone data into your Google account. That copy is between you and Google.",
+        "Brokely switches off Android's own Google backup, so the data on your phone is never copied to your Google account. Your Brokely account is the only backup; without one, you can save a copy any time with More → Your data → Export.",
       ],
     },
     {
@@ -130,7 +130,7 @@ const ms: PrivacyNotice = {
       paragraphs: [
         "Supabase menyimpan akaun dan rekod sandaran anda di pusat data di Singapura. Pelayan penyegerakan Brokely berjalan di Microsoft Azure di Hong Kong: rekod anda melaluinya ke Supabase, dan lognya hanya mengandungi butiran teknikal (masa, alamat yang dipanggil, keputusan), bukan jumlah, catatan atau nama. Google terlibat hanya jika anda log masuk dengan Google.",
         "Singapura dan Hong Kong berada di luar Malaysia. Kedua-duanya mempunyai undang-undang perlindungan data peribadi sendiri, penyedia ini melindungi data di bawah kontrak, dan semuanya dihantar secara tersulit (HTTPS). Dengan membuat akaun, anda bersetuju dengan pemindahan ini.",
-        "Jika sandaran Google Android anda dihidupkan, Android mungkin turut menyalin data Brokely dalam telefon ke akaun Google anda. Salinan itu antara anda dan Google.",
+        "Brokely mematikan sandaran Google Android sendiri, jadi data dalam telefon anda tidak pernah disalin ke akaun Google anda. Akaun Brokely anda ialah satu-satunya sandaran; tanpanya, anda boleh menyimpan salinan pada bila-bila masa melalui More → Your data → Export.",
       ],
     },
     {

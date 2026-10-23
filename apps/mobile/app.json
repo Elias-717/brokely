@@ -18,6 +18,7 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
+      "allowBackup": false,
       "package": "com.elias717.brokely"
     },
     "web": {
@@ -34,11 +35,8 @@
       "expo-font",
       "./plugins/with-windows-cmake",
       "@react-native-community/datetimepicker",
-      "expo-secure-store",
-      [
-        "expo-notifications",
-        { "icon": "./assets/android-icon-monochrome.png", "color": "#5E7330" }
-      ]
+      ["expo-secure-store", { "configureAndroidBackup": false }],
+      ["expo-notifications", { "icon": "./assets/android-icon-monochrome.png", "color": "#5E7330" }]
     ]
   }
 }

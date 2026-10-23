@@ -56,11 +56,11 @@ something sensitive (e.g. a clinic visit). Treated like any record: private, nev
 |---|---|---|---|
 | P-1 | ~~Owner and contact were placeholders~~ | **Done 22 Oct:** data user Elias Al-Sumairi, contact eliassumairi@gmail.com | Author |
 | P-2 | Malay text is a draft translation | Have a native speaker check it; English prevails on conflict | Author |
-| P-3 | Android Auto Backup is on (`allowBackup="true"`; only the secure-store token is excluded), so the phone database can be copied to the student's Google Drive | Either keep it and say so (the notice now does), or set `android.allowBackup: false` so the account is the only backup. Also avoids restoring a phone linked to an account without its token | Author decides; agent changes `app.json` |
+| P-3 | ~~Android Auto Backup was on~~ | **Done 23 Oct (D-97):** `android.allowBackup: false` in `app.json` (secure-store backup rules no longer needed); the notice says the Brokely account is the only backup. Takes effect with the next native build | Done |
 | P-4 | Supabase "Leaked password protection" is off (security advisor WARN) | Turn on in Authentication → Email (may need a paid plan) | Author |
 | P-5 | Backup retention on the Supabase plan not confirmed | Check Database → Backups; NFR-14 needs ≤ 30 days | Author |
-| P-6 | No written breach plan | One page: detect, assess harm, notify Commissioner (72 h) and students, record | Agent drafts, author approves |
-| P-7 | Notice shown as a link, not acknowledged | Acceptable under s.7 (notice before collection); optionally show the notice once at first sign-in | Author decides |
+| P-6 | No written breach plan | **Drafted 23 Oct:** `breach-plan.md` (contain, assess, Commissioner within 72 h, students within 7 days, template, record). Author approves and fills in the supervisor | Author approves |
+| P-7 | Notice shown as a link, not acknowledged | **Decided 23 Oct (D-97):** keep the link on sign-in and in More (acceptable under s.7) | Done |
 | P-8 | Public notice URL needed for Google Play and the OAuth consent screen | `https://brokely-api.ashyglacier-36b03c11.eastasia.azurecontainerapps.io/privacy` (live after deploy); a custom domain later | Done (D-92) |
 | P-9 | Pilot students' age | PDPA has no child-specific rule, but minors' consent is weaker; AIU students are adults. State "for students 18+" in the pilot invite | Author |
 
