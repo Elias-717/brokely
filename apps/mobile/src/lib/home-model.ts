@@ -97,9 +97,7 @@ export type HomeModel =
       readonly endExclusive: LocalDate;
       /** "hidden" on plans shorter than 14 days (D-37); "waiting" before the gate opens (BR-17). */
       readonly forecast:
-        | { kind: "hidden" }
-        | { kind: "waiting" }
-        | { kind: "shown"; value: Forecast };
+        { kind: "hidden" } | { kind: "waiting" } | { kind: "shown"; value: Forecast };
       readonly stillToCome: readonly {
         id: string;
         name: string;
