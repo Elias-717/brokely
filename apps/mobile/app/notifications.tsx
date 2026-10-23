@@ -118,10 +118,7 @@ export default function NotificationsScreen() {
           <Row title="Time" first>
             <Pill label={clockTime(s.eveningTime)} onPress={() => void time("eveningTime")} />
           </Row>
-          <Row
-            title="Tone"
-            detail={s.tone === "cheeky" ? "Nags kindly until you log" : undefined}
-          >
+          <Row title="Tone" detail={s.tone === "cheeky" ? "Nags kindly until you log" : undefined}>
             <View style={{ flexDirection: "row", gap: 6 }}>
               <Chip
                 label="Friendly"
