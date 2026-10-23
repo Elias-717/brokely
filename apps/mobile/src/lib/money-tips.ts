@@ -5,7 +5,8 @@
  *
  * The first 30 are the author's (lightly reworded for the glossary); the rest are Brokely's,
  * some inspired by ideas from "Rich Dad Poor Dad" (pay yourself first, assets vs liabilities,
- * learning that earns), written in our own words. All to be reviewed by the author.
+ * learning that earns), written in our own words; c01…c50 added 23 Oct (D-113) to reach 100.
+ * All to be reviewed by the author.
  */
 
 export type TipTopic =
@@ -278,6 +279,257 @@ export const MONEY_TIPS: readonly MoneyTip[] = [
     id: "b20",
     topics: ["savings", "growth"],
     text: "The earlier you start saving, the more time your money has to grow. Small and steady wins.",
+  },
+  // More of Brokely's tips (D-113), to be reviewed by the author
+  {
+    id: "c01",
+    topics: ["snacks"],
+    text: "A drink a day adds up: RM4 teh ais every afternoon is about RM120 a month. Pick your favourite days instead.",
+  },
+  {
+    id: "c02",
+    topics: ["snacks"],
+    text: "Buy a big pack of your favourite snack at the shop and split it into small bags. Cheaper than the vending machine.",
+  },
+  {
+    id: "c03",
+    topics: ["snacks"],
+    text: "Hungry between classes? A banana or a bun from home costs a fraction of the café.",
+  },
+  {
+    id: "c04",
+    topics: ["snacks"],
+    text: "Treats are part of a good plan. Give them their own amount so you enjoy them without guessing.",
+  },
+  {
+    id: "c05",
+    topics: ["snacks"],
+    text: "Before a late-night snack run, check what's already in your room. Half the time it's enough.",
+  },
+  {
+    id: "c06",
+    topics: ["snacks"],
+    text: "Bubble tea twice a week instead of five times keeps the joy and saves around RM50 a month.",
+  },
+  {
+    id: "c07",
+    topics: ["fun"],
+    text: "Plan your weekend fun on Monday. Fun you decided on is cheaper than fun you stumble into.",
+  },
+  {
+    id: "c08",
+    topics: ["fun"],
+    text: "Movie nights at home with friends cost the price of snacks, not the price of tickets.",
+  },
+  {
+    id: "c09",
+    topics: ["fun"],
+    text: "For a trip, agree on a budget with friends before booking, so nobody feels awkward later.",
+  },
+  {
+    id: "c10",
+    topics: ["fun"],
+    text: "Look for student days: many cinemas and attractions are cheaper on weekdays.",
+  },
+  {
+    id: "c11",
+    topics: ["fun"],
+    text: "Saying “not this time” to one outing is fine. Real friends will invite you to the next one.",
+  },
+  {
+    id: "c12",
+    topics: ["fun"],
+    text: "Saving for a trip? Add a small set-aside each week. It feels lighter than paying all at once.",
+  },
+  {
+    id: "c13",
+    topics: ["transport"],
+    text: "Walking or cycling short distances saves money and counts as exercise too.",
+  },
+  {
+    id: "c14",
+    topics: ["transport"],
+    text: "Grab prices jump at peak times. Leaving 15 minutes earlier can make the same ride cheaper.",
+  },
+  {
+    id: "c15",
+    topics: ["transport"],
+    text: "Planning to go to town? Do all your errands in one trip instead of three.",
+  },
+  {
+    id: "c16",
+    topics: ["transport"],
+    text: "Top up your TNG with a set amount each week, so transport money doesn't quietly run out.",
+  },
+  {
+    id: "c17",
+    topics: ["transport"],
+    text: "Check if your campus has a free shuttle bus. It's the cheapest ride there is.",
+  },
+  {
+    id: "c18",
+    topics: ["bills"],
+    text: "Write down the date each bill is due. Paying on time avoids late fees that buy you nothing.",
+  },
+  {
+    id: "c19",
+    topics: ["bills"],
+    text: "Compare phone plans once a semester. A cheaper prepaid plan can save RM10 or more a month.",
+  },
+  {
+    id: "c20",
+    topics: ["bills"],
+    text: "Sharing a streaming plan with family or housemates splits the cost, if the plan allows it.",
+  },
+  {
+    id: "c21",
+    topics: ["bills"],
+    text: "Set bills to come out right after money comes in, so they're paid before anything else.",
+  },
+  {
+    id: "c22",
+    topics: ["bills"],
+    text: "Unplug chargers and switch off the fan when you leave. If you pay for electricity, it adds up.",
+  },
+  {
+    id: "c23",
+    topics: ["debt"],
+    text: "Before you borrow, plan when you'll pay it back. A date makes it easy to keep your word.",
+  },
+  {
+    id: "c24",
+    topics: ["debt"],
+    text: "Lending to a friend? Only lend what you could manage without if it comes back late.",
+  },
+  {
+    id: "c25",
+    topics: ["debt"],
+    text: "Pay back small debts first. Clearing one completely feels great and keeps things simple.",
+  },
+  {
+    id: "c26",
+    topics: ["debt"],
+    text: "Splitting a bill? Settle it the same day while everyone still remembers who had what.",
+  },
+  {
+    id: "c27",
+    topics: ["debt"],
+    text: "Buy-now-pay-later still means paying. Count the monthly payments in your plan before you tap.",
+  },
+  {
+    id: "c28",
+    topics: ["food"],
+    text: "Bring a water bottle and refill it. Bottled drinks every day add up fast.",
+  },
+  {
+    id: "c29",
+    topics: ["food"],
+    text: "Buying rice, eggs and noodles in bulk with housemates is often cheaper per meal.",
+  },
+  {
+    id: "c30",
+    topics: ["food"],
+    text: "Eat before you go grocery shopping. Shopping hungry fills the basket with extras.",
+  },
+  {
+    id: "c31",
+    topics: ["food"],
+    text: "Check the cafeteria's set meals. They're often cheaper than ordering each dish separately.",
+  },
+  {
+    id: "c32",
+    topics: ["food"],
+    text: "Food delivery adds fees and a tip. Picking it up yourself can save a few ringgit each time.",
+  },
+  {
+    id: "c33",
+    topics: ["food"],
+    text: "Plan two or three easy home meals a week. Even a little cooking makes food money last longer.",
+  },
+  {
+    id: "c34",
+    topics: ["shopping"],
+    text: "Leave things in your online cart for a day. If you still want it tomorrow, it's probably worth it.",
+  },
+  {
+    id: "c35",
+    topics: ["shopping"],
+    text: "Second-hand books and notes from seniors are cheaper than new, and the content is the same.",
+  },
+  {
+    id: "c36",
+    topics: ["shopping"],
+    text: "Before buying, check the price per gram or per piece. The bigger pack isn't always cheaper.",
+  },
+  {
+    id: "c37",
+    topics: ["shopping"],
+    text: "Turn off shopping app notifications. Fewer sale alerts means fewer surprise buys.",
+  },
+  {
+    id: "c38",
+    topics: ["shopping"],
+    text: "Ask yourself: do I need it, or do I just like it right now? Both are fine, just choose on purpose.",
+  },
+  {
+    id: "c39",
+    topics: ["savings"],
+    text: "Round up: if lunch costs RM8.50, put RM1.50 into Savings. Small change grows quietly.",
+  },
+  {
+    id: "c40",
+    topics: ["savings"],
+    text: "Give each saving a name, like Laptop or Raya trip. A goal with a name is easier to keep.",
+  },
+  {
+    id: "c41",
+    topics: ["savings"],
+    text: "Money from a gift or a part-time bonus? Save part of it before it blends into everyday spending.",
+  },
+  {
+    id: "c42",
+    topics: ["savings"],
+    text: "Saving the same small amount every week beats saving a big amount once and then stopping.",
+  },
+  {
+    id: "c43",
+    topics: ["growth"],
+    text: "Freelance skills like design, tutoring or video editing can turn free time into money in.",
+  },
+  {
+    id: "c44",
+    topics: ["growth"],
+    text: "Free online courses can teach skills employers pay for. Learning costs time, not money.",
+  },
+  {
+    id: "c45",
+    topics: ["growth"],
+    text: "Keep a small list of what you're good at. It helps you spot part-time work that fits.",
+  },
+  {
+    id: "c46",
+    topics: ["growth"],
+    text: "Selling things you no longer use, like old books or clothes, turns clutter into money in.",
+  },
+  {
+    id: "c47",
+    topics: ["general"],
+    text: "Check your plan once a week. Five minutes on Sunday beats a surprise at the end of the month.",
+  },
+  {
+    id: "c48",
+    topics: ["general"],
+    text: "Different weeks cost different amounts. A plan that bends is better than one you give up on.",
+  },
+  {
+    id: "c49",
+    topics: ["general"],
+    text: "Missed a few days of logging? No stress. Log what you remember and carry on.",
+  },
+  {
+    id: "c50",
+    topics: ["general"],
+    text: "Talking about money with friends can give you new ideas. Everyone has a trick worth sharing.",
   },
 ];
 
