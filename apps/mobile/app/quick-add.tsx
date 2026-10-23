@@ -26,6 +26,7 @@ import { SheetPanel, SheetScroll, WhenFull } from "../src/ui/sheet";
 import { DebtExtras, MoneyInExtras, SpentExtras } from "../src/ui/sheet-extras";
 import { asTyped } from "../src/ui/allocation-fields";
 import { CategoryPicker } from "../src/ui/category-picker";
+import { PayBackBy } from "../src/ui/pay-back-by";
 import { Chip, Field } from "../src/ui/sheet-parts";
 import { fonts, MIN_TOUCH, radius, space, type } from "../src/ui/theme";
 import { KeyboardSafe } from "../src/ui/keyboard-safe";
@@ -112,6 +113,7 @@ export default function QuickAdd() {
   const [from, setFrom] = useState(FROM[0]!);
   const [moreKind, setMoreKind] = useState<MoreKind>(params.more ?? "transfer");
   const [person, setPerson] = useState("");
+  const [payBackBy, setPayBackBy] = useState<LocalDate | null>(null);
 
   const amount = parseAmount(amountText);
   const share = parseAmount(shareText);
@@ -246,6 +248,7 @@ export default function QuickAdd() {
         direction: lent ? "owed_to_me" : "owed_by_me",
         counterparty: person.trim(),
         amountSen: amount,
+        dueDate: payBackBy,
         notes: cleanNote,
         ...when,
       }),
@@ -478,6 +481,10 @@ export default function QuickAdd() {
                     moreKind === "lent" ? "Who did you lend to?" : "Who did you borrow from?"
                   }
                 />
+              ) : null}
+              {/* When it should be paid back; optional, used by the reminder (D-103) */}
+              {moreKind !== "transfer" ? (
+                <PayBackBy today={day} value={payBackBy} onChange={setPayBackBy} />
               ) : null}
             </View>
           ) : null}

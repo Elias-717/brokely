@@ -1,3 +1,4 @@
+import { addDays, localDate, type LocalDate } from "./dates";
 import { sen, sumSen, type Sen } from "./money";
 import { fail, OK, type RuleResult } from "./result";
 import type { DebtDirection, Transaction, TransactionType } from "./transactions";
@@ -74,4 +75,19 @@ export function checkWithinOutstanding(summary: DebtSummary, amountSen: Sen): Ru
         "DEBT_EXCEEDS_OUTSTANDING",
         `Only ${summary.outstandingSen} sen is outstanding on this debt`,
       );
+}
+
+/**
+ * "Pay back by" shortcuts (D-103): in a week, and the end of this month (or of next month when
+ * today is already the last day). The student can also pick any date or none.
+ */
+export function payBackPresets(today: LocalDate): { inAWeek: LocalDate; endOfMonth: LocalDate } {
+  const [y, m] = today.split("-").map(Number) as [number, number];
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const firstOfNext = (year: number, month: number) =>
+    localDate(month === 12 ? `${year + 1}-01-01` : `${year}-${pad(month + 1)}-01`);
+  let endOfMonth = addDays(firstOfNext(y, m), -1);
+  if (endOfMonth === today)
+    endOfMonth = addDays(firstOfNext(m === 12 ? y + 1 : y, m === 12 ? 1 : m + 1), -1);
+  return { inAWeek: addDays(today, 7), endOfMonth };
 }

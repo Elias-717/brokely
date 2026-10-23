@@ -236,6 +236,24 @@ export function adjustDebt(
   });
 }
 
+/** "Pay back by" (D-103): set, change or remove (null) a debt's due date. */
+export function setDebtDueDate(ctx: RepoContext, id: string, dueDate: string | null) {
+  return write(ctx, (scope) => {
+    const debt = liveDebt(scope.tx, id);
+    enqueueUpsert(scope, "debt", id, debt.version, {
+      direction: debt.direction,
+      counterparty: debt.counterparty,
+      dueDate,
+      notes: debt.notes,
+    });
+    scope.tx
+      .update(debts)
+      .set({ dueDate, ...touched(scope.at) })
+      .where(eq(debts.id, id))
+      .run();
+  });
+}
+
 /**
  * Removes a debt that has no transactions left, e.g. after Undo of the lend, borrow or split
  * that created it (D-38). A debt with history is never deleted; it settles or is written off.

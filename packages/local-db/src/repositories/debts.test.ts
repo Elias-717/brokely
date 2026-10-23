@@ -12,6 +12,7 @@ import {
   listDebts,
   recordRepayment,
   recordSplitPurchase,
+  setDebtDueDate,
   writeOffDebt,
 } from "./debts";
 import { deleteTransaction, listTransactions, recordTransaction } from "./transactions";
@@ -196,5 +197,16 @@ describe("debt repository", () => {
 
     expect(listDebts(ctx.db)).toHaveLength(0);
     expect(outbox().slice(-1)[0]).toMatchObject({ entity: "debt", op: "delete", baseVersion: 1 });
+  });
+
+  it("sets, changes and removes the pay-back date, each one synced (D-103)", () => {
+    const { debtId: id } = debt("owed_to_me", 5000);
+    const before = outbox().length;
+    setDebtDueDate(ctx, id, "2026-11-30");
+    expect(getDebt(ctx.db, id)?.dueDate).toBe("2026-11-30");
+    setDebtDueDate(ctx, id, null);
+    expect(getDebt(ctx.db, id)?.dueDate).toBeNull();
+    const ops = outbox().slice(before);
+    expect(ops.map((o) => o.entity)).toEqual(["debt", "debt"]);
   });
 });

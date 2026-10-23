@@ -1,10 +1,13 @@
-import { formatRM } from "@brokely/domain";
+import { formatRM, type LocalDate } from "@brokely/domain";
+import { setDebtDueDate } from "@brokely/local-db";
 import { router, useLocalSearchParams } from "expo-router";
 import { Pressable, Text, View } from "react-native";
+import { repo } from "../../src/db/client";
 import { useRead } from "../../src/db/use-read";
 import { readDebt, type DebtEvent } from "../../src/lib/debts-model";
-import { dayMonth } from "../../src/lib/today";
+import { dayMonth, today } from "../../src/lib/today";
 import { Avatar } from "../../src/ui/avatar";
+import { PayBackBy } from "../../src/ui/pay-back-by";
 import { Button, Empty, Heading, PageScreen, Sticker } from "../../src/ui/components";
 import { ProgressBar } from "../../src/ui/progress-bar";
 import { fonts, space, type } from "../../src/ui/theme";
@@ -59,6 +62,17 @@ export default function DebtScreen() {
           {debt.dueDate ? ` · due ${dayMonth(debt.dueDate)}` : ""}
         </Text>
       </View>
+
+      {/* Pay back by (D-103): set, change or remove; the 9:00 reminder follows it (D-94) */}
+      {open ? (
+        <Sticker style={{ padding: space.md }}>
+          <PayBackBy
+            today={today()}
+            value={debt.dueDate}
+            onChange={(date: LocalDate | null) => setDebtDueDate(repo, debt.id, date)}
+          />
+        </Sticker>
+      ) : null}
 
       {open ? (
         <View style={{ gap: space.sm }}>

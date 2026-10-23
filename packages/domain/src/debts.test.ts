@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { checkDebtMovement, checkWithinOutstanding, summarizeDebt } from "./debts";
+import { localDate } from "./dates";
+import { checkDebtMovement, checkWithinOutstanding, payBackPresets, summarizeDebt } from "./debts";
 import { sen } from "./money";
 import { cat, debtLine, spend, txn } from "./test-fixtures";
 
@@ -65,5 +66,26 @@ describe("debt rules", () => {
     expect(checkDebtMovement("owed_by_me", "repayment_received").ok).toBe(false);
     expect(checkDebtMovement("owed_by_me", "lend").ok).toBe(false);
     expect(checkDebtMovement("owed_by_me", "write_off").ok).toBe(true);
+  });
+});
+
+describe("pay back by shortcuts (D-103)", () => {
+  it("in a week, and the end of this month", () => {
+    expect(payBackPresets(localDate("2026-10-23"))).toEqual({
+      inAWeek: "2026-10-30",
+      endOfMonth: "2026-10-31",
+    });
+  });
+
+  it("on the last day of a month, the end of next month", () => {
+    expect(payBackPresets(localDate("2026-10-31")).endOfMonth).toBe("2026-11-30");
+    expect(payBackPresets(localDate("2026-12-31"))).toEqual({
+      inAWeek: "2027-01-07",
+      endOfMonth: "2027-01-31",
+    });
+  });
+
+  it("February in a leap year", () => {
+    expect(payBackPresets(localDate("2028-02-10")).endOfMonth).toBe("2028-02-29");
   });
 });
