@@ -1,7 +1,7 @@
 # Brokely: features and what to advertise
 
 **Who this is for:** the Brokely author and any AI agent writing ads, store text or social posts.
-**Release covered:** 0.1 (Android, Malaysia, first pilot at AIU). App version 0.1.1. Last checked: 24 Oct 2026 (up to D-119; matches SRS v1.8).
+**Release covered:** 0.1 (Android, Malaysia, first pilot at AIU). App version 0.1.1. Last checked: 24 Oct 2026 (up to D-123; matches SRS v1.8).
 **Keep it current:** when a feature ships or changes, update section 3 and, if needed, sections 4–6.
 
 ---
@@ -99,7 +99,7 @@ These come from the product rules (AGENTS.md section 4, glossary, D-07, D-23). A
 ### Brokely the mascot and fun
 | Feature | What the student gets | Where |
 |---|---|---|
-| **Brokely grows** | 3 stages (Sprout → Growing at 7 logged days → Money-broccoli at 30) and 4 moods (happy, proud on a 3-day streak, worried when over pace, sleepy when you forget). 12 pictures. Spending less never changes it: it's about the habit. | Home, Profile |
+| **Brokely grows** | 3 stages (Sprout → Growing at 7 logged days → Money-broccoli at 30) and 4 moods (happy, proud on a 3-day streak, worried when over pace, sleepy when you forget). 12 pictures. A ring around Brokely on Home fills towards the next stage ("3/7"). Spending less never changes it: it's about the habit. | Home, Profile |
 | **"Brokely grew!" moment** | A small celebration (with a buzz) the first time Brokely reaches a new stage. | Home |
 | **100 money tips** | Short, fun money tips with Malaysian examples, shown after you log (can be turned off). | After saving |
 | **Fun notifications** | Bill due, evening "log today?" (Friendly or Cheeky tone), streaks, debts due back, optional pace heads-up. Max 3 a day, quiet hours, each type can be muted. On the phone only, no server. | More → Notifications |
@@ -252,3 +252,4 @@ Sample captions (fact first, then the fun):
 |---|---|
 | 24 Oct 2026 | First version (up to D-117). |
 | 24 Oct 2026 | Add → More is now three tabs (D-119): Transfers row points to Add → More → Transfer; new "Lent or borrowed in seconds" row. App version 0.1.1. |
+| 24 Oct 2026 | Growth ring around Brokely on Home (D-123); grow card pops up after day 1 (D-122). Up to D-123. |

@@ -1,6 +1,7 @@
 import {
   mascotMood,
   mascotStage,
+  stageProgress,
   type LocalDate,
   type MascotMood,
   type MascotStage,
@@ -54,6 +55,7 @@ export function readMascot(db: Db, today: LocalDate, overPace: boolean) {
   for (const d of logged) if (d > today) logged.delete(d);
   const stage = mascotStage(logged.size);
   const mood = mascotMood({ today, logged, overPace });
+  const ring = stageProgress(logged.size); // D-123
   return {
     stage,
     mood,
@@ -62,6 +64,6 @@ export function readMascot(db: Db, today: LocalDate, overPace: boolean) {
     picture: PICTURES[stage][mood],
     /** For the "Brokely grew" moment (D-109). */
     proudPicture: PICTURES[stage].proud,
-    label: `Brokely, stage ${stage} of 3, ${MOOD_WORDS[mood]}`,
+    label: `Brokely, stage ${stage} of 3, ${MOOD_WORDS[mood]}, ${ring.final ? "fully grown" : `${ring.done} of ${ring.goal} days to the next stage`}`,
   };
 }

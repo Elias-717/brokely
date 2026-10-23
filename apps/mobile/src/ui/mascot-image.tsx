@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Animated, Easing, Image, Modal, Pressable, Text, View } from "react-native";
 import type { ImageSourcePropType } from "react-native";
+import Svg, { Circle } from "react-native-svg";
 import { Button, Sticker } from "./components";
-import { STAGE_2_DAYS, STAGE_3_DAYS } from "@brokely/domain";
+import { STAGE_2_DAYS, STAGE_3_DAYS, stageProgress } from "@brokely/domain";
 import { STAGE_PICTURES } from "../lib/mascot";
 import { grewBuzz } from "./haptics";
 import { useReduceMotion } from "./motion";
@@ -354,5 +355,110 @@ export function GrowIntroPopup({
         </Pressable>
       </Pressable>
     </Modal>
+  );
+}
+
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+
+/**
+ * Brokely on Home inside a ring that fills towards the next stage (D-123): 0 → 7 days logged,
+ * then again 7 → 30. A full ring means Brokely grows (and "Brokely grew!" pops up, D-109); at
+ * the last stage the ring stays full. The arc moves gently when a day is logged, not at all with
+ * Reduce motion. A small badge under it says "3/7".
+ */
+export function StageRing({
+  source,
+  label,
+  loggedDays,
+  size = 96,
+}: {
+  source: ImageSourcePropType;
+  label: string;
+  loggedDays: number;
+  size?: number;
+}) {
+  const { colors } = useTheme();
+  const reduce = useReduceMotion();
+  const { done, goal, final } = stageProgress(loggedDays);
+  const arc = Math.min(1, done / goal);
+  const stroke = 6;
+  const r = (size - stroke) / 2;
+  const length = 2 * Math.PI * r;
+  const shown = useRef(new Animated.Value(reduce ? arc : 0)).current;
+
+  useEffect(() => {
+    Animated.timing(shown, {
+      toValue: arc,
+      duration: reduce ? 0 : 700,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false, // strokeDashoffset is not a transform
+    }).start();
+  }, [arc, reduce, shown]);
+
+  const picture = Math.round(size * 0.66);
+  return (
+    <View style={{ width: size, height: size + 8 }}>
+      <Svg width={size} height={size} style={{ transform: [{ rotate: "-90deg" }] }}>
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          stroke={colors.cardTint}
+          strokeWidth={stroke}
+          fill="none"
+        />
+        <AnimatedCircle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          stroke={colors.primary}
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          fill="none"
+          strokeDasharray={`${length} ${length}`}
+          strokeDashoffset={shown.interpolate({ inputRange: [0, 1], outputRange: [length, 0] })}
+        />
+      </Svg>
+      <View
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: size,
+          height: size,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <MascotImage source={source} label={label} width={picture} height={picture * 1.15} />
+      </View>
+      {/* "3/7": days towards the next stage; a star once fully grown */}
+      <View
+        style={{
+          position: "absolute",
+          bottom: 0,
+          alignSelf: "center",
+          minWidth: 36,
+          paddingHorizontal: 6,
+          paddingVertical: 1,
+          borderRadius: 99,
+          borderWidth: 2,
+          borderColor: colors.outline,
+          backgroundColor: final ? colors.primary : colors.card,
+          alignItems: "center",
+        }}
+      >
+        <Text
+          style={{
+            fontFamily: fonts.heavy,
+            fontSize: 12,
+            color: final ? colors.onPrimary : colors.text,
+            fontVariant: ["tabular-nums"],
+          }}
+        >
+          {final ? "★" : `${done}/${goal}`}
+        </Text>
+      </View>
+    </View>
   );
 }

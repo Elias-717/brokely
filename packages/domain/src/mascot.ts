@@ -46,3 +46,20 @@ export function mascotMood(input: {
   if (input.overPace) return "worried";
   return "happy";
 }
+
+/**
+ * Progress towards the next stage, for the ring around Brokely on Home (D-123): days logged
+ * since this stage began out of the days the stage lasts. It never goes back (days logged only
+ * grow); a full ring means the next stage. At the last stage there is nothing left to fill.
+ */
+export function stageProgress(loggedDays: number): {
+  readonly done: number;
+  readonly goal: number;
+  readonly final: boolean;
+} {
+  if (loggedDays >= STAGE_3_DAYS) return { done: 1, goal: 1, final: true };
+  if (loggedDays >= STAGE_2_DAYS) {
+    return { done: loggedDays - STAGE_2_DAYS, goal: STAGE_3_DAYS - STAGE_2_DAYS, final: false };
+  }
+  return { done: loggedDays, goal: STAGE_2_DAYS, final: false };
+}

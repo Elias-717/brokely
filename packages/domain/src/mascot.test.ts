@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { localDate } from "./dates";
-import { loggedStreak, mascotMood, mascotStage } from "./mascot";
+import { loggedStreak, mascotMood, mascotStage, stageProgress } from "./mascot";
 
 const today = localDate("2026-10-23");
 const days = (...d: string[]) => new Set(d.map((x) => `2026-10-${x}`));
@@ -41,5 +41,15 @@ describe("mascot mood, sleepy > proud > worried > happy (D-105)", () => {
   });
   it("on track: happy", () => {
     expect(mascotMood({ today, logged: days("22", "23"), overPace: false })).toBe("happy");
+  });
+});
+
+describe("stage ring on Home (D-123)", () => {
+  it("fills towards 7 days, starts again towards 30, and is full at the last stage", () => {
+    expect(stageProgress(0)).toEqual({ done: 0, goal: 7, final: false });
+    expect(stageProgress(3)).toEqual({ done: 3, goal: 7, final: false });
+    expect(stageProgress(7)).toEqual({ done: 0, goal: 23, final: false });
+    expect(stageProgress(29)).toEqual({ done: 22, goal: 23, final: false });
+    expect(stageProgress(30)).toEqual({ done: 1, goal: 1, final: true });
   });
 });

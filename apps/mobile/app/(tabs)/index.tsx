@@ -25,7 +25,7 @@ import { dayMonth, today } from "../../src/lib/today";
 import { AnimatedAmount } from "../../src/ui/animated-amount";
 import { BrokelyAvatar } from "../../src/ui/chat";
 import { Button, Screen, Sticker } from "../../src/ui/components";
-import { GrewCelebration, GrowIntroPopup, MascotImage } from "../../src/ui/mascot-image";
+import { GrewCelebration, GrowIntroPopup, StageRing } from "../../src/ui/mascot-image";
 import { ProgressRing } from "../../src/ui/progress-ring";
 import { fonts, radius, space, type } from "../../src/ui/theme";
 import { useTheme } from "../../src/ui/theme-context";
@@ -91,7 +91,8 @@ export default function HomeScreen() {
           opacity: pressed ? 0.7 : 1,
         })}
       >
-        <MascotImage source={mascot.picture} label={mascot.label} width={72} height={90} />
+        {/* The ring fills towards Brokely's next stage (D-123). */}
+        <StageRing source={mascot.picture} label={mascot.label} loggedDays={mascot.loggedDays} />
         <View style={{ gap: 2, flex: 1 }}>
           <Text style={[type.title, { color: colors.text }]} numberOfLines={1}>
             {nickname ? `Hi, ${nickname}` : "Hi there"}
