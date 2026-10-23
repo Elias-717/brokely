@@ -1,26 +1,31 @@
 import {
+  evaluateAmount,
   formatRM,
   guessCategory,
+  limitName,
   noteSuggestions,
-  parseAmount,
   sen,
   type LocalDate,
 } from "@brokely/domain";
 import {
   addCategory,
+  clearAddDraft,
   createDebt,
   deleteDebt,
   deleteTransaction,
+  getAddDraft,
   recordMoneyIn,
   recordPurchase,
   recordSplitPurchase,
   recordTransaction,
+  setAddDraft,
+  type AddDraft,
   type RepoResult,
 } from "@brokely/local-db";
 import { router, useLocalSearchParams, type Href } from "expo-router";
-import { useMemo, useState } from "react";
-import { Pressable, ScrollView, Switch, Text, View } from "react-native";
-import { repo } from "../src/db/client";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { AppState, Pressable, ScrollView, Switch, Text, View } from "react-native";
+import { db, repo } from "../src/db/client";
 import { useRead } from "../src/db/use-read";
 import { categoriesByUse, guessHistory } from "../src/lib/category-order";
 import { categoryIcon } from "../src/lib/essentials-meta";
@@ -29,7 +34,7 @@ import { refusalText } from "../src/lib/messages";
 import { dayMonth, occurredAtFor, today } from "../src/lib/today";
 import { Button, Sticker } from "../src/ui/components";
 import { pickDate } from "../src/ui/date-picker";
-import { Keypad } from "../src/ui/keypad";
+import { Keypad, SumLine } from "../src/ui/keypad";
 import { SheetPanel, SheetScroll, WhenFull } from "../src/ui/sheet";
 import { DebtExtras, MoneyInExtras, SpentExtras } from "../src/ui/sheet-extras";
 import { asTyped } from "../src/ui/allocation-fields";
@@ -109,28 +114,92 @@ export default function QuickAdd() {
 
   // Debts opens it on More → I lent / I borrowed (S7 "+ Add").
   const params = useLocalSearchParams<{ more?: MoreKind }>();
-  const [mode, setMode] = useState<Mode>(params.more ? "more" : "spent");
-  const [amountText, setAmountText] = useState("");
-  const [date, setDate] = useState<LocalDate>(day);
-  const [note, setNote] = useState("");
+  // What was typed when the sheet last closed without saving, today (D-117). Opened from
+  // Debts for a new debt, it starts empty and leaves that draft alone.
+  const [restored, setRestored] = useState(() =>
+    params.more ? null : readDraft(getAddDraft(db, day)),
+  );
+  const [start] = useState(() => restored ?? emptyDraft(params.more, day));
+  const [mode, setMode] = useState<Mode>(start.mode);
+  const [amountText, setAmountText] = useState(start.amountText);
+  const [date, setDate] = useState<LocalDate>(start.date);
+  const [note, setNote] = useState(start.note);
   const [problem, setProblem] = useState<string | null>(null);
   // Spent
-  const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [categoryId, setCategoryId] = useState<string | null>(start.categoryId);
   /** A category chosen by hand is never replaced by a guess (D-84). */
-  const [pickedByHand, setPickedByHand] = useState(false);
-  const [split, setSplit] = useState(false);
+  const [pickedByHand, setPickedByHand] = useState(start.pickedByHand);
+  const [split, setSplit] = useState(start.split);
   /** Under Other: the student's own category name (D-44). */
-  const [customName, setCustomName] = useState("");
-  const [friend, setFriend] = useState("");
-  const [shareText, setShareText] = useState("");
+  const [customName, setCustomName] = useState(start.customName);
+  const [friend, setFriend] = useState(start.friend);
+  const [shareText, setShareText] = useState(start.shareText);
   // Money in / More
-  const [from, setFrom] = useState(FROM[0]!);
-  const [moreKind, setMoreKind] = useState<MoreKind>(params.more ?? "transfer");
-  const [person, setPerson] = useState("");
-  const [payBackBy, setPayBackBy] = useState<LocalDate | null>(null);
+  const [from, setFrom] = useState(start.from);
+  const [moreKind, setMoreKind] = useState<MoreKind>(start.moreKind);
+  const [person, setPerson] = useState(start.person);
+  const [payBackBy, setPayBackBy] = useState<LocalDate | null>(start.payBackBy);
 
-  const amount = parseAmount(amountText);
-  const share = parseAmount(shareText);
+  // The draft is written when the sheet closes or the app goes to the background, never on
+  // every key: each database write makes every open screen read again.
+  const latest = useRef<Draft>(start);
+  latest.current = {
+    mode,
+    amountText,
+    date,
+    note,
+    categoryId,
+    pickedByHand,
+    split,
+    customName,
+    friend,
+    shareText,
+    from,
+    moreKind,
+    person,
+    payBackBy,
+  };
+  const saved = useRef(false);
+  useEffect(() => {
+    const keep = () => {
+      if (saved.current) return;
+      if (hasTyped(latest.current)) setAddDraft(repo, { day, fields: { ...latest.current } });
+      else clearAddDraft(repo);
+    };
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state !== "active") keep();
+    });
+    return () => {
+      sub.remove();
+      keep();
+    };
+  }, [day]);
+
+  /** "Clear" on a restored draft: back to an empty sheet. */
+  const clearDraft = () => {
+    const empty = emptyDraft(undefined, day);
+    setMode(empty.mode);
+    setAmountText("");
+    setDate(day);
+    setNote("");
+    setCategoryId(null);
+    setPickedByHand(false);
+    setSplit(false);
+    setCustomName("");
+    setFriend("");
+    setShareText("");
+    setFrom(empty.from);
+    setMoreKind(empty.moreKind);
+    setPerson("");
+    setPayBackBy(null);
+    setProblem(null);
+    setRestored(null);
+    clearAddDraft(repo);
+  };
+
+  // A sum such as 12.50+8 is worked out as it is typed (D-115).
+  const amount = evaluateAmount(amountText);
+  const share = evaluateAmount(shareText);
   // Smart categorization (D-84): the note suggests a category until one is picked by hand.
   const guess = useMemo(
     () => (mode === "spent" && !pickedByHand ? guessCategory(note, history, categories) : null),
@@ -154,6 +223,8 @@ export default function QuickAdd() {
     tipFor?: string,
   ) => {
     if (!result.ok) return setProblem(refusalText(result.code, result.message));
+    saved.current = true;
+    clearAddDraft(repo);
     savedBuzz();
     router.back();
     showUndo(message, () => undo(result.value));
@@ -323,6 +394,20 @@ export default function QuickAdd() {
               }}
             />
 
+            {restored ? (
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: space.sm,
+                }}
+              >
+                <Text style={[type.small, { color: colors.muted }]}>Draft restored</Text>
+                <Chip label="Clear" onPress={clearDraft} />
+              </View>
+            ) : null}
+            <SumLine text={amountText} />
             <Text
               accessibilityLabel={`Amount ${formatRM(amount ?? sen(0))}`}
               style={{
@@ -419,7 +504,7 @@ export default function QuickAdd() {
                 setPickedByHand(true);
                 setCustomName("");
               }}
-              footer={() => <PayingBack amountText={amountText} />}
+              footer={() => <PayingBack amountText={amount ? asTyped(amount) : ""} />}
             />
           ) : null}
           {mode === "spent" && guessed ? (
@@ -450,7 +535,7 @@ export default function QuickAdd() {
                 <View style={{ gap: space.xs, marginTop: space.sm }}>
                   <Field
                     value={person}
-                    onChange={setPerson}
+                    onChange={(t) => setPerson(limitName(t))}
                     expanded
                     placeholder="Friend's name (optional)"
                   />
@@ -463,7 +548,7 @@ export default function QuickAdd() {
                 <View style={{ gap: space.xs, marginTop: space.sm }}>
                   <Field
                     value={person}
-                    onChange={setPerson}
+                    onChange={(t) => setPerson(limitName(t))}
                     expanded
                     placeholder="Who did you borrow from?"
                   />
@@ -530,7 +615,7 @@ export default function QuickAdd() {
               {moreKind !== "transfer" ? (
                 <Field
                   value={person}
-                  onChange={setPerson}
+                  onChange={(t) => setPerson(limitName(t))}
                   expanded
                   placeholder={
                     moreKind === "lent" ? "Who did you lend to?" : "Who did you borrow from?"
@@ -604,7 +689,12 @@ export default function QuickAdd() {
             <View style={{ gap: space.sm }}>
               <View style={{ flexDirection: "row", gap: space.sm }}>
                 <View style={{ flex: 3 }}>
-                  <Field value={friend} onChange={setFriend} placeholder="Friend's name" expanded />
+                  <Field
+                    value={friend}
+                    onChange={(t) => setFriend(limitName(t))}
+                    placeholder="Friend's name"
+                    expanded
+                  />
                 </View>
                 <View style={{ flex: 2 }}>
                   <Field
@@ -797,4 +887,75 @@ function PayingBack({ amountText }: { amountText: string }) {
       <Button variant="link" label="See all in Debts" onPress={() => go("/debts")} />
     </View>
   );
+}
+
+/** Everything typed in Add, as kept in a draft (D-117). */
+interface Draft {
+  mode: Mode;
+  amountText: string;
+  date: LocalDate;
+  note: string;
+  categoryId: string | null;
+  pickedByHand: boolean;
+  split: boolean;
+  customName: string;
+  friend: string;
+  shareText: string;
+  from: string;
+  moreKind: MoreKind;
+  person: string;
+  payBackBy: LocalDate | null;
+}
+
+function emptyDraft(more: MoreKind | undefined, day: LocalDate): Draft {
+  return {
+    mode: more ? "more" : "spent",
+    amountText: "",
+    date: day,
+    note: "",
+    categoryId: null,
+    pickedByHand: false,
+    split: false,
+    customName: "",
+    friend: "",
+    shareText: "",
+    from: FROM[0]!,
+    moreKind: more ?? "transfer",
+    person: "",
+    payBackBy: null,
+  };
+}
+
+/** Only typing counts: a tab or a category picked alone isn't worth a draft. */
+const hasTyped = (d: Draft) =>
+  [d.amountText, d.note, d.customName, d.friend, d.shareText, d.person].some(
+    (t) => t.trim() !== "",
+  );
+
+/** A stored draft back as sheet fields; anything missing or odd falls back to empty. */
+function readDraft(stored: AddDraft | null): Draft | null {
+  if (!stored) return null;
+  const f = stored.fields;
+  const empty = emptyDraft(undefined, stored.day as LocalDate);
+  const text = (k: keyof Draft) => {
+    const v = f[k];
+    return typeof v === "string" ? v : "";
+  };
+  const draft: Draft = {
+    mode: f.mode === "in" || f.mode === "more" ? f.mode : "spent",
+    amountText: text("amountText"),
+    date: (text("date") || empty.date) as LocalDate,
+    note: text("note"),
+    categoryId: text("categoryId") || null,
+    pickedByHand: f.pickedByHand === true,
+    split: f.split === true,
+    customName: text("customName"),
+    friend: text("friend"),
+    shareText: text("shareText"),
+    from: FROM.includes(text("from")) ? text("from") : empty.from,
+    moreKind: f.moreKind === "lent" || f.moreKind === "borrowed" ? f.moreKind : "transfer",
+    person: text("person"),
+    payBackBy: (text("payBackBy") || null) as LocalDate | null,
+  };
+  return hasTyped(draft) ? draft : null;
 }

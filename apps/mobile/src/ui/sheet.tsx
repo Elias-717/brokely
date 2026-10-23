@@ -241,14 +241,10 @@ export function SheetPanel({
           else if (expandedRef.current && (g.dy > EXPAND_DISTANCE || g.vy > EXPAND_VELOCITY)) {
             resize(false);
           } else if (down && !expandedRef.current) {
-            Animated.timing(offset, {
-              toValue: 1000,
-              duration: reduce ? 0 : 180,
-              useNativeDriver: true,
-            }).start(() => {
-              close();
-              offset.setValue(0); // a modal sheet stays mounted and may open again
-            });
+            // The screen's own closing slide (or the Modal's) takes it from where the finger
+            // left it. Sliding the panel away first left a grey, empty dimmed screen and then a
+            // second close animation with the sheet put back (author, 24 Oct).
+            close();
             return;
           }
           Animated.spring(offset, { toValue: 0, useNativeDriver: true }).start();

@@ -18,3 +18,5 @@ export * from "./notifications";
 export * from "./guide";
 export * from "./category-balance";
 export * from "./mascot";
+export * from "./calculator";
+export * from "./names";

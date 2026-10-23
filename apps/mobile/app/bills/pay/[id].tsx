@@ -1,4 +1,4 @@
-import { formatRM, parseAmount, type LocalDate, type Sen } from "@brokely/domain";
+import { evaluateAmount, formatRM, type LocalDate, type Sen } from "@brokely/domain";
 import {
   deleteTransaction,
   markBillPaid,
@@ -14,7 +14,7 @@ import { refusalText } from "../../../src/lib/messages";
 import { dayMonth, occurredAtFor, today } from "../../../src/lib/today";
 import { Button } from "../../../src/ui/components";
 import { pickDate } from "../../../src/ui/date-picker";
-import { Keypad } from "../../../src/ui/keypad";
+import { Keypad, SumLine } from "../../../src/ui/keypad";
 import { DateButton, SheetAmount, SheetNote, SheetShell, WhenFull } from "../../../src/ui/sheet";
 import { BillExtras } from "../../../src/ui/sheet-extras";
 import { type } from "../../../src/ui/theme";
@@ -46,7 +46,7 @@ function MarkPaidSheet({ item, day }: { item: BillItem; day: LocalDate }) {
   const [amountText, setAmountText] = useState(asTyped(item.amountSen));
   const [date, setDate] = useState<LocalDate>(day);
   const [problem, setProblem] = useState<string | null>(null);
-  const amount = parseAmount(amountText);
+  const amount = evaluateAmount(amountText);
 
   const save = () => {
     if (amount === null || amount <= 0) return setProblem("Type an amount above zero.");
@@ -103,6 +103,7 @@ function MarkPaidSheet({ item, day }: { item: BillItem; day: LocalDate }) {
         </>
       }
     >
+      <SumLine text={amountText} />
       <SheetAmount text={formatRM(amount ?? (0 as Sen))} />
       <SheetNote
         title={`Counts as spending in ${item.categoryName}`}

@@ -4,7 +4,10 @@ import { outboxOperations } from "../schema";
 import { createTestContext } from "../test-db";
 import type { RepoContext } from "./context";
 import {
+  clearAddDraft,
   dismissCard,
+  getAddDraft,
+  setAddDraft,
   getAppearance,
   getCardChoices,
   getHapticsEnabled,
@@ -190,6 +193,26 @@ describe("phone-only preferences (D-30, D-32)", () => {
 
     setMoneyTipsEnabled(ctx, false);
     expect(getMoneyTips(ctx.db).enabled).toBe(false);
+    expect(ctx.db.select().from(outboxOperations).all()).toHaveLength(0); // phone-only
+  });
+
+  it("the Add draft is kept for the day it was typed, then forgotten (D-117)", () => {
+    expect(getAddDraft(ctx.db, "2026-10-24")).toBeNull();
+
+    setAddDraft(ctx, {
+      day: "2026-10-24",
+      fields: { amountText: "12+8", note: "nasi", split: false },
+    });
+    expect(getAddDraft(ctx.db, "2026-10-24")?.fields).toEqual({
+      amountText: "12+8",
+      note: "nasi",
+      split: false,
+    });
+    expect(getAddDraft(ctx.db, "2026-10-25")).toBeNull(); // the next day it's gone
+
+    clearAddDraft(ctx);
+    expect(getAddDraft(ctx.db, "2026-10-24")).toBeNull();
+    clearAddDraft(ctx); // nothing to clear: fine
     expect(ctx.db.select().from(outboxOperations).all()).toHaveLength(0); // phone-only
   });
 });

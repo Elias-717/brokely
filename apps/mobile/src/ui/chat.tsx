@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ComponentRef, type ReactNode } from "
 import { Animated, Image, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
+import { limitName, NAME_MAX_CHARS } from "@brokely/domain";
 import { plain, type Line } from "../lib/brokely-lines";
 import { Appear, useReduceMotion } from "./motion";
 import { fonts, MIN_TOUCH, space, type } from "./theme";
@@ -363,6 +364,8 @@ export function AmountComposer(props: { label: string; onSend: (text: string) =>
 export function TextComposer(props: {
   label: string;
   placeholder?: string;
+  /** A person's name: at most 2 words and 20 characters (D-116). */
+  name?: boolean;
   onSend: (text: string) => void;
 }) {
   return <Composer {...props} amount={false} />;
@@ -373,11 +376,13 @@ function Composer({
   onSend,
   amount,
   placeholder,
+  name,
 }: {
   label: string;
   onSend: (text: string) => void;
   amount: boolean;
   placeholder?: string;
+  name?: boolean;
 }) {
   const { colors } = useTheme();
   const [text, setText] = useState("");
@@ -409,11 +414,11 @@ function Composer({
           ) : null}
           <TextInput
             value={text}
-            onChangeText={setText}
+            onChangeText={(t) => setText(name ? limitName(t) : t)}
             onSubmitEditing={send}
             keyboardType={amount ? "decimal-pad" : "default"}
             autoCapitalize={amount ? "none" : "words"}
-            maxLength={amount ? undefined : 60}
+            maxLength={amount ? undefined : name ? NAME_MAX_CHARS : 60}
             returnKeyType="send"
             autoFocus
             placeholder={amount ? "0.00" : placeholder}

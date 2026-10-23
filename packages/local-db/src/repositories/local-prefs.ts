@@ -265,3 +265,38 @@ export function setNotificationState(
 ): void {
   setPref(ctx, NOTIFY_KEY, { ...getNotificationPrefs(ctx.db), ...change });
 }
+
+// ── Add sheet draft (D-117) ─────────────────────────────────────────────────────
+
+/**
+ * What was typed in Add when the sheet closed without saving, so a slipped swipe loses
+ * nothing. Phone-only, never synced; kept for the day it was typed (`day`), then forgotten.
+ * The fields are the sheet's own; this file only stores and expires them.
+ */
+export interface AddDraft {
+  readonly day: string;
+  readonly fields: Readonly<Record<string, string | boolean | null>>;
+}
+
+const ADD_DRAFT_KEY = "add_draft";
+
+/** Today's draft, or null if there is none or it is from another day. */
+export function getAddDraft(db: Db, today: string): AddDraft | null {
+  const v = getPref(db, ADD_DRAFT_KEY) as Partial<AddDraft> | undefined;
+  if (!v || v.day !== today || !v.fields || typeof v.fields !== "object") return null;
+  const fields = Object.fromEntries(
+    Object.entries(v.fields).filter(
+      ([, x]) => x === null || typeof x === "string" || typeof x === "boolean",
+    ),
+  );
+  return { day: v.day, fields };
+}
+
+export function setAddDraft(ctx: RepoContext, draft: AddDraft): void {
+  setPref(ctx, ADD_DRAFT_KEY, draft);
+}
+
+export function clearAddDraft(ctx: RepoContext): void {
+  if (getPref(ctx.db, ADD_DRAFT_KEY) === undefined) return; // no write, so no screen re-reads
+  ctx.db.delete(localPrefs).where(eq(localPrefs.key, ADD_DRAFT_KEY)).run();
+}

@@ -22,7 +22,7 @@ import { repo } from "../../src/db/client";
 import { useRead } from "../../src/db/use-read";
 import { brokely, type Line } from "../../src/lib/brokely-lines";
 import { refusalText } from "../../src/lib/messages";
-import { dayMonth, today } from "../../src/lib/today";
+import { dayMonth, monthName, today } from "../../src/lib/today";
 import {
   AmountComposer,
   BrokelyBubble,
@@ -32,6 +32,7 @@ import {
   TextComposer,
   TypingBubble,
 } from "../../src/ui/chat";
+import { Button } from "../../src/ui/components";
 import { pickDate } from "../../src/ui/date-picker";
 import { space } from "../../src/ui/theme";
 import { useConversation } from "../../src/ui/use-conversation";
@@ -40,8 +41,7 @@ import { useConversation } from "../../src/ui/use-conversation";
 const MOSTLY_ON = ["Meals", "Snacks & treats", "Home necessities", "Other"];
 
 type Step =
-  | "choose" // S1c: already spent some?
-  | "fresh-amount" // S1b: what's left until the month end?
+  | "fresh-amount" // S1b: what's left until the month end? (after the 1st: or plan all, D-114)
   | "fresh-confirm"
   | "cu-money" // S1d: the month's money
   | "cu-gone" // S1d: roughly how much is gone
@@ -120,7 +120,7 @@ export default function QuickStartChat() {
   // Brokely opens the conversation once.
   useEffect(() => {
     if (catchUpOffered) {
-      chat.say([brokely.greeting(nickname), brokely.askAlreadySpent(day)], "choose");
+      chat.say([brokely.greeting(nickname), brokely.askLeftThisMonth(day)], "fresh-amount");
     } else {
       chat.say([brokely.greeting(nickname), brokely.freshMonth(day, end)], "fresh-amount");
     }
@@ -254,38 +254,29 @@ export default function QuickStartChat() {
 
   const footer = (() => {
     switch (chat.step) {
-      case "choose":
-        return (
-          <>
-            <ReplyButton
-              primary
-              title="No, start fresh from today"
-              detail={`I'll tell you what's left until ${dayMonth(inclusiveEnd(freshRange))}`}
-              onPress={() => {
-                chat.answer("No, start fresh from today");
-                chat.say([brokely.askLeft(end)], "fresh-amount");
-              }}
-            />
-            <ReplyButton
-              title="Yes, catch me up"
-              detail="Plan the whole month, add roughly what's gone"
-              onPress={() => {
-                chat.answer("Yes, catch me up");
-                chat.say([brokely.askMonthMoney(day)], "cu-money");
-              }}
-            />
-          </>
-        );
       case "fresh-amount":
         return (
-          <AmountComposer
-            label="Type what you have left"
-            onSend={(text) => {
-              const amount = readAmount(text, "fresh-amount", false);
-              if (amount === null) return;
-              askDebts(amount, "fresh");
-            }}
-          />
+          <>
+            <AmountComposer
+              label="Type what you have left"
+              onSend={(text) => {
+                const amount = readAmount(text, "fresh-amount", false);
+                if (amount === null) return;
+                askDebts(amount, "fresh");
+              }}
+            />
+            {/* After the 1st, the whole month is the smaller choice (D-114, was "catch me up"). */}
+            {catchUpOffered ? (
+              <Button
+                variant="link"
+                label={`I'd rather plan all of ${monthName(day)}`}
+                onPress={() => {
+                  chat.answer(`I'd rather plan all of ${monthName(day)}`);
+                  chat.say([brokely.askMonthMoney(day)], "cu-money");
+                }}
+              />
+            ) : null}
+          </>
         );
       case "fresh-confirm":
         return (
@@ -297,7 +288,7 @@ export default function QuickStartChat() {
       case "cu-money":
         return (
           <AmountComposer
-            label="Type the month's money"
+            label={`Type the money for all of ${monthName(day)}`}
             onSend={(text) => {
               const amount = readAmount(text, "cu-money", false);
               if (amount === null) return;
@@ -317,7 +308,7 @@ export default function QuickStartChat() {
               }}
             />
             <AmountComposer
-              label="Or type roughly how much"
+              label="Or type roughly how much is used"
               onSend={(text) => {
                 const amount = readAmount(text, "cu-gone", true);
                 if (amount === null) return;
@@ -386,8 +377,9 @@ export default function QuickStartChat() {
         const owe = chat.step === "owe-who";
         return (
           <TextComposer
-            label="Type their name"
-            placeholder="e.g. Aiman"
+            label="Type their name (up to 2 words)"
+            placeholder="e.g. Aiman or Kak Sarah"
+            name
             onSend={(text) => {
               const name = text.trim();
               if (name === "") return;
@@ -474,13 +466,7 @@ export default function QuickStartChat() {
 
   return (
     <ChatScreen
-      subtitle={
-        !catchUpOffered
-          ? "Planning with you"
-          : chat.step === "choose" || chat.messages.length < 3
-            ? "Planning with you · step 1 of 2"
-            : "Planning with you · step 2 of 2"
-      }
+      subtitle="Planning with you"
       onBack={() => router.replace("/")}
       // Planning is never required (FR-PLN-04, FR-PLN-19): Home offers "Make a plan" later.
       onSkip={() => router.replace("/")}

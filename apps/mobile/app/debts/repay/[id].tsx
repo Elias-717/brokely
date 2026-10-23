@@ -1,4 +1,4 @@
-import { formatRM, parseAmount, type LocalDate, type Sen } from "@brokely/domain";
+import { evaluateAmount, formatRM, type LocalDate, type Sen } from "@brokely/domain";
 import { deleteTransaction, recordRepayment } from "@brokely/local-db";
 import { Redirect, router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
@@ -9,7 +9,7 @@ import { refusalText } from "../../../src/lib/messages";
 import { dayMonth, occurredAtFor, today } from "../../../src/lib/today";
 import { Button } from "../../../src/ui/components";
 import { pickDate } from "../../../src/ui/date-picker";
-import { Keypad } from "../../../src/ui/keypad";
+import { Keypad, SumLine } from "../../../src/ui/keypad";
 import { DateButton, SheetAmount, SheetNote, SheetShell } from "../../../src/ui/sheet";
 import { type } from "../../../src/ui/theme";
 import { useTheme } from "../../../src/ui/theme-context";
@@ -39,7 +39,7 @@ export default function RepaySheet() {
   if (!debt || debt.status !== "open") return <Redirect href="/debts" />;
 
   const toMe = debt.direction === "owed_to_me";
-  const amount = parseAmount(amountText);
+  const amount = evaluateAmount(amountText);
 
   const save = () => {
     if (amount === null || amount <= 0) return setProblem("Type an amount above zero.");
@@ -90,6 +90,7 @@ export default function RepaySheet() {
         </>
       }
     >
+      <SumLine text={amountText} />
       <SheetAmount text={formatRM(amount ?? (0 as Sen))} />
       <SheetNote
         title={

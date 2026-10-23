@@ -22,16 +22,13 @@ export const brokely = {
   greeting: (nickname: string | null): Line =>
     nickname ? ["Nice to meet you, ", { b: nickname }, "!"] : ["Let's set up your plan!"],
 
-  askAlreadySpent: (today: LocalDate): Line => [
-    `It's ${dayMonth(today)}. Have you already spent some of this month's money?`,
+  /** After the 1st (D-114): one number the student can check, no choice to make first. */
+  askLeftThisMonth: (today: LocalDate): Line => [
+    `It's ${dayMonth(today)}. How much money do you have left for the rest of ${monthName(today)}?`,
   ],
 
   freshMonth: (today: LocalDate, end: LocalDate): Line => [
     `It's ${dayMonth(today)}, a fresh month! How much do you have to spend until ${dayMonth(end)}?`,
-  ],
-
-  askLeft: (end: LocalDate): Line => [
-    `Easy! How much do you have left to spend until ${dayMonth(end)}?`,
   ],
 
   perDay: (budget: Sen, days: number): Line => {
@@ -56,10 +53,10 @@ export const brokely = {
   ],
 
   askMonthMoney: (today: LocalDate): Line => [
-    `Let's plan all of ${monthName(today)}. How much money do you have for ${monthName(today)} in total?`,
+    `Let's plan all of ${monthName(today)}. How much did you set for all of ${monthName(today)}?`,
   ],
 
-  askAlreadyGone: (): Line => ["And roughly how much is already gone? A guess is fine."],
+  askAlreadyGone: (): Line => ["How much of that is already used? A guess is fine."],
 
   askMostlyOn: (): Line => ["What did it mostly go on?"],
 

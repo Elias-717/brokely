@@ -1,6 +1,6 @@
 import {
+  evaluateAmount,
   formatRM,
-  parseAmount,
   refundableSen,
   sen,
   type LocalDate,
@@ -32,7 +32,7 @@ import { dayMonth, occurredAtFor, today } from "../../src/lib/today";
 import { Button } from "../../src/ui/components";
 import { pickDate } from "../../src/ui/date-picker";
 import { CategoryPicker } from "../../src/ui/category-picker";
-import { Keypad } from "../../src/ui/keypad";
+import { Keypad, SumLine } from "../../src/ui/keypad";
 import { SheetPanel, SheetScroll } from "../../src/ui/sheet";
 import { Field } from "../../src/ui/sheet-parts";
 import { fonts, MIN_TOUCH, radius, space, type } from "../../src/ui/theme";
@@ -108,7 +108,7 @@ function Sheet({
   const [note, setNote] = useState(t.note);
   const [problem, setProblem] = useState<string | null>(null);
 
-  const amount = parseAmount(mode === "edit" ? amountText : refundText);
+  const amount = evaluateAmount(mode === "edit" ? amountText : refundText);
   const categoryName = categories.find(
     (c) => c.id === (categoryId ?? firstSpending?.categoryId),
   )?.name;
@@ -245,6 +245,9 @@ function Sheet({
               </Text>
             </View>
 
+            {mode === "edit" && split ? null : (
+              <SumLine text={mode === "edit" ? amountText : refundText} />
+            )}
             <Text
               style={{
                 textAlign: "center",
