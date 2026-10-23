@@ -31,7 +31,7 @@ Brokely stays clear of licensed activities as long as it keeps doing what it doe
 
 ## 3. The pilot with students
 
-- [ ] A usability study with students is **research with people**: ask your supervisor or AIU's research-ethics committee whether you need approval before recruiting.
+- [ ] A usability study with students is **research with people**. Brokely is a personal project (no supervisor), so formal ethics approval is usually not required; if you recruit through AIU or use the results in coursework, ask AIU's research-ethics office first.
 - [ ] Use a short **consent form**: what they'll do, that it's voluntary, that they can stop any time, what you record (feedback, not their real spending), how long you keep it.
 - [ ] Recruit **18 and over** only (the Terms say so).
 - [ ] Ask testers to use **test data or rough amounts** if they prefer; never ask for screenshots of real bank or TNG apps.

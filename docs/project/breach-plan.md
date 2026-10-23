@@ -22,7 +22,7 @@ or the API being down.
 | Role | Person | Contact |
 |---|---|---|
 | Responsible for the data (data user) and the breach decision | Elias Al-Sumairi | eliassumairi@gmail.com |
-| Second pair of eyes (pilot) | Supervisor at AIU (name to fill in) | |
+| Second pair of eyes | None: Brokely is a personal project with one person responsible. If a breach happens, a trusted friend or a lawyer can be asked to review the report before it is sent (optional). | |
 
 ## 3. Steps
 
