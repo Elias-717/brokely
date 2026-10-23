@@ -3,7 +3,7 @@
     "name": "Brokely",
     "slug": "brokely",
     "scheme": "brokely",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -19,6 +19,7 @@
       },
       "predictiveBackGestureEnabled": false,
       "allowBackup": false,
+      "versionCode": 2,
       "package": "com.elias717.brokely"
     },
     "web": {
