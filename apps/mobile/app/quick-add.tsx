@@ -31,7 +31,7 @@ import { categoryIcon } from "../src/lib/essentials-meta";
 import { readDebts } from "../src/lib/debts-model";
 import { refusalText } from "../src/lib/messages";
 import { dayMonth, occurredAtFor, today } from "../src/lib/today";
-import { Button, Sticker } from "../src/ui/components";
+import { Button } from "../src/ui/components";
 import { pickDate } from "../src/ui/date-picker";
 import { Keypad, SumLine } from "../src/ui/keypad";
 import { SheetPanel, SheetScroll, WhenFull } from "../src/ui/sheet";
@@ -47,6 +47,7 @@ import { useTheme } from "../src/ui/theme-context";
 import { useMoneyTip } from "../src/ui/money-tip";
 import { savedBuzz } from "../src/ui/haptics";
 import { useUndo } from "../src/ui/undo";
+import { Segmented } from "../src/ui/segmented";
 import { useKeyboardOpen } from "../src/ui/use-keyboard";
 
 type Mode = "spent" | "in" | "more";
@@ -75,24 +76,27 @@ const FROM_ICON: Record<string, IconName> = {
   Other: "coins",
 };
 
-/** The More choices, each saying what it does (D-85). */
-const MORE: { kind: MoreKind; icon: IconName; label: string; detail: string }[] = [
+/**
+ * The More choices as three tabs; only the chosen one's line shows under them (D-119, was a
+ * list with a line each, D-85).
+ */
+const MORE: { value: MoreKind; label: string; spoken: string; detail: string }[] = [
   {
-    kind: "transfer",
-    icon: "arrows-left-right",
-    label: "Between my own wallets",
-    detail: "e.g. bank to TNG · never spending",
+    value: "transfer",
+    label: "Transfer",
+    spoken: "Transfer between my own wallets",
+    detail: "Between your own wallets, e.g. bank to TNG · never spending",
   },
   {
-    kind: "lent",
-    icon: "arrow-up-right",
-    label: "I lent money",
+    value: "lent",
+    label: "I lent",
+    spoken: "I lent money",
     detail: "Someone owes you · shows in Debts",
   },
   {
-    kind: "borrowed",
-    icon: "arrow-down-left",
-    label: "I borrowed money",
+    value: "borrowed",
+    label: "I borrowed",
+    spoken: "I borrowed money",
     detail: "You owe someone · shows in Debts",
   },
 ];
@@ -138,6 +142,8 @@ export default function QuickAdd() {
   const [moreKind, setMoreKind] = useState<MoreKind>(start.moreKind);
   const [person, setPerson] = useState(start.person);
   const [payBackBy, setPayBackBy] = useState<LocalDate | null>(start.payBackBy);
+  /** In More the note is behind "+ Add a note" (D-119); a restored note shows straight away. */
+  const [noteOpen, setNoteOpen] = useState(start.note !== "");
 
   // The draft is written when the sheet closes or the app goes to the background, never on
   // every key: each database write makes every open screen read again.
@@ -191,6 +197,7 @@ export default function QuickAdd() {
     setMoreKind(empty.moreKind);
     setPerson("");
     setPayBackBy(null);
+    setNoteOpen(false);
     setProblem(null);
     setRestored(null);
     clearAddDraft(repo);
@@ -385,7 +392,7 @@ export default function QuickAdd() {
       <SheetPanel
         top={
           <>
-            <Segmented
+            <ModeTabs
               value={mode}
               onChange={(m) => {
                 setMode(m);
@@ -425,72 +432,75 @@ export default function QuickAdd() {
         }
       >
         <SheetScroll>
-          {/* The note comes first, so saying what it was is the obvious next step (D-49). */}
-          <View style={{ gap: space.xs }}>
-            <Field
-              value={note}
-              onChange={setNote}
-              expanded
-              placeholder={NOTE_PROMPT[mode]}
-              label={`Note, optional. ${NOTE_PROMPT[mode]}`}
-            />
-            {/* As you type: up to 3 past notes; a tap fills the note and its category (D-112) */}
-            {noteIdeas.length > 0 ? (
-              <View
-                style={{
-                  borderRadius: radius.button,
-                  borderWidth: 2,
-                  borderColor: colors.outline,
-                  backgroundColor: colors.card,
-                  overflow: "hidden",
-                }}
-              >
-                {noteIdeas.map((idea, i) => {
-                  const category = categories.find((c) => c.id === idea.categoryId);
-                  return (
-                    <Pressable
-                      key={idea.note}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Use ${idea.note}${category ? `, ${category.name}` : ""}`}
-                      onPress={() => {
-                        setNote(idea.note);
-                        if (category) {
-                          setCategoryId(category.id);
-                          setPickedByHand(true);
-                        }
-                      }}
-                      style={({ pressed }) => ({
-                        minHeight: MIN_TOUCH,
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: space.sm,
-                        paddingHorizontal: space.md,
-                        borderTopWidth: i === 0 ? 0 : 1,
-                        borderTopColor: colors.background,
-                        opacity: pressed ? 0.7 : 1,
-                      })}
-                    >
-                      {category ? <Icon name={categoryIcon(category.name)} size={20} /> : null}
-                      <Text
-                        numberOfLines={1}
-                        style={{
-                          flex: 1,
-                          fontFamily: fonts.bold,
-                          fontSize: 15,
-                          color: colors.text,
+          {/* The note comes first, so saying what it was is the obvious next step (D-49).
+              More keeps it behind "+ Add a note" further down (D-119). */}
+          {mode === "more" ? null : (
+            <View style={{ gap: space.xs }}>
+              <Field
+                value={note}
+                onChange={setNote}
+                expanded
+                placeholder={NOTE_PROMPT[mode]}
+                label={`Note, optional. ${NOTE_PROMPT[mode]}`}
+              />
+              {/* As you type: up to 3 past notes; a tap fills the note and its category (D-112) */}
+              {noteIdeas.length > 0 ? (
+                <View
+                  style={{
+                    borderRadius: radius.button,
+                    borderWidth: 2,
+                    borderColor: colors.outline,
+                    backgroundColor: colors.card,
+                    overflow: "hidden",
+                  }}
+                >
+                  {noteIdeas.map((idea, i) => {
+                    const category = categories.find((c) => c.id === idea.categoryId);
+                    return (
+                      <Pressable
+                        key={idea.note}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Use ${idea.note}${category ? `, ${category.name}` : ""}`}
+                        onPress={() => {
+                          setNote(idea.note);
+                          if (category) {
+                            setCategoryId(category.id);
+                            setPickedByHand(true);
+                          }
                         }}
+                        style={({ pressed }) => ({
+                          minHeight: MIN_TOUCH,
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: space.sm,
+                          paddingHorizontal: space.md,
+                          borderTopWidth: i === 0 ? 0 : 1,
+                          borderTopColor: colors.background,
+                          opacity: pressed ? 0.7 : 1,
+                        })}
                       >
-                        {idea.note}
-                      </Text>
-                      {category ? (
-                        <Text style={[type.small, { color: colors.muted }]}>{category.name}</Text>
-                      ) : null}
-                    </Pressable>
-                  );
-                })}
-              </View>
-            ) : null}
-          </View>
+                        {category ? <Icon name={categoryIcon(category.name)} size={20} /> : null}
+                        <Text
+                          numberOfLines={1}
+                          style={{
+                            flex: 1,
+                            fontFamily: fonts.bold,
+                            fontSize: 15,
+                            color: colors.text,
+                          }}
+                        >
+                          {idea.note}
+                        </Text>
+                        {category ? (
+                          <Text style={[type.small, { color: colors.muted }]}>{category.name}</Text>
+                        ) : null}
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              ) : null}
+            </View>
+          )}
 
           {mode === "spent" ? (
             // One Category row; the list opens on tap and closes after a choice (D-51).
@@ -558,57 +568,20 @@ export default function QuickAdd() {
             </View>
           ) : mode === "more" ? (
             <View style={{ gap: space.sm }}>
-              <Sticker offset={2} rounded={14} style={{ padding: 0, overflow: "hidden" }}>
-                <View accessibilityRole="radiogroup">
-                  {MORE.map((m, i) => {
-                    const on = m.kind === moreKind;
-                    return (
-                      <Pressable
-                        key={m.kind}
-                        accessibilityRole="radio"
-                        accessibilityState={{ checked: on }}
-                        accessibilityLabel={`${m.label}. ${m.detail}`}
-                        onPress={() => {
-                          setMoreKind(m.kind);
-                          setProblem(null);
-                        }}
-                        style={({ pressed }) => ({
-                          minHeight: MIN_TOUCH + 8,
-                          flexDirection: "row",
-                          alignItems: "center",
-                          gap: space.sm,
-                          paddingHorizontal: 12,
-                          paddingVertical: 9,
-                          backgroundColor: on ? colors.cardTint : colors.card,
-                          borderTopWidth: i === 0 ? 0 : 2,
-                          borderTopColor: colors.background,
-                          opacity: pressed ? 0.8 : 1,
-                        })}
-                      >
-                        <Icon name={m.icon} size={24} />
-                        <View style={{ flex: 1 }}>
-                          <Text
-                            style={{ fontFamily: fonts.heavy, fontSize: 15, color: colors.text }}
-                          >
-                            {m.label}
-                          </Text>
-                          <Text style={[type.small, { color: colors.muted }]}>{m.detail}</Text>
-                        </View>
-                        <View
-                          style={{
-                            width: 22,
-                            height: 22,
-                            borderRadius: 11,
-                            borderWidth: on ? 7 : 2,
-                            borderColor: on ? colors.primary : colors.outline,
-                            backgroundColor: colors.card,
-                          }}
-                        />
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              </Sticker>
+              {/* Three tabs, one line about the chosen one (D-119). */}
+              <Segmented
+                stretch
+                label="What kind of entry"
+                options={MORE}
+                value={moreKind}
+                onChange={(kind) => {
+                  setMoreKind(kind);
+                  setProblem(null);
+                }}
+              />
+              <Text accessibilityLiveRegion="polite" style={[type.small, { color: colors.muted }]}>
+                {MORE.find((m) => m.value === moreKind)?.detail}
+              </Text>
               {moreKind !== "transfer" ? (
                 <NameField
                   value={person}
@@ -622,6 +595,18 @@ export default function QuickAdd() {
               {moreKind !== "transfer" ? (
                 <PayBackBy today={day} value={payBackBy} onChange={setPayBackBy} />
               ) : null}
+              {/* A note is rarely needed here, so it waits behind a link (D-119). */}
+              {noteOpen || note !== "" ? (
+                <Field
+                  value={note}
+                  onChange={setNote}
+                  expanded
+                  placeholder={NOTE_PROMPT.more}
+                  label={`Note, optional. ${NOTE_PROMPT.more}`}
+                />
+              ) : (
+                <Button variant="link" label="+ Add a note" onPress={() => setNoteOpen(true)} />
+              )}
             </View>
           ) : null}
 
@@ -764,7 +749,7 @@ export default function QuickAdd() {
   );
 }
 
-function Segmented({ value, onChange }: { value: Mode; onChange: (mode: Mode) => void }) {
+function ModeTabs({ value, onChange }: { value: Mode; onChange: (mode: Mode) => void }) {
   const { colors } = useTheme();
   const options: { mode: Mode; label: string }[] = [
     { mode: "spent", label: "Spent" },

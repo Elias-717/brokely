@@ -12,12 +12,15 @@ export function Segmented<V extends string | number>({
   value,
   onChange,
   label,
+  stretch,
 }: {
   options: readonly { value: V; label: string; spoken?: string }[];
   value: V;
   onChange: (value: V) => void;
   /** What the whole choice is about, for screen readers. */
   label: string;
+  /** Fills the row, the choices sharing it equally and 44 dp high (Add → More, D-119). */
+  stretch?: boolean;
 }) {
   const { colors } = useTheme();
   return (
@@ -44,7 +47,8 @@ export function Segmented<V extends string | number>({
             accessibilityLabel={o.spoken ?? o.label}
             onPress={() => onChange(o.value)}
             style={{
-              minHeight: 38,
+              flex: stretch ? 1 : undefined,
+              minHeight: stretch ? 44 : 38,
               minWidth: 44,
               paddingHorizontal: 10,
               borderRadius: 7,
@@ -56,7 +60,7 @@ export function Segmented<V extends string | number>({
             <Text
               style={{
                 fontFamily: fonts.heavy,
-                fontSize: 13,
+                fontSize: stretch ? 15 : 13,
                 color: on ? colors.onPrimary : colors.text,
               }}
             >
