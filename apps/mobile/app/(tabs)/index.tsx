@@ -236,7 +236,61 @@ export default function HomeScreen() {
         <View style={{ height: 1, backgroundColor: colors.onHero, opacity: 0.18 }} />
 
         {/* Left to spend today; once over, what a day from tomorrow (D-95, D-98) */}
-        {todayText ? (
+        {todayText?.columns ? (
+          <View style={{ gap: space.sm }}>
+            {/* Two columns instead of one long line: left today | about a day after today */}
+            <View style={{ flexDirection: "row" }}>
+              <View
+                style={{ flex: 1, gap: 2, paddingRight: space.md }}
+                accessible
+                accessibilityLabel={`${formatRM(todayText.columns.leftTodaySen)} left today, ${todayText.columns.todaySub}`}
+              >
+                <Text style={[type.small, { color: colors.onHero, opacity: 0.9 }]}>Left today</Text>
+                <Text
+                  style={{ fontFamily: fonts.heavy, fontSize: 24, color: colors.onHero }}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                >
+                  {formatRM(todayText.columns.leftTodaySen)}
+                </Text>
+                <Text style={[type.small, { color: colors.onHero, opacity: 0.85 }]}>
+                  {todayText.columns.todaySub}
+                </Text>
+              </View>
+              <View style={{ width: 1, backgroundColor: colors.onHero, opacity: 0.18 }} />
+              <View
+                style={{ flex: 1, gap: 2, paddingLeft: space.md }}
+                accessible
+                accessibilityLabel={
+                  todayText.columns.thenPerDaySen !== null
+                    ? `About ${formatRM(todayText.columns.thenPerDaySen)} a day after today`
+                    : "Today is the last day of this plan"
+                }
+              >
+                <Text style={[type.small, { color: colors.onHero, opacity: 0.9 }]}>
+                  After today
+                </Text>
+                <Text
+                  style={{ fontFamily: fonts.heavy, fontSize: 24, color: colors.onHero }}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                >
+                  {todayText.columns.thenPerDaySen !== null
+                    ? `~${formatRM(todayText.columns.thenPerDaySen)}`
+                    : "Last day"}
+                </Text>
+                <Text style={[type.small, { color: colors.onHero, opacity: 0.85 }]}>
+                  {todayText.columns.thenPerDaySen !== null ? "a day" : "of this plan"}
+                </Text>
+              </View>
+            </View>
+            {forecastLine ? (
+              <Text style={[type.small, { color: colors.onHero, opacity: 0.7 }]}>
+                {forecastLine}
+              </Text>
+            ) : null}
+          </View>
+        ) : todayText ? (
           <View style={{ gap: 2 }}>
             <Text style={{ color: colors.onHero }} numberOfLines={1} adjustsFontSizeToFit>
               <Text style={{ fontFamily: fonts.heavy, fontSize: 24 }}>
@@ -254,10 +308,6 @@ export default function HomeScreen() {
             ) : null}
           </View>
         ) : null}
-
-        <Text style={[type.body, { color: colors.onHero, fontSize: 14, opacity: 0.85 }]}>
-          {formatRM(home.spentSen)} spent so far
-        </Text>
       </View>
 
       {/* Nothing logged today: one tap marks a covered day (FR-TXN-08, R-01) */}
@@ -475,7 +525,13 @@ function todayCard(
   daysLeft: number,
   freeSen: Sen,
   leftInPlanSen: Sen,
-): { amountSen: Sen; unit: string; line: string } {
+): {
+  amountSen: Sen;
+  unit: string;
+  line: string;
+  /** Set while under today's share: the card shows two columns instead of one line. */
+  columns?: { leftTodaySen: Sen; todaySub: string; thenPerDaySen: Sen | null };
+} {
   const after = daysLeft - 1;
   const days = (n: number) => (n === 1 ? "tomorrow gets" : `the next ${n} days get`);
   if (leftInPlanSen < 0) {
@@ -509,6 +565,12 @@ function todayCard(
       guide.thenPerDaySen !== null
         ? `of ${formatRM(guide.todaySen)} for today · about ${formatRM(guide.thenPerDaySen)} a day after that`
         : `of ${formatRM(guide.todaySen)} · the last day of this plan`,
+    columns: {
+      leftTodaySen: guide.leftTodaySen,
+      todaySub:
+        guide.leftTodaySen === guide.todaySen ? "None used yet" : `of ${formatRM(guide.todaySen)}`,
+      thenPerDaySen: guide.thenPerDaySen,
+    },
   };
 }
 
