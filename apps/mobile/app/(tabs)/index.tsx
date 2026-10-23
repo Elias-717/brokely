@@ -59,8 +59,19 @@ export default function HomeScreen() {
 
   // Home header (D-65): Brokely beside the greeting, in its stage and mood (D-105); no date
   // line, the budget card already says how many days are left.
+  // Tapping Brokely or the greeting opens Profile (D-106), like the profile card on More.
   const header = (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: space.md }}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${nickname ? `Hi, ${nickname}` : "Hi there"}. ${mascot.label}. Open your profile`}
+      onPress={() => router.push("/profile")}
+      style={({ pressed }) => ({
+        flexDirection: "row",
+        alignItems: "center",
+        gap: space.md,
+        opacity: pressed ? 0.7 : 1,
+      })}
+    >
       <Image
         source={mascot.picture}
         style={{ width: 72, height: 90 }}
@@ -84,7 +95,7 @@ export default function HomeScreen() {
           </Text>
         )}
       </View>
-    </View>
+    </Pressable>
   );
 
   if (home.kind === "no-plan") {
