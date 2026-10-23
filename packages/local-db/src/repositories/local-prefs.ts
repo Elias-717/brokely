@@ -117,6 +117,19 @@ export function showHeadsUp(ctx: RepoContext, cycleId: string, categoryId: strin
   setPref(ctx, headsUpKey(cycleId), hidden);
 }
 
+/**
+ * The highest Brokely stage the student has seen celebrated (D-109); null before Home first
+ * stores it. Phone-only, so a new phone celebrates nothing it has already passed.
+ */
+export function getSeenMascotStage(db: Db): number | null {
+  const value = getPref(db, "mascot_stage_seen");
+  return typeof value === "number" ? value : null;
+}
+
+export function setSeenMascotStage(ctx: RepoContext, stage: number): void {
+  setPref(ctx, "mascot_stage_seen", stage);
+}
+
 /** Money tips after saving an expense (D-39, D-67). Phone-only, never synced. */
 export interface MoneyTipsState {
   /** On by default; More → Settings turns it off. */

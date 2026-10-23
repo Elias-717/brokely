@@ -8,6 +8,8 @@ import {
   getAppearance,
   getCardChoices,
   getHiddenHeadsUps,
+  getSeenMascotStage,
+  setSeenMascotStage,
   hideHeadsUp,
   showHeadsUp,
   getMoneyTips,
@@ -131,6 +133,13 @@ describe("phone-only preferences (D-30, D-32)", () => {
       dismissCard(ctx, NOV, "meals");
       expect(ctx.db.select().from(outboxOperations).all()).toHaveLength(0);
     });
+  });
+
+  it("remembers the Brokely stage already celebrated, on this phone only (D-109)", () => {
+    expect(getSeenMascotStage(ctx.db)).toBeNull();
+    setSeenMascotStage(ctx, 2);
+    expect(getSeenMascotStage(ctx.db)).toBe(2);
+    expect(ctx.db.select().from(outboxOperations).all()).toHaveLength(0);
   });
 
   describe("hidden heads-ups, per cycle (D-102)", () => {

@@ -33,6 +33,7 @@ import { fonts, MIN_TOUCH, radius, space, type } from "../src/ui/theme";
 import { KeyboardSafe } from "../src/ui/keyboard-safe";
 import { useTheme } from "../src/ui/theme-context";
 import { useMoneyTip } from "../src/ui/money-tip";
+import { savedBuzz } from "../src/ui/haptics";
 import { useUndo } from "../src/ui/undo";
 import { useKeyboardOpen } from "../src/ui/use-keyboard";
 
@@ -145,6 +146,7 @@ export default function QuickAdd() {
     tipFor?: string,
   ) => {
     if (!result.ok) return setProblem(refusalText(result.code, result.message));
+    savedBuzz();
     router.back();
     showUndo(message, () => undo(result.value));
     if (tipFor !== undefined) offerTip(tipFor);

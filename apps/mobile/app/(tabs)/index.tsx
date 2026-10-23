@@ -4,12 +4,14 @@ import {
   completeEndedCycles,
   dismissCard,
   getNickname,
+  getSeenMascotStage,
   postponeCard,
+  setSeenMascotStage,
   undoCheckIn,
 } from "@brokely/local-db";
 import { router } from "expo-router";
 import { useEffect } from "react";
-import { Image, Pressable, Text, useWindowDimensions, View } from "react-native";
+import { Pressable, Text, useWindowDimensions, View } from "react-native";
 import { repo } from "../../src/db/client";
 import { useRead } from "../../src/db/use-read";
 import { homeStatus } from "../../src/lib/brokely-lines";
@@ -21,6 +23,7 @@ import { dayMonth, today } from "../../src/lib/today";
 import { AnimatedAmount } from "../../src/ui/animated-amount";
 import { BrokelyAvatar } from "../../src/ui/chat";
 import { Button, Screen, Sticker } from "../../src/ui/components";
+import { GrewCelebration, MascotImage } from "../../src/ui/mascot-image";
 import { ProgressRing } from "../../src/ui/progress-ring";
 import { fonts, radius, space, type } from "../../src/ui/theme";
 import { useTheme } from "../../src/ui/theme-context";
@@ -53,6 +56,13 @@ export default function HomeScreen() {
     (home.leftInPlanSen < 0 ||
       (home.forecast.kind === "shown" && home.forecast.value.pace === "over_pace"));
   const mascot = useRead((db) => readMascot(db, day, overPace), [day, overPace]);
+  // "Brokely grew" once per stage (D-109). The first time, the current stage is stored quietly,
+  // so an update or a new phone doesn't celebrate a stage reached long ago.
+  const seenStage = useRead(getSeenMascotStage);
+  useEffect(() => {
+    if (seenStage === null) setSeenMascotStage(repo, mascot.stage);
+  }, [seenStage, mascot.stage]);
+  const grew = seenStage !== null && mascot.stage > seenStage;
   const showUndo = useUndo();
   const { width } = useWindowDimensions();
   // The ring stays smaller than the amount beside it, also on narrow phones (D-58).
@@ -62,41 +72,44 @@ export default function HomeScreen() {
   // line, the budget card already says how many days are left.
   // Tapping Brokely or the greeting opens Profile (D-106), like the profile card on More.
   const header = (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`${nickname ? `Hi, ${nickname}` : "Hi there"}. ${mascot.label}. Open your profile`}
-      onPress={() => router.push("/profile")}
-      style={({ pressed }) => ({
-        flexDirection: "row",
-        alignItems: "center",
-        gap: space.md,
-        opacity: pressed ? 0.7 : 1,
-      })}
-    >
-      <Image
-        source={mascot.picture}
-        style={{ width: 72, height: 90 }}
-        resizeMode="contain"
-        accessibilityIgnoresInvertColors
-        accessibilityLabel={mascot.label}
-      />
-      <View style={{ gap: 2, flex: 1 }}>
-        <Text style={[type.title, { color: colors.text }]} numberOfLines={1}>
-          {nickname ? `Hi, ${nickname}` : "Hi there"}
-        </Text>
-        {home.kind === "plan" ? (
-          <Text style={[type.body, { color: colors.muted, fontSize: 15 }]}>
-            {homeStatus[home.status]}
+    <>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`${nickname ? `Hi, ${nickname}` : "Hi there"}. ${mascot.label}. Open your profile`}
+        onPress={() => router.push("/profile")}
+        style={({ pressed }) => ({
+          flexDirection: "row",
+          alignItems: "center",
+          gap: space.md,
+          opacity: pressed ? 0.7 : 1,
+        })}
+      >
+        <MascotImage source={mascot.picture} label={mascot.label} width={72} height={90} />
+        <View style={{ gap: 2, flex: 1 }}>
+          <Text style={[type.title, { color: colors.text }]} numberOfLines={1}>
+            {nickname ? `Hi, ${nickname}` : "Hi there"}
           </Text>
-        ) : (
-          <Text style={[type.body, { color: colors.muted, fontSize: 15 }]}>
-            {home.month.records > 0
-              ? `${home.month.records} ${home.month.records === 1 ? "record" : "records"} this month`
-              : "Tracking mode"}
-          </Text>
-        )}
-      </View>
-    </Pressable>
+          {home.kind === "plan" ? (
+            <Text style={[type.body, { color: colors.muted, fontSize: 15 }]}>
+              {homeStatus[home.status]}
+            </Text>
+          ) : (
+            <Text style={[type.body, { color: colors.muted, fontSize: 15 }]}>
+              {home.month.records > 0
+                ? `${home.month.records} ${home.month.records === 1 ? "record" : "records"} this month`
+                : "Tracking mode"}
+            </Text>
+          )}
+        </View>
+      </Pressable>
+      {grew ? (
+        <GrewCelebration
+          stage={mascot.stage}
+          picture={mascot.proudPicture}
+          onClose={() => setSeenMascotStage(repo, mascot.stage)}
+        />
+      ) : null}
+    </>
   );
 
   if (home.kind === "no-plan") {

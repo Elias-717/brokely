@@ -55,6 +55,8 @@ export function readMascot(db: Db, today: LocalDate, overPace: boolean) {
     stage,
     mood,
     picture: PICTURES[stage][mood],
+    /** For the "Brokely grew" moment (D-109). */
+    proudPicture: PICTURES[stage].proud,
     label: `Brokely, stage ${stage} of 3, ${MOOD_WORDS[mood]}`,
   };
 }
