@@ -1,8 +1,10 @@
 import {
   deleteAllData,
   exportJson,
+  getMascotIntroSeen,
   getNickname,
   NICKNAME_MAX,
+  setMascotIntroSeen,
   setNickname,
   syncCounts,
 } from "@brokely/local-db";
@@ -20,6 +22,7 @@ import { useSync } from "../src/sync/sync-provider";
 import { deleteAccountOnServer, OfflineError } from "../src/sync/transport";
 import { Avatar } from "../src/ui/avatar";
 import { Button, PageScreen, Sticker } from "../src/ui/components";
+import { GrowIntroCard } from "../src/ui/mascot-image";
 import { ModalSheet } from "../src/ui/sheet";
 import { Icon, type IconName } from "../src/ui/icons";
 import { TextField } from "../src/ui/text-field";
@@ -32,6 +35,7 @@ import { useTheme } from "../src/ui/theme-context";
  * sign out with its rule: only once everything is backed up, and it clears this phone.
  */
 export default function ProfileScreen() {
+  const introSeen = useRead(getMascotIntroSeen);
   const { colors } = useTheme();
   const sync = useSync();
   const nickname = useRead(getNickname);
@@ -135,6 +139,9 @@ export default function ProfileScreen() {
             : "Not signed in · everything stays on this phone"}
         </Text>
       </View>
+
+      {/* Once: how Brokely grows, with the three stages (D-110) */}
+      {introSeen ? null : <GrowIntroCard onDone={() => setMascotIntroSeen(repo)} />}
 
       {editing ? (
         <Sticker style={{ padding: space.md, gap: space.sm }}>

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Animated, Easing, Image, Modal, Pressable, Text, View } from "react-native";
 import type { ImageSourcePropType } from "react-native";
 import { Button, Sticker } from "./components";
+import { STAGE_PICTURES } from "../lib/mascot";
 import { grewBuzz } from "./haptics";
 import { useReduceMotion } from "./motion";
 import { fonts, space, type } from "./theme";
@@ -131,5 +132,52 @@ export function GrewCelebration({
         </Pressable>
       </Pressable>
     </Modal>
+  );
+}
+
+const STAGES = [
+  { name: "Sprout", when: "to start" },
+  { name: "Growing", when: "7 days logged" },
+  { name: "Money-broccoli", when: "30 days logged" },
+];
+
+/**
+ * "How Brokely grows" (D-110): shown once on Profile, with the three stages side by side, and
+ * gone for good after "Got it".
+ */
+export function GrowIntroCard({ onDone }: { onDone: () => void }) {
+  const { colors } = useTheme();
+  return (
+    <Sticker background={colors.cardTint} style={{ padding: space.md, gap: space.sm }}>
+      <Text accessibilityRole="header" style={[type.heading, { color: colors.text }]}>
+        Watch Brokely grow
+      </Text>
+      <Text style={[type.body, { color: colors.text }]}>
+        Brokely grows every day you log something, or tap “No spending today”. Log 3 days in a row
+        and it looks proud. Spending less never changes it, only the habit does.
+      </Text>
+      <View style={{ flexDirection: "row", gap: space.xs }}>
+        {STAGES.map((s, i) => (
+          <View
+            key={s.name}
+            accessible
+            accessibilityLabel={`Stage ${i + 1}, ${s.name}, ${s.when}`}
+            style={{ flex: 1, alignItems: "center", gap: 2 }}
+          >
+            <Image
+              source={STAGE_PICTURES[i]!}
+              style={{ width: 72, height: 90 }}
+              resizeMode="contain"
+              accessibilityIgnoresInvertColors
+            />
+            <Text style={{ fontFamily: fonts.heavy, fontSize: 13, color: colors.text }}>
+              {s.name}
+            </Text>
+            <Text style={[type.small, { color: colors.muted, textAlign: "center" }]}>{s.when}</Text>
+          </View>
+        ))}
+      </View>
+      <Button label="Got it" onPress={onDone} />
+    </Sticker>
   );
 }

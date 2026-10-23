@@ -8,6 +8,8 @@ import {
   getAppearance,
   getCardChoices,
   getHiddenHeadsUps,
+  getMascotIntroSeen,
+  setMascotIntroSeen,
   getSeenMascotStage,
   setSeenMascotStage,
   hideHeadsUp,
@@ -133,6 +135,12 @@ describe("phone-only preferences (D-30, D-32)", () => {
       dismissCard(ctx, NOV, "meals");
       expect(ctx.db.select().from(outboxOperations).all()).toHaveLength(0);
     });
+  });
+
+  it("the 'how Brokely grows' card is shown until Got it, once (D-110)", () => {
+    expect(getMascotIntroSeen(ctx.db)).toBe(false);
+    setMascotIntroSeen(ctx);
+    expect(getMascotIntroSeen(ctx.db)).toBe(true);
   });
 
   it("remembers the Brokely stage already celebrated, on this phone only (D-109)", () => {

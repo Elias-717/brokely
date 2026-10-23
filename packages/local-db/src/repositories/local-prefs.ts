@@ -130,6 +130,15 @@ export function setSeenMascotStage(ctx: RepoContext, stage: number): void {
   setPref(ctx, "mascot_stage_seen", stage);
 }
 
+/** The one-time "how Brokely grows" card on Profile (D-110): gone after "Got it". */
+export function getMascotIntroSeen(db: Db): boolean {
+  return getPref(db, "mascot_intro_seen") === true;
+}
+
+export function setMascotIntroSeen(ctx: RepoContext): void {
+  setPref(ctx, "mascot_intro_seen", true);
+}
+
 /** Money tips after saving an expense (D-39, D-67). Phone-only, never synced. */
 export interface MoneyTipsState {
   /** On by default; More → Settings turns it off. */

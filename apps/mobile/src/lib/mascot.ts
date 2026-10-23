@@ -30,6 +30,9 @@ const PICTURES: Record<MascotStage, Record<MascotMood, ImageSourcePropType>> = {
   },
 };
 
+/** The three stages, happy, for the "how Brokely grows" card (D-110). */
+export const STAGE_PICTURES = [PICTURES[1].happy, PICTURES[2].happy, PICTURES[3].happy] as const;
+
 const MOOD_WORDS: Record<MascotMood, string> = {
   happy: "happy",
   worried: "a little worried",
