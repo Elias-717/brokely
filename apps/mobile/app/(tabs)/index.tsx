@@ -124,6 +124,10 @@ export default function HomeScreen() {
   }
 
   const meta = home.card ? essentialMeta(home.card.name) : null;
+  const overBudget = home.usedPercent > 100;
+  const todayText = home.today
+    ? todayCard(home.today, home.daysLeft, home.freeSen, home.leftInPlanSen)
+    : null;
   const forecastLine =
     home.forecast.kind === "waiting"
       ? "Forecast shows from day 14"
@@ -167,69 +171,49 @@ export default function HomeScreen() {
               of {formatRM(home.budgetSen)} planned
             </Text>
           </View>
+          {/* Past the budget the ring turns red and shows how far over, e.g. "−20%" (D-98) */}
           <ProgressRing
             size={ringSize}
             arc={home.usedArc}
-            label={`${home.usedPercent}%`}
-            caption="spent"
-            color={colors.heroRing}
+            label={overBudget ? `−${home.usedPercent - 100}%` : `${home.usedPercent}%`}
+            caption={overBudget ? "over" : "spent"}
+            color={overBudget ? colors.heroOver : colors.heroRing}
             track={colors.heroTile}
-            textColor={colors.onHero}
-            mutedColor={colors.onHero}
-            accessibilityLabel={`${home.usedPercent} percent of your budget spent`}
+            textColor={overBudget ? colors.heroOver : colors.onHero}
+            mutedColor={overBudget ? colors.heroOver : colors.onHero}
+            accessibilityLabel={
+              overBudget
+                ? `${home.usedPercent - 100} percent over your budget`
+                : `${home.usedPercent} percent of your budget spent`
+            }
           />
         </View>
 
         <View style={{ height: 1, backgroundColor: colors.onHero, opacity: 0.18 }} />
 
-        {/* Left to spend today, then about a day after (D-58, D-95), after bills and set-asides */}
-        {home.today ? (
-          <View style={{ flexDirection: "row", alignItems: "center", gap: space.md }}>
-            <View style={{ flex: 1, gap: 2 }}>
-              <Text style={{ color: colors.onHero }} numberOfLines={1} adjustsFontSizeToFit>
-                <Text style={{ fontFamily: fonts.heavy, fontSize: 24 }}>
-                  {formatRM(sen(Math.max(0, home.today.leftTodaySen)))}
-                </Text>
-                <Text style={{ fontFamily: fonts.body, fontSize: 16 }}> left today</Text>
+        {/* Left to spend today; once over, what a day from tomorrow (D-95, D-98) */}
+        {todayText ? (
+          <View style={{ gap: 2 }}>
+            <Text style={{ color: colors.onHero }} numberOfLines={1} adjustsFontSizeToFit>
+              <Text style={{ fontFamily: fonts.heavy, fontSize: 24 }}>
+                {formatRM(todayText.amountSen)}
               </Text>
-              <Text style={[type.small, { color: colors.onHero, opacity: 0.85 }]}>
-                {todayLine(home.today, home.daysLeft, home.freeSen)}
-                {home.stillToComeSen > 0 && home.freeSen > 0
-                  ? `, after ${formatRM(home.stillToComeSen)} of bills`
-                  : ""}
+              <Text style={{ fontFamily: fonts.body, fontSize: 16 }}> {todayText.unit}</Text>
+            </Text>
+            <Text style={[type.small, { color: colors.onHero, opacity: 0.85 }]}>
+              {todayText.line}
+            </Text>
+            {forecastLine ? (
+              <Text style={[type.small, { color: colors.onHero, opacity: 0.7 }]}>
+                {forecastLine}
               </Text>
-              {forecastLine ? (
-                <Text style={[type.small, { color: colors.onHero, opacity: 0.7 }]}>
-                  {forecastLine}
-                </Text>
-              ) : null}
-            </View>
+            ) : null}
           </View>
         ) : null}
 
-        <View
-          style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}
-        >
-          <Text style={[type.body, { color: colors.onHero, fontSize: 14, opacity: 0.85 }]}>
-            {formatRM(home.spentSen)} spent so far
-          </Text>
-          {/* Optional wallet check (FR-WAL-01, D-27) */}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Wallet check"
-            onPress={() => router.push("/wallet-check")}
-            hitSlop={10}
-            style={({ pressed }) => ({
-              minHeight: 44,
-              justifyContent: "center",
-              opacity: pressed ? 0.6 : 1,
-            })}
-          >
-            <Text style={{ fontFamily: fonts.heavy, fontSize: 15, color: colors.onHero }}>
-              Wallet check ↗
-            </Text>
-          </Pressable>
-        </View>
+        <Text style={[type.body, { color: colors.onHero, fontSize: 14, opacity: 0.85 }]}>
+          {formatRM(home.spentSen)} spent so far
+        </Text>
       </View>
 
       {/* Nothing logged today: one tap marks a covered day (FR-TXN-08, R-01) */}
@@ -436,20 +420,51 @@ export default function HomeScreen() {
 }
 
 /** A card title in the text font, with an optional amount and a small action on the right. */
-/** The small line under "left today" (D-95): facts and the next step, never a telling-off. */
-function todayLine(guide: TodayGuide, daysLeft: number, freeSen: Sen): string {
-  if (freeSen <= 0 && guide.todaySen === 0) return "Bills to come and set-asides need what's left";
+/**
+ * What the budget card says about today (D-95, D-98): one big amount and one plain line. Under
+ * today's share: what is left today. Over it: the amount a day from tomorrow, with why it changed.
+ * Never a telling-off (rule 9).
+ */
+function todayCard(
+  guide: TodayGuide,
+  daysLeft: number,
+  freeSen: Sen,
+  leftInPlanSen: Sen,
+): { amountSen: Sen; unit: string; line: string } {
   const after = daysLeft - 1;
-  const then =
-    guide.thenPerDaySen !== null
-      ? `about ${formatRM(guide.thenPerDaySen)} a day for the next ${after} ${after === 1 ? "day" : "days"}`
-      : null;
-  if (guide.leftTodaySen < 0) {
-    const over = `${formatRM(sen(-guide.leftTodaySen))} over today's ${formatRM(guide.todaySen)}`;
-    return then ? `${over}. Then ${then}` : over;
+  const days = (n: number) => (n === 1 ? "tomorrow gets" : `the next ${n} days get`);
+  if (leftInPlanSen < 0) {
+    return {
+      amountSen: sen(0),
+      unit: "free to spend",
+      line: `You've spent ${formatRM(sen(-leftInPlanSen))} more than your plan. Keep logging, it still helps.`,
+    };
   }
-  const share = `of ${formatRM(guide.todaySen)} for today`;
-  return then ? `${share} · then ${then}` : `${share}, the last day of this plan`;
+  if (freeSen <= 0 && guide.todaySen === 0) {
+    return {
+      amountSen: sen(0),
+      unit: "free to spend",
+      line: "Bills still to come and set-asides need what's left in your plan.",
+    };
+  }
+  if (guide.leftTodaySen < 0) {
+    const over = `Today went ${formatRM(sen(-guide.leftTodaySen))} over its ${formatRM(guide.todaySen)}`;
+    return guide.thenPerDaySen !== null
+      ? {
+          amountSen: guide.thenPerDaySen,
+          unit: "a day from tomorrow",
+          line: `${over}, so ${days(after)} a little less.`,
+        }
+      : { amountSen: sen(0), unit: "left today", line: `${over}, the last day of this plan.` };
+  }
+  return {
+    amountSen: guide.leftTodaySen,
+    unit: "left today",
+    line:
+      guide.thenPerDaySen !== null
+        ? `of ${formatRM(guide.todaySen)} for today · about ${formatRM(guide.thenPerDaySen)} a day after that`
+        : `of ${formatRM(guide.todaySen)} · the last day of this plan`,
+  };
 }
 
 function SectionHeader({

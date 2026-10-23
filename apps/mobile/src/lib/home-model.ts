@@ -117,7 +117,7 @@ export type HomeModel =
       readonly usedPercent: number;
       readonly usedArc: number;
       /** Brokely's one-line status under the greeting (D-58). */
-      readonly status: "fresh" | "on-plan" | "ahead" | "over";
+      readonly status: "fresh" | "on-plan" | "ahead" | "over" | "nothing-free" | "today-over";
       /** The latest spending, newest first (D-58). */
       readonly recent: readonly {
         id: string;
@@ -230,14 +230,19 @@ export function readHome(db: Db, today: LocalDate): HomeModel {
   );
   const todayShare = todayGuide({ freeSen: guide.freeSen, everydayTodaySen, daysLeft });
   const used = budgetUsed(progress.spentSen, budgetSen);
+  // The status agrees with the budget card (D-98): over the plan, nothing free, over today.
   const status =
     leftInPlanSen < 0
       ? "over"
-      : progress.spentSen === 0
-        ? "fresh"
-        : progress.forecast?.pace === "over_pace"
-          ? "ahead"
-          : "on-plan";
+      : guide.freeSen <= 0 && progress.spentSen > 0
+        ? "nothing-free"
+        : todayShare && todayShare.leftTodaySen < 0
+          ? "today-over"
+          : progress.spentSen === 0
+            ? "fresh"
+            : progress.forecast?.pace === "over_pace"
+              ? "ahead"
+              : "on-plan";
   const recent = [...transactions]
     .filter((t) => t.type === "purchase")
     .sort((a, b) =>

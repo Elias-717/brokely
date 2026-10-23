@@ -26,6 +26,8 @@ export interface Colors {
   /** Home budget card (D-59): the ring's arc, and the darker track under it. */
   heroRing: string;
   heroTile: string;
+  /** The ring and its label once spending passes the budget (D-98); ≥ 3.4:1 on the card. */
+  heroOver: string;
   tabBar: string;
   tabActive: string;
   tabInactive: string;
@@ -66,6 +68,7 @@ export const lightColors: Colors = {
   heroFill: "#FAFBF4",
   heroRing: "#DCEBBE",
   heroTile: "#4A5C26",
+  heroOver: "#FFC2BA",
   tabBar: "#FAFBF4",
   tabActive: "#4E6127",
   tabInactive: "#5F665A",
@@ -97,6 +100,7 @@ export const darkColors: Colors = {
   heroFill: "#ECEEE8",
   heroRing: "#D3E6AE",
   heroTile: "#36451A",
+  heroOver: "#FFC2BA",
   tabBar: "#1A1C1A",
   tabActive: "#9DBF5E",
   tabInactive: "#9AA196",
