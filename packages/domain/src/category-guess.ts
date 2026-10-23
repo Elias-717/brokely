@@ -188,3 +188,33 @@ export function guessCategory(
   }
   return null;
 }
+
+/** A past note offered while typing (D-112), with the category it went to most recently. */
+export interface NoteSuggestion {
+  readonly note: string;
+  readonly categoryId: string;
+}
+
+/**
+ * Notes from past purchases that match what is being typed (D-112): the whole note or one of
+ * its words starts with the typed text (case, spaces and punctuation ignored). Whole-note
+ * matches come first, then newest first; each note once; nothing until something is typed and
+ * nothing once the typed text already is that note. `history` is newest first.
+ */
+export function noteSuggestions(history: GuessHistory, typed: string, max = 3): NoteSuggestion[] {
+  const query = normalizeNote(typed);
+  if (!query) return [];
+  const starts: NoteSuggestion[] = [];
+  const words: NoteSuggestion[] = [];
+  const seen = new Set<string>([query]);
+  for (const h of history) {
+    const key = normalizeNote(h.note);
+    if (seen.has(key)) continue;
+    if (key.startsWith(query)) starts.push({ note: h.note, categoryId: h.categoryId });
+    else if (key.split(" ").some((w) => w.startsWith(query))) {
+      words.push({ note: h.note, categoryId: h.categoryId });
+    } else continue;
+    seen.add(key);
+  }
+  return [...starts, ...words].slice(0, max);
+}

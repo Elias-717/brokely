@@ -1,4 +1,11 @@
-import { formatRM, guessCategory, parseAmount, sen, type LocalDate } from "@brokely/domain";
+import {
+  formatRM,
+  guessCategory,
+  noteSuggestions,
+  parseAmount,
+  sen,
+  type LocalDate,
+} from "@brokely/domain";
 import {
   addCategory,
   createDebt,
@@ -15,7 +22,8 @@ import { useMemo, useState } from "react";
 import { Pressable, ScrollView, Switch, Text, View } from "react-native";
 import { repo } from "../src/db/client";
 import { useRead } from "../src/db/use-read";
-import { categoriesByUse, guessHistory, recentNotesByCategory } from "../src/lib/category-order";
+import { categoriesByUse, guessHistory } from "../src/lib/category-order";
+import { categoryIcon } from "../src/lib/essentials-meta";
 import { readDebts } from "../src/lib/debts-model";
 import { refusalText } from "../src/lib/messages";
 import { dayMonth, occurredAtFor, today } from "../src/lib/today";
@@ -97,7 +105,6 @@ export default function QuickAdd() {
   const day = useMemo(() => today(), []);
   const keyboardOpen = useKeyboardOpen();
   const categories = useRead((db) => categoriesByUse(db, day), [day]);
-  const recentNotes = useRead((db) => recentNotesByCategory(db, day), [day]);
   const history = useRead((db) => guessHistory(db, day), [day]);
 
   // Debts opens it on More → I lent / I borrowed (S7 "+ Add").
@@ -135,7 +142,8 @@ export default function QuickAdd() {
   const when = { localDate: date, occurredAt: occurredAtFor(date, day) };
   const cleanNote = note.trim();
   // One-tap notes typed recently for this category, e.g. "nasi lemak".
-  const noteIdeas = picked ? (recentNotes.get(picked.id) ?? []) : [];
+  // Past notes that match what is being typed (D-112); nothing while empty or unmatched.
+  const noteIdeas = mode === "spent" ? noteSuggestions(history, note) : [];
 
   /** Saves, then closes the sheet and offers Undo (D-38). */
   const finish = <T,>(
@@ -342,23 +350,61 @@ export default function QuickAdd() {
               placeholder={NOTE_PROMPT[mode]}
               label={`Note, optional. ${NOTE_PROMPT[mode]}`}
             />
-            {mode === "spent" && noteIdeas.length > 0 ? (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
-                contentContainerStyle={{ gap: space.sm }}
+            {/* As you type: up to 3 past notes; a tap fills the note and its category (D-112) */}
+            {noteIdeas.length > 0 ? (
+              <View
+                style={{
+                  borderRadius: radius.button,
+                  borderWidth: 2,
+                  borderColor: colors.outline,
+                  backgroundColor: colors.card,
+                  overflow: "hidden",
+                }}
               >
-                {noteIdeas.map((idea) => (
-                  <Chip
-                    key={idea}
-                    label={idea}
-                    dashed
-                    selected={note.trim().toLowerCase() === idea.toLowerCase()}
-                    onPress={() => setNote(idea)}
-                  />
-                ))}
-              </ScrollView>
+                {noteIdeas.map((idea, i) => {
+                  const category = categories.find((c) => c.id === idea.categoryId);
+                  return (
+                    <Pressable
+                      key={idea.note}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Use ${idea.note}${category ? `, ${category.name}` : ""}`}
+                      onPress={() => {
+                        setNote(idea.note);
+                        if (category) {
+                          setCategoryId(category.id);
+                          setPickedByHand(true);
+                        }
+                      }}
+                      style={({ pressed }) => ({
+                        minHeight: MIN_TOUCH,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: space.sm,
+                        paddingHorizontal: space.md,
+                        borderTopWidth: i === 0 ? 0 : 1,
+                        borderTopColor: colors.background,
+                        opacity: pressed ? 0.7 : 1,
+                      })}
+                    >
+                      {category ? <Icon name={categoryIcon(category.name)} size={20} /> : null}
+                      <Text
+                        numberOfLines={1}
+                        style={{
+                          flex: 1,
+                          fontFamily: fonts.bold,
+                          fontSize: 15,
+                          color: colors.text,
+                        }}
+                      >
+                        {idea.note}
+                      </Text>
+                      {category ? (
+                        <Text style={[type.small, { color: colors.muted }]}>{category.name}</Text>
+                      ) : null}
+                    </Pressable>
+                  );
+                })}
+              </View>
             ) : null}
           </View>
 

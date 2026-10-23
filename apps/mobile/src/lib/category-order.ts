@@ -47,32 +47,3 @@ export function guessHistory(db: Db, today: LocalDate, max = 500): GuessHistory 
   }
   return history;
 }
-
-/**
- * Notes typed in the last 30 days, per category, newest first, each once (case-insensitive):
- * offered as one-tap chips under the note box so describing a repeat meal takes one tap.
- */
-export function recentNotesByCategory(db: Db, today: LocalDate, max = 4): Map<string, string[]> {
-  const recent = listTransactions(db, {
-    start: addDays(today, -30),
-    endExclusive: addDays(today, 1),
-  }).sort((a, b) =>
-    a.localDate === b.localDate
-      ? b.occurredAt.localeCompare(a.occurredAt)
-      : b.localDate.localeCompare(a.localDate),
-  );
-  const notes = new Map<string, string[]>();
-  for (const t of recent) {
-    const note = t.note.trim();
-    if (t.type !== "purchase" || !note || note === OPENING_SPEND_NOTE) continue;
-    for (const line of t.lines) {
-      if (line.kind !== "spending") continue;
-      const list = notes.get(line.categoryId) ?? [];
-      if (list.length < max && !list.some((n) => n.toLowerCase() === note.toLowerCase())) {
-        list.push(note);
-      }
-      notes.set(line.categoryId, list);
-    }
-  }
-  return notes;
-}

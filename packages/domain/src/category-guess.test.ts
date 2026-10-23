@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { guessCategory, normalizeNote, type GuessHistory } from "./category-guess";
+import { guessCategory, normalizeNote, noteSuggestions, type GuessHistory } from "./category-guess";
 
 const CATEGORIES = [
   { id: "meals", name: "Meals" },
@@ -80,5 +80,39 @@ describe("smart categorization from the note (D-84)", () => {
     const without = CATEGORIES.filter((c) => c.id !== "laundry");
     expect(guessCategory("dobi", [], without)).toBeNull();
     expect(guessCategory("wash", said("wash", "laundry", 3), without)).toBeNull();
+  });
+});
+
+describe("note suggestions while typing (D-112)", () => {
+  const history = [
+    { note: "Teh tarik", categoryId: "snacks" },
+    { note: "nasi lemak", categoryId: "meals" },
+    { note: "Nasi lemak", categoryId: "meals" },
+    { note: "rice for the week", categoryId: "home" },
+    { note: "nasi kandar", categoryId: "meals" },
+    { note: "Dobi", categoryId: "laundry" },
+    { note: "ayam nasi", categoryId: "meals" },
+  ];
+
+  it("nothing until something is typed", () => {
+    expect(noteSuggestions(history, "  ")).toEqual([]);
+  });
+
+  it("whole-note matches first, newest first, each note once, at most 3", () => {
+    expect(noteSuggestions(history, "NAS").map((s) => s.note)).toEqual([
+      "nasi lemak",
+      "nasi kandar",
+      "ayam nasi",
+    ]);
+  });
+
+  it("matches the start of any word", () => {
+    expect(noteSuggestions(history, "week")).toEqual([
+      { note: "rice for the week", categoryId: "home" },
+    ]);
+  });
+
+  it("stops suggesting once the typed text is that note", () => {
+    expect(noteSuggestions(history, "dobi")).toEqual([]);
   });
 });
