@@ -377,8 +377,8 @@ export default function QuickStartChat() {
         const owe = chat.step === "owe-who";
         return (
           <TextComposer
-            label="Type their name (up to 2 words)"
-            placeholder="e.g. Aiman or Kak Sarah"
+            label="Type their name"
+            placeholder="e.g. Aiman or Tan Wei Ming"
             name
             onSend={(text) => {
               const name = text.trim();

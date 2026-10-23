@@ -2,12 +2,13 @@ import { useEffect, useRef, useState, type ComponentRef, type ReactNode } from "
 import { Animated, Image, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
-import { limitName, NAME_MAX_CHARS } from "@brokely/domain";
+import { limitName, NAME_MAX_CHARS, nameOverLimit } from "@brokely/domain";
 import { plain, type Line } from "../lib/brokely-lines";
 import { Appear, useReduceMotion } from "./motion";
 import { fonts, MIN_TOUCH, space, type } from "./theme";
 import { KeyboardSafe } from "./keyboard-safe";
 import { KeyboardScroll } from "./keyboard-scroll";
+import { NAME_LIMIT_MESSAGE } from "./sheet-parts";
 import { useTheme } from "./theme-context";
 
 /**
@@ -364,7 +365,7 @@ export function AmountComposer(props: { label: string; onSend: (text: string) =>
 export function TextComposer(props: {
   label: string;
   placeholder?: string;
-  /** A person's name: at most 2 words and 20 characters (D-116). */
+  /** A person's name: at most 4 words and 30 characters (D-116). */
   name?: boolean;
   onSend: (text: string) => void;
 }) {
@@ -386,10 +387,13 @@ function Composer({
 }) {
   const { colors } = useTheme();
   const [text, setText] = useState("");
+  /** Tried to type more than a name (D-116). */
+  const [over, setOver] = useState(false);
   const send = () => {
     if (text.trim() === "") return;
     onSend(text);
     setText("");
+    setOver(false);
   };
   return (
     <View style={{ gap: space.sm }}>
@@ -414,7 +418,10 @@ function Composer({
           ) : null}
           <TextInput
             value={text}
-            onChangeText={(t) => setText(name ? limitName(t) : t)}
+            onChangeText={(t) => {
+              if (name) setOver(nameOverLimit(t));
+              setText(name ? limitName(t) : t);
+            }}
             onSubmitEditing={send}
             keyboardType={amount ? "decimal-pad" : "default"}
             autoCapitalize={amount ? "none" : "words"}
@@ -461,6 +468,11 @@ function Composer({
           </Svg>
         </Pressable>
       </View>
+      {over ? (
+        <Text accessibilityLiveRegion="polite" style={[type.small, { color: colors.warning }]}>
+          {NAME_LIMIT_MESSAGE}
+        </Text>
+      ) : null}
     </View>
   );
 }

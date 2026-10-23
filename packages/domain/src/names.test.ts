@@ -1,23 +1,28 @@
 import { describe, expect, it } from "vitest";
-import { limitName } from "./names";
+import { limitName, nameOverLimit } from "./names";
 
-describe("names are at most 2 words and 20 characters (D-116)", () => {
-  it("keeps one or two words as typed", () => {
+describe("names are at most 4 words and 30 characters (D-116)", () => {
+  it("keeps full Malaysian names as typed", () => {
     expect(limitName("Aiman")).toBe("Aiman");
     expect(limitName("Aiman ")).toBe("Aiman ");
-    expect(limitName("Kak Sarah")).toBe("Kak Sarah");
+    expect(limitName("Tan Wei Ming")).toBe("Tan Wei Ming");
+    expect(limitName("Muhammad Aiman bin Ali")).toBe("Muhammad Aiman bin Ali");
+    expect(nameOverLimit("Muhammad Aiman bin Ali")).toBe(false);
   });
 
-  it("stops at the second word: the space for a third is not taken", () => {
-    expect(limitName("Kak Sarah ")).toBe("Kak Sarah");
-    expect(limitName("my friend from class")).toBe("my friend");
-    expect(limitName("Muhammad Aiman bin Ali")).toBe("Muhammad Aiman");
+  it("stops at the fourth word: the space for a fifth is not taken, and that is flagged", () => {
+    expect(limitName("Muhammad Aiman bin Ali ")).toBe("Muhammad Aiman bin Ali");
+    expect(nameOverLimit("Muhammad Aiman bin Ali ")).toBe(true);
+    expect(limitName("my friend from class who paid")).toBe("my friend from class");
+    expect(nameOverLimit("my friend from class who paid")).toBe(true);
   });
 
-  it("drops leading and double spaces, and cuts at 20 characters", () => {
+  it("drops leading and double spaces without flagging them, and cuts at 30 characters", () => {
     expect(limitName("  Ali")).toBe("Ali");
     expect(limitName("Ali   Baba")).toBe("Ali Baba");
-    expect(limitName("Abdulrahmanabdullah Ismail")).toBe("Abdulrahmanabdullah ");
-    expect(limitName("Abdulrahmanabdullah Ismail").length).toBe(20);
+    expect(nameOverLimit("Ali   Baba")).toBe(false);
+    const long = "Abdulrahmanabdullah Ismailsyahrul";
+    expect(limitName(long)).toHaveLength(30);
+    expect(nameOverLimit(long)).toBe(true);
   });
 });

@@ -2,7 +2,6 @@ import {
   evaluateAmount,
   formatRM,
   guessCategory,
-  limitName,
   noteSuggestions,
   sen,
   type LocalDate,
@@ -41,7 +40,7 @@ import { asTyped } from "../src/ui/allocation-fields";
 import { CategoryPicker } from "../src/ui/category-picker";
 import { Icon, type IconName } from "../src/ui/icon";
 import { PayBackBy } from "../src/ui/pay-back-by";
-import { Chip, Field } from "../src/ui/sheet-parts";
+import { Chip, Field, NameField } from "../src/ui/sheet-parts";
 import { fonts, MIN_TOUCH, radius, space, type } from "../src/ui/theme";
 import { KeyboardSafe } from "../src/ui/keyboard-safe";
 import { useTheme } from "../src/ui/theme-context";
@@ -533,10 +532,9 @@ export default function QuickAdd() {
               />
               {from === FRIEND ? (
                 <View style={{ gap: space.xs, marginTop: space.sm }}>
-                  <Field
+                  <NameField
                     value={person}
-                    onChange={(t) => setPerson(limitName(t))}
-                    expanded
+                    onChange={setPerson}
                     placeholder="Friend's name (optional)"
                   />
                   <Text style={[type.small, { color: colors.muted }]}>
@@ -546,10 +544,9 @@ export default function QuickAdd() {
               ) : null}
               {from === BORROWED ? (
                 <View style={{ gap: space.xs, marginTop: space.sm }}>
-                  <Field
+                  <NameField
                     value={person}
-                    onChange={(t) => setPerson(limitName(t))}
-                    expanded
+                    onChange={setPerson}
                     placeholder="Who did you borrow from?"
                   />
                   <Text style={[type.small, { color: colors.muted }]}>
@@ -613,10 +610,9 @@ export default function QuickAdd() {
                 </View>
               </Sticker>
               {moreKind !== "transfer" ? (
-                <Field
+                <NameField
                   value={person}
-                  onChange={(t) => setPerson(limitName(t))}
-                  expanded
+                  onChange={setPerson}
                   placeholder={
                     moreKind === "lent" ? "Who did you lend to?" : "Who did you borrow from?"
                   }
@@ -689,12 +685,7 @@ export default function QuickAdd() {
             <View style={{ gap: space.sm }}>
               <View style={{ flexDirection: "row", gap: space.sm }}>
                 <View style={{ flex: 3 }}>
-                  <Field
-                    value={friend}
-                    onChange={(t) => setFriend(limitName(t))}
-                    placeholder="Friend's name"
-                    expanded
-                  />
+                  <NameField value={friend} onChange={setFriend} placeholder="Friend's name" />
                 </View>
                 <View style={{ flex: 2 }}>
                   <Field
