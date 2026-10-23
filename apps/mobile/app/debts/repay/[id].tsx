@@ -25,11 +25,14 @@ const asTyped = (amount: Sen) =>
 export default function RepaySheet() {
   const { colors } = useTheme();
   const showUndo = useUndo();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  // `amount` comes from quick add's "Paying someone back?" (D-104), as typed there.
+  const { id, amount: typed } = useLocalSearchParams<{ id: string; amount?: string }>();
   const day = useMemo(() => today(), []);
   // Read once: a full repayment closes the debt while this sheet is closing.
   const debt = useMemo(() => readDebt(db, id), [id]);
-  const [amountText, setAmountText] = useState(debt ? asTyped(debt.outstandingSen) : "");
+  const [amountText, setAmountText] = useState(
+    typed ? typed : debt ? asTyped(debt.outstandingSen) : "",
+  );
   const [date, setDate] = useState<LocalDate>(day);
   const [problem, setProblem] = useState<string | null>(null);
   if (!debt || debt.status !== "open") return <Redirect href="/debts" />;

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Pressable, Text, View } from "react-native";
 import { categoryEmoji } from "../lib/essentials-meta";
 import { fonts, MIN_TOUCH, radius, space, type } from "./theme";
@@ -20,6 +20,7 @@ export function CategoryPicker({
   onSelect,
   title = "Category",
   emojiOf = categoryEmoji,
+  footer,
 }: {
   categories: readonly PickerCategory[];
   selectedId: string | null;
@@ -27,6 +28,8 @@ export function CategoryPicker({
   /** The small label above the choice, e.g. "From" for money in. */
   title?: string;
   emojiOf?: (name: string) => string;
+  /** Shown under the open list, e.g. "Paying someone back?" in quick add (D-104). */
+  footer?: (close: () => void) => ReactNode;
 }) {
   const { colors } = useTheme();
   const [open, setOpen] = useState(false);
@@ -104,6 +107,7 @@ export function CategoryPicker({
             );
           })
         : null}
+      {open && footer ? footer(() => setOpen(false)) : null}
     </View>
   );
 }

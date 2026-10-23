@@ -10,12 +10,13 @@ import {
   recordTransaction,
   type RepoResult,
 } from "@brokely/local-db";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams, type Href } from "expo-router";
 import { useMemo, useState } from "react";
 import { Pressable, ScrollView, Switch, Text, View } from "react-native";
 import { repo } from "../src/db/client";
 import { useRead } from "../src/db/use-read";
 import { categoriesByUse, guessHistory, recentNotesByCategory } from "../src/lib/category-order";
+import { readDebts } from "../src/lib/debts-model";
 import { categoryEmoji } from "../src/lib/essentials-meta";
 import { refusalText } from "../src/lib/messages";
 import { dayMonth, occurredAtFor, today } from "../src/lib/today";
@@ -365,6 +366,7 @@ export default function QuickAdd() {
                 setPickedByHand(true);
                 setCustomName("");
               }}
+              footer={() => <PayingBack amountText={amountText} />}
             />
           ) : null}
           {mode === "spent" && guessed ? (
@@ -677,6 +679,69 @@ function Segmented({ value, onChange }: { value: Mode; onChange: (mode: Mode) =>
           </Pressable>
         );
       })}
+    </View>
+  );
+}
+
+/**
+ * "Paying someone back?" under the category list (D-104). Paying back is never spending
+ * (FR-DEBT-06), so this is a shortcut to the debt's "I paid back" sheet, with the typed amount.
+ */
+function PayingBack({ amountText }: { amountText: string }) {
+  const { colors } = useTheme();
+  const owe = useRead((db) => readDebts(db).iOwe, []);
+  const go = (href: Href) => router.replace(href);
+  return (
+    <View
+      style={{
+        borderTopWidth: 2,
+        borderTopColor: colors.background,
+        padding: space.md,
+        gap: space.xs,
+      }}
+    >
+      <Text style={{ fontFamily: fonts.heavy, fontSize: 16, color: colors.text }}>
+        🤝 Paying someone back?
+      </Text>
+      <Text style={[type.small, { color: colors.muted }]}>
+        Pick the debt. Paying back isn't counted as spending.
+      </Text>
+      {owe.map((d) => (
+        <Pressable
+          key={d.id}
+          accessibilityRole="button"
+          accessibilityLabel={`Pay back ${d.name}, ${formatRM(d.outstandingSen)} left`}
+          onPress={() =>
+            go({
+              pathname: "/debts/repay/[id]",
+              params: amountText ? { id: d.id, amount: amountText } : { id: d.id },
+            })
+          }
+          style={({ pressed }) => ({
+            minHeight: MIN_TOUCH,
+            flexDirection: "row",
+            alignItems: "center",
+            opacity: pressed ? 0.7 : 1,
+          })}
+        >
+          <Text style={{ flex: 1, fontFamily: fonts.bold, fontSize: 16, color: colors.text }}>
+            {d.name}
+            {d.dueDate ? (
+              <Text style={[type.small, { color: colors.muted }]}>
+                {" "}
+                · due {dayMonth(d.dueDate)}
+              </Text>
+            ) : null}
+          </Text>
+          <Text style={{ fontFamily: fonts.heavy, fontSize: 16, color: colors.text }}>
+            {formatRM(d.outstandingSen)}
+          </Text>
+        </Pressable>
+      ))}
+      {owe.length === 0 ? (
+        <Text style={[type.small, { color: colors.muted }]}>You don't owe anyone right now.</Text>
+      ) : null}
+      <Button variant="link" label="See all in Debts" onPress={() => go("/debts")} />
     </View>
   );
 }
