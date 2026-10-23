@@ -15,6 +15,7 @@ import { useRead } from "../../src/db/use-read";
 import { homeStatus } from "../../src/lib/brokely-lines";
 import { categoryEmoji, essentialMeta } from "../../src/lib/essentials-meta";
 import { readHome } from "../../src/lib/home-model";
+import { readMascot } from "../../src/lib/mascot";
 import { dayMonth, today } from "../../src/lib/today";
 import { AnimatedAmount } from "../../src/ui/animated-amount";
 import { BrokelyAvatar } from "../../src/ui/chat";
@@ -24,9 +25,6 @@ import { fonts, radius, space, type } from "../../src/ui/theme";
 import { useTheme } from "../../src/ui/theme-context";
 import { FirstVisit, MonthSoFar } from "../../src/ui/home-no-plan";
 import { useUndo } from "../../src/ui/undo";
-
-/** The full mascot picture (author's main design). */
-const MASCOT = require("../../assets/mascot/main_design.webp");
 
 /** A forecast bound is a whole RM10 step (R-10), so it reads best without sen. */
 const wholeRM = (amount: Sen) => `RM${Math.round(amount / 100)}`;
@@ -48,21 +46,27 @@ export default function HomeScreen() {
   }, [day]);
   const home = useRead((db) => readHome(db, day), [day]);
   const nickname = useRead(getNickname);
+  // Brokely's stage and mood (D-105): worried when over pace or past the budget.
+  const overPace =
+    home.kind === "plan" &&
+    (home.leftInPlanSen < 0 ||
+      (home.forecast.kind === "shown" && home.forecast.value.pace === "over_pace"));
+  const mascot = useRead((db) => readMascot(db, day, overPace), [day, overPace]);
   const showUndo = useUndo();
   const { width } = useWindowDimensions();
   // The ring stays smaller than the amount beside it, also on narrow phones (D-58).
   const ringSize = Math.round(Math.min(104, Math.max(80, width * 0.24)));
 
-  // Home header (D-65): the full Brokely picture beside the greeting; no date line, the
-  // budget card already says how many days are left.
+  // Home header (D-65): Brokely beside the greeting, in its stage and mood (D-105); no date
+  // line, the budget card already says how many days are left.
   const header = (
     <View style={{ flexDirection: "row", alignItems: "center", gap: space.md }}>
       <Image
-        source={MASCOT}
+        source={mascot.picture}
         style={{ width: 72, height: 90 }}
         resizeMode="contain"
         accessibilityIgnoresInvertColors
-        accessibilityLabel="Brokely"
+        accessibilityLabel={mascot.label}
       />
       <View style={{ gap: 2, flex: 1 }}>
         <Text style={[type.title, { color: colors.text }]} numberOfLines={1}>
