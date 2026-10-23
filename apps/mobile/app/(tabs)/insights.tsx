@@ -1,4 +1,11 @@
-import { formatRM, inclusiveEnd, sen, type DateRange, type Sen } from "@brokely/domain";
+import {
+  formatRM,
+  inclusiveEnd,
+  sen,
+  type CategoryHeadsUp,
+  type DateRange,
+  type Sen,
+} from "@brokely/domain";
 import { router } from "expo-router";
 import { useState } from "react";
 import { Image, Pressable, Text, View } from "react-native";
@@ -97,6 +104,20 @@ export default function InsightsScreen() {
         />
       )}
 
+      {/* An optional category ahead of Meals or past its plan amount: say so, with one step (D-96) */}
+      {starting
+        ? null
+        : model.headsUps
+            .slice(0, 2)
+            .map((h) => (
+              <HeadsUp
+                key={h.categoryId}
+                headsUp={h}
+                daysLeft={model.daysLeft}
+                onSee={() => setSelected(h.categoryId)}
+              />
+            ))}
+
       {/* Daily average always with coverage (FR-INS-05) */}
       {starting ? null : (
         <Sticker style={{ padding: space.md, gap: space.xs }}>
@@ -178,6 +199,38 @@ export default function InsightsScreen() {
 }
 
 /** A: nothing to show yet and no plan. What Insights will show, and both ways in. */
+/** Category heads-up (D-96): the numbers, then one thing to try. Never on essentials. */
+function HeadsUp({
+  headsUp: h,
+  daysLeft,
+  onSee,
+}: {
+  headsUp: CategoryHeadsUp;
+  daysLeft: number;
+  onSee: () => void;
+}) {
+  const { colors } = useTheme();
+  const fact =
+    h.reason === "ahead_of_essential"
+      ? `${h.name} (${formatRM(h.spentSen)}) is ahead of ${h.essential.name} (${formatRM(h.essential.spentSen)}) this plan.`
+      : `${h.name} is at ${formatRM(h.spentSen)}, past the ${formatRM(h.plannedSen)} you planned for it.`;
+  const first = h.reason === "ahead_of_essential" ? `${h.essential.name} comes first: ` : "";
+  const step =
+    h.perDaySen !== null
+      ? `try keeping ${h.name} under ${formatRM(h.perDaySen)} a day for the next ${daysLeft} ${daysLeft === 1 ? "day" : "days"}.`
+      : `try pausing ${h.name} for a while, or give it more in Your plan.`;
+  return (
+    <Sticker background={colors.warningCard} style={{ padding: space.md, gap: space.xs }}>
+      <Heading>Heads-up</Heading>
+      <Body>
+        {fact} {first}
+        {first ? step : step.charAt(0).toUpperCase() + step.slice(1)}
+      </Body>
+      <Button variant="secondary" label={`See ${h.name} records`} onPress={onSee} />
+    </Sticker>
+  );
+}
+
 function BrandNew() {
   const { colors } = useTheme();
   const preview = [

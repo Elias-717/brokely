@@ -11,6 +11,7 @@ import {
   percentHalfEven,
   sen,
   spendingByCategory,
+  todayGuide,
   type Forecast,
   type LocalDate,
   type Sen,
@@ -106,6 +107,12 @@ export type HomeModel =
       readonly perDaySen: Sen | null;
       /** Left in plan minus bills still to come and unused set-asides (D-58). */
       readonly freeSen: Sen;
+      /** Today's share, what is left of it, and about a day after today (D-95); null at the end. */
+      readonly today: {
+        readonly todaySen: Sen;
+        readonly leftTodaySen: Sen;
+        readonly thenPerDaySen: Sen | null;
+      } | null;
       /** % of the budget spent: the real figure for the label, capped 0…1 for the circle. */
       readonly usedPercent: number;
       readonly usedArc: number;
@@ -206,6 +213,22 @@ export function readHome(db: Db, today: LocalDate): HomeModel {
     setAsideLeftSen,
     daysLeft,
   });
+  // Left to spend today (D-95): everyday spending dated today, without bills, estimates and
+  // set-asides (BR-18), since those were never part of the free money.
+  const billTransactionIds = new Set(items.map((i) => i.transactionId).filter(Boolean));
+  const setAsideIds = new Set(
+    plan.allocations.filter((a) => a.kind === "set_aside").map((a) => a.categoryId),
+  );
+  const todaysEveryday = spendingByCategory(
+    transactions.filter(
+      (t) => t.localDate === today && !billTransactionIds.has(t.id) && !t.isEstimate,
+    ),
+    directionOf,
+  );
+  const everydayTodaySen = sen(
+    [...todaysEveryday].reduce((sum, [id, amount]) => sum + (setAsideIds.has(id) ? 0 : amount), 0),
+  );
+  const todayShare = todayGuide({ freeSen: guide.freeSen, everydayTodaySen, daysLeft });
   const used = budgetUsed(progress.spentSen, budgetSen);
   const status =
     leftInPlanSen < 0
@@ -253,6 +276,7 @@ export function readHome(db: Db, today: LocalDate): HomeModel {
     leftInPlanSen,
     perDaySen: guide.perDaySen,
     freeSen: guide.freeSen,
+    today: todayShare,
     usedPercent: used ? percentHalfEven(used.label) : 0,
     usedArc: used?.arc ?? 0,
     status,

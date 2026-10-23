@@ -1,4 +1,4 @@
-import { formatRM, type Sen } from "@brokely/domain";
+import { formatRM, sen, type Sen, type TodayGuide } from "@brokely/domain";
 import {
   checkInNoSpending,
   completeEndedCycles,
@@ -182,20 +182,18 @@ export default function HomeScreen() {
 
         <View style={{ height: 1, backgroundColor: colors.onHero, opacity: 0.18 }} />
 
-        {/* About how much a day keeps the plan, after bills and set-asides (D-58) */}
-        {home.perDaySen !== null ? (
+        {/* Left to spend today, then about a day after (D-58, D-95), after bills and set-asides */}
+        {home.today ? (
           <View style={{ flexDirection: "row", alignItems: "center", gap: space.md }}>
             <View style={{ flex: 1, gap: 2 }}>
               <Text style={{ color: colors.onHero }} numberOfLines={1} adjustsFontSizeToFit>
                 <Text style={{ fontFamily: fonts.heavy, fontSize: 24 }}>
-                  {formatRM(home.freeSen > 0 ? home.perDaySen : (0 as Sen))}
+                  {formatRM(sen(Math.max(0, home.today.leftTodaySen)))}
                 </Text>
-                <Text style={{ fontFamily: fonts.body, fontSize: 16 }}> / day</Text>
+                <Text style={{ fontFamily: fonts.body, fontSize: 16 }}> left today</Text>
               </Text>
               <Text style={[type.small, { color: colors.onHero, opacity: 0.85 }]}>
-                {home.freeSen > 0
-                  ? `Suggested for the next ${home.daysLeft} ${home.daysLeft === 1 ? "day" : "days"}`
-                  : "Bills to come and set-asides need what's left"}
+                {todayLine(home.today, home.daysLeft, home.freeSen)}
                 {home.stillToComeSen > 0 && home.freeSen > 0
                   ? `, after ${formatRM(home.stillToComeSen)} of bills`
                   : ""}
@@ -438,6 +436,22 @@ export default function HomeScreen() {
 }
 
 /** A card title in the text font, with an optional amount and a small action on the right. */
+/** The small line under "left today" (D-95): facts and the next step, never a telling-off. */
+function todayLine(guide: TodayGuide, daysLeft: number, freeSen: Sen): string {
+  if (freeSen <= 0 && guide.todaySen === 0) return "Bills to come and set-asides need what's left";
+  const after = daysLeft - 1;
+  const then =
+    guide.thenPerDaySen !== null
+      ? `about ${formatRM(guide.thenPerDaySen)} a day for the next ${after} ${after === 1 ? "day" : "days"}`
+      : null;
+  if (guide.leftTodaySen < 0) {
+    const over = `${formatRM(sen(-guide.leftTodaySen))} over today's ${formatRM(guide.todaySen)}`;
+    return then ? `${over}. Then ${then}` : over;
+  }
+  const share = `of ${formatRM(guide.todaySen)} for today`;
+  return then ? `${share} · then ${then}` : `${share}, the last day of this plan`;
+}
+
 function SectionHeader({
   title,
   detail,

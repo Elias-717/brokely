@@ -1,5 +1,7 @@
 import {
+  categoryHeadsUps,
   computeProgress,
+  daysBetween,
   FORECAST_MIN_COVERAGE_PERCENT,
   FORECAST_MIN_DAYS,
   forecastCanShow,
@@ -11,6 +13,7 @@ import {
   sen,
   shareOfSpending,
   spendingByCategory,
+  type CategoryHeadsUp,
   type DateRange,
   type Forecast,
   type LocalDate,
@@ -62,6 +65,9 @@ export type InsightsModel =
       readonly slices: readonly CategoryLine[];
       /** Every category with an amount in the plan or spending (FR-INS-02). */
       readonly lines: readonly CategoryLine[];
+      /** Optional categories ahead of Meals or past their plan amount, biggest first (D-96). */
+      readonly headsUps: readonly CategoryHeadsUp[];
+      readonly daysLeft: number;
       readonly dailyAverageSen: Sen | null;
       readonly coveragePercent: number | null;
       readonly coveredDays: number;
@@ -125,6 +131,18 @@ export function readInsights(db: Db, today: LocalDate): InsightsModel {
       };
     });
 
+  const daysLeft = Math.max(0, daysBetween(today, range.endExclusive));
+  const headsUps = categoryHeadsUps(
+    lines.map((l) => ({
+      id: l.id,
+      name: l.name,
+      kind: l.kind,
+      plannedSen: l.allocationSen,
+      spentSen: l.spentSen,
+    })),
+    daysLeft,
+  );
+
   const planDays = lengthInDays({ start: trackingStart, endExclusive: range.endExclusive });
   const coveragePercent = progress.coverage ? percentHalfEven(progress.coverage) : null;
 
@@ -138,6 +156,8 @@ export function readInsights(db: Db, today: LocalDate): InsightsModel {
     stillToComeSen: progress.stillToComeSen,
     slices: lines.filter((l) => l.spentSen > 0).sort((a, b) => b.spentSen - a.spentSen),
     lines: [...lines].sort((a, b) => kindOrder(a.kind) - kindOrder(b.kind)),
+    headsUps,
+    daysLeft,
     dailyAverageSen: progress.dailyAverage ? roundHalfEven(progress.dailyAverage) : null,
     coveragePercent,
     coveredDays: progress.coveredDays,

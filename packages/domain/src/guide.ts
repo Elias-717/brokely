@@ -48,3 +48,46 @@ export function budgetUsed(spentSen: Sen, budgetSen: Sen): { label: Ratio; arc: 
     arc: Math.min(1, spent / budgetSen),
   };
 }
+
+/**
+ * Left to spend today (D-95): today's share of the free money, minus everyday spending already
+ * logged today. Today's share is fixed for the day: it is worked out as if today's spending had
+ * not happened yet, so logging a meal lowers "left today" instead of moving the target.
+ * Everyday spending leaves out bill payments, estimates and set-aside spending (BR-18), because
+ * those were never part of the free money. Display only: nothing is stored or blocked (D-63).
+ */
+export interface TodayGuideInput {
+  /** Free money now, from `dailyGuide` (today's spending already taken off). */
+  readonly freeSen: Sen;
+  /** Everyday spending dated today. */
+  readonly everydayTodaySen: Sen;
+  /** Days from today to the end, today included. */
+  readonly daysLeft: number;
+}
+
+export interface TodayGuide {
+  /** Today's share at the start of the day, rounded half-even (R-03); never negative. */
+  readonly todaySen: Sen;
+  /** todaySen − today's everyday spending; negative when over today's share. */
+  readonly leftTodaySen: Sen;
+  /** About a day for the days after today, if today's share is used up; null on the last day. */
+  readonly thenPerDaySen: Sen | null;
+}
+
+export function todayGuide(input: TodayGuideInput): TodayGuide | null {
+  if (input.daysLeft <= 0) return null;
+  const startFree = Math.max(0, input.freeSen + input.everydayTodaySen);
+  const todaySen = roundHalfEven(divideSen(sen(startFree), input.daysLeft));
+  const leftTodaySen = sen(todaySen - input.everydayTodaySen);
+  const daysAfter = input.daysLeft - 1;
+  return {
+    todaySen,
+    leftTodaySen,
+    thenPerDaySen:
+      daysAfter > 0
+        ? roundHalfEven(
+            divideSen(sen(Math.max(0, input.freeSen - Math.max(0, leftTodaySen))), daysAfter),
+          )
+        : null,
+  };
+}

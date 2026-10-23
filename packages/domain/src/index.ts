@@ -16,3 +16,4 @@ export * from "./suggestions";
 export * from "./category-guess";
 export * from "./notifications";
 export * from "./guide";
+export * from "./category-balance";
