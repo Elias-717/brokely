@@ -24,11 +24,11 @@ import { fonts, space, type } from "../src/ui/theme";
 import { useTheme } from "../src/ui/theme-context";
 
 const KINDS: { kind: NotificationKind; title: string; detail: string }[] = [
-  { kind: "bill_due", title: "🧾 Bills due", detail: "9:00 on the due date · opens Mark paid" },
-  { kind: "evening", title: "🌙 Evening check-in", detail: "Only if nothing is logged today" },
-  { kind: "debt_due", title: "🤝 Debts due back", detail: "9:00 on the date you set" },
-  { kind: "pace", title: "📈 Pace heads-up", detail: "At most once a week, when over plan" },
-  { kind: "streak", title: "🔥 Streaks", detail: "After 3, 7, 14… days in a row" },
+  { kind: "bill_due", title: "Bills due", detail: "9:00 on the due date · opens Mark paid" },
+  { kind: "evening", title: "Evening check-in", detail: "Only if nothing is logged today" },
+  { kind: "debt_due", title: "Debts due back", detail: "9:00 on the date you set" },
+  { kind: "pace", title: "Pace heads-up", detail: "At most once a week, when over plan" },
+  { kind: "streak", title: "Streaks", detail: "After 3, 7, 14… days in a row" },
 ];
 
 /**
@@ -120,7 +120,7 @@ export default function NotificationsScreen() {
           </Row>
           <Row
             title="Tone"
-            detail={s.tone === "cheeky" ? "Nags kindly until you log 😘" : undefined}
+            detail={s.tone === "cheeky" ? "Nags kindly until you log" : undefined}
           >
             <View style={{ flexDirection: "row", gap: 6 }}>
               <Chip
@@ -129,7 +129,7 @@ export default function NotificationsScreen() {
                 onPress={() => change({ tone: "friendly" })}
               />
               <Chip
-                label="Cheeky 😘"
+                label="Cheeky"
                 selected={s.tone === "cheeky"}
                 onPress={() => change({ tone: "cheeky" })}
               />
