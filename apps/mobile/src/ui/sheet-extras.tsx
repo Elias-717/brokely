@@ -4,7 +4,6 @@ import type { ReactNode } from "react";
 import { Pressable, Text, View } from "react-native";
 import { useRead } from "../db/use-read";
 import { readDebts } from "../lib/debts-model";
-import { categoryEmoji } from "../lib/essentials-meta";
 import {
   billHistory,
   categoryInPlan,
@@ -154,7 +153,7 @@ export function SpentExtras({
       meter = (
         <Sticker offset={2} rounded={14} style={{ padding: 12, gap: 2 }}>
           <Text style={{ fontFamily: fonts.heavy, fontSize: 15, color: colors.text }}>
-            {categoryEmoji(category.name)} {category.name}
+            {category.name}
           </Text>
           <Text accessibilityLiveRegion="polite" style={[type.body, { color: colors.text }]}>
             {left >= 0

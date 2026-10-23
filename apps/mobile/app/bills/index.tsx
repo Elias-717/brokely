@@ -7,7 +7,7 @@ import { repo } from "../../src/db/client";
 import { useRead } from "../../src/db/use-read";
 import { BILL_PRESETS, billTypeOf } from "../../src/lib/bill-types";
 import { readBills, type BillItem, type BillsModel } from "../../src/lib/bills-model";
-import { categoryEmoji } from "../../src/lib/essentials-meta";
+import { Icon } from "../../src/ui/icon";
 import { dayMonth, today } from "../../src/lib/today";
 import { Button, Heading, PageScreen, Sticker } from "../../src/ui/components";
 import { Tabs } from "../../src/ui/tabs";
@@ -250,7 +250,7 @@ function Row({ item, day, first }: { item: BillItem; day: LocalDate; first: bool
       <DateBadge date={item.dueDate} tone={late ? "late" : today ? "today" : "plain"} />
       <View style={{ flex: 1, gap: 1 }}>
         <Text style={{ fontFamily: fonts.heavy, fontSize: 16, lineHeight: 22, color: colors.text }}>
-          {item.name} {categoryEmoji(item.categoryName)}
+          {item.name}
         </Text>
         {urgent ? (
           <Text style={{ fontFamily: fonts.heavy, fontSize: 14, color: colors.text }}>
@@ -299,7 +299,7 @@ function DoneRow({ item, first }: { item: BillItem; first: boolean }) {
       <DateBadge date={item.dueDate} tone="done" />
       <View style={{ flex: 1, gap: 1 }}>
         <Text style={{ fontFamily: fonts.heavy, fontSize: 16, lineHeight: 22, color: colors.text }}>
-          {item.name} {categoryEmoji(item.categoryName)}
+          {item.name}
         </Text>
         <Text style={[type.small, { color: colors.muted }]}>
           {paid
@@ -363,7 +363,7 @@ function YourBills({ bills, day }: { bills: BillsModel["bills"]; day: LocalDate 
                   justifyContent: "center",
                 }}
               >
-                <Text style={{ fontSize: 20 }}>{billTypeOf(bill.categoryName).emoji}</Text>
+                <Icon name={billTypeOf(bill.categoryName).icon} size={22} />
               </View>
               <View style={{ flex: 1, gap: 1 }}>
                 <Text
@@ -469,10 +469,17 @@ function NothingYet() {
             <Sticker
               rounded={12}
               offset={2}
-              style={{ minHeight: MIN_TOUCH, paddingHorizontal: 14, justifyContent: "center" }}
+              style={{
+                minHeight: MIN_TOUCH,
+                paddingHorizontal: 14,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 6,
+              }}
             >
+              <Icon name={p.icon} size={20} />
               <Text style={{ fontFamily: fonts.heavy, fontSize: 15, color: colors.text }}>
-                {p.emoji} {p.label}
+                {p.label}
               </Text>
             </Sticker>
           </Pressable>

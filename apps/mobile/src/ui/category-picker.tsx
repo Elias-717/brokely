@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { Pressable, Text, View } from "react-native";
-import { categoryEmoji } from "../lib/essentials-meta";
+import { categoryIcon } from "../lib/essentials-meta";
+import { Icon, type IconName } from "./icon";
 import { fonts, MIN_TOUCH, radius, space, type } from "./theme";
 import { useTheme } from "./theme-context";
 
@@ -19,7 +20,7 @@ export function CategoryPicker({
   selectedId,
   onSelect,
   title = "Category",
-  emojiOf = categoryEmoji,
+  iconOf = categoryIcon,
   footer,
 }: {
   categories: readonly PickerCategory[];
@@ -27,14 +28,13 @@ export function CategoryPicker({
   onSelect: (id: string) => void;
   /** The small label above the choice, e.g. "From" for money in. */
   title?: string;
-  emojiOf?: (name: string) => string;
+  iconOf?: (name: string) => IconName;
   /** Shown under the open list, e.g. "Paying someone back?" in quick add (D-104). */
   footer?: (close: () => void) => ReactNode;
 }) {
   const { colors } = useTheme();
   const [open, setOpen] = useState(false);
   const selected = categories.find((c) => c.id === selectedId);
-  const label = (c: PickerCategory) => `${emojiOf(c.name) || "🏷️"}  ${c.name}`;
 
   return (
     <View
@@ -62,9 +62,12 @@ export function CategoryPicker({
       >
         <View style={{ flex: 1 }}>
           <Text style={[type.small, { color: colors.muted }]}>{title}</Text>
-          <Text style={{ fontFamily: fonts.heavy, fontSize: 17, color: colors.text }}>
-            {selected ? label(selected) : `Choose ${title.toLowerCase()}`}
-          </Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}>
+            {selected ? <Icon name={iconOf(selected.name)} size={22} /> : null}
+            <Text style={{ fontFamily: fonts.heavy, fontSize: 17, color: colors.text }}>
+              {selected ? selected.name : `Choose ${title.toLowerCase()}`}
+            </Text>
+          </View>
         </View>
         <Text style={[type.heading, { color: colors.muted }]}>{open ? "▴" : "▾"}</Text>
       </Pressable>
@@ -85,6 +88,7 @@ export function CategoryPicker({
                   minHeight: MIN_TOUCH,
                   flexDirection: "row",
                   alignItems: "center",
+                  gap: space.sm,
                   paddingHorizontal: space.md,
                   borderTopWidth: 1,
                   borderTopColor: colors.background,
@@ -92,6 +96,7 @@ export function CategoryPicker({
                   opacity: pressed ? 0.7 : 1,
                 })}
               >
+                <Icon name={iconOf(c.name)} size={22} />
                 <Text
                   style={{
                     flex: 1,
@@ -100,7 +105,7 @@ export function CategoryPicker({
                     color: colors.text,
                   }}
                 >
-                  {label(c)}
+                  {c.name}
                 </Text>
                 {on ? <Text style={[type.strong, { color: colors.primary }]}>✓</Text> : null}
               </Pressable>

@@ -9,7 +9,8 @@ import {
   type Db,
   type TransactionView,
 } from "@brokely/local-db";
-import { categoryEmoji } from "./essentials-meta";
+import type { IconName } from "../ui/icon-paths";
+import { categoryIcon } from "./essentials-meta";
 
 export type RecordFilter = "all" | "spending" | "money-in" | "debts" | "bills";
 
@@ -21,7 +22,7 @@ export type RecordRow =
       readonly kind: "transaction";
       readonly id: string;
       readonly date: LocalDate;
-      readonly emoji: string;
+      readonly icon: IconName;
       readonly title: string;
       readonly detail: string;
       readonly amount: string;
@@ -126,13 +127,13 @@ export function readRecords(db: Db, filter: RecordFilter): RecordDay[] {
       kind: "transaction",
       id: t.id,
       date: t.localDate,
-      emoji: categoryName
-        ? categoryEmoji(categoryName) || "🧾"
+      icon: categoryName
+        ? categoryIcon(categoryName)
         : style === "money-in"
-          ? "💸"
+          ? "coins"
           : debt
-            ? "🤝"
-            : "🔁",
+            ? "handshake"
+            : "arrows-left-right",
       title,
       detail,
       amount: `${sign}${formatRM(isSplit ? sen(mineSen) : t.amountSen)}`,

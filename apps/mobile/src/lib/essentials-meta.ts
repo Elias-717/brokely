@@ -1,4 +1,5 @@
 import type { Period } from "@brokely/domain";
+import type { IconName } from "../ui/icon-paths";
 
 /**
  * How each essential card asks its questions (D-35, D-36). Matched by the default category
@@ -10,8 +11,8 @@ import type { Period } from "@brokely/domain";
  * - "bill-or-topup": a monthly bill on a set day, or top-ups as needed (count style).
  */
 export interface EssentialMeta {
-  readonly emoji: string;
-  /** Brokely's opener, e.g. "Let's plan your meals 🍛". */
+  readonly icon: IconName;
+  /** Brokely's opener, e.g. "Let's plan your meals". */
   readonly intro: string;
   /** The thing it counts, for "about how much each …". */
   readonly unit: string;
@@ -22,36 +23,36 @@ export interface EssentialMeta {
 
 const META: Record<string, EssentialMeta> = {
   Meals: {
-    emoji: "🍛",
+    icon: "bowl-food",
     intro: "Meals first! A fed brain studies better, so this one comes before everything else.",
     unit: "time",
     style: "daily",
     likely: "day",
   },
   "Home necessities": {
-    emoji: "🧴",
+    icon: "basket",
     intro: "Home necessities next: groceries, toiletries, cleaning things",
     unit: "time",
     style: "often",
     likely: "week",
   },
   Laundry: {
-    emoji: "🧺",
+    icon: "t-shirt",
     intro: "Laundry time. No need to know dates, washes happen when clothes run out.",
     unit: "wash",
     style: "count",
     likely: "month",
   },
-  Transport: { emoji: "🚌", intro: "Getting around", unit: "time", style: "often", likely: "day" },
+  Transport: { icon: "bus", intro: "Getting around", unit: "time", style: "often", likely: "day" },
   "Phone & internet": {
-    emoji: "📱",
+    icon: "device-mobile",
     intro: "Phone and internet",
     unit: "top-up",
     style: "bill-or-topup",
     likely: "month",
   },
   Health: {
-    emoji: "💊",
+    icon: "first-aid-kit",
     intro: "Health, just in case",
     unit: "time",
     style: "often",
@@ -60,7 +61,7 @@ const META: Record<string, EssentialMeta> = {
 };
 
 const OTHER: EssentialMeta = {
-  emoji: "✨",
+  icon: "tag",
   intro: "",
   unit: "time",
   style: "often",
@@ -71,24 +72,24 @@ export function essentialMeta(name: string): EssentialMeta {
   return META[name] ?? { ...OTHER, intro: `Let's plan ${name.toLowerCase()}` };
 }
 
-/** A small picture for every default category, used in "Saved RM12.00 · Meals 🍛". */
-const EMOJI: Record<string, string> = {
-  "Snacks & treats": "🍪",
-  "Fun & trips": "🎉",
-  Shopping: "🛍️",
-  "Gifts & charity": "💝",
-  Other: "✨",
-  Emergency: "🛟",
-  Savings: "🐷",
+/** An icon for every default category (D-108); the student's own categories get a tag. */
+const ICONS: Record<string, IconName> = {
+  "Snacks & treats": "cookie",
+  "Fun & trips": "airplane-tilt",
+  Shopping: "shopping-bag",
+  "Gifts & charity": "gift",
+  Other: "dots-three-circle",
+  Emergency: "lifebuoy",
+  Savings: "piggy-bank",
   // Created from bill types (D-57)
-  "Housing & Rent": "🏠",
-  Utilities: "💡",
-  "Loans & Debt": "🏦",
-  Subscriptions: "📺",
-  Insurance: "🛡️",
-  Education: "🎓",
+  "Housing & Rent": "house",
+  Utilities: "lightning",
+  "Loans & Debt": "hand-coins",
+  Subscriptions: "play-circle",
+  Insurance: "shield-check",
+  Education: "graduation-cap",
 };
 
-export function categoryEmoji(name: string): string {
-  return META[name]?.emoji ?? EMOJI[name] ?? "";
+export function categoryIcon(name: string): IconName {
+  return META[name]?.icon ?? ICONS[name] ?? "tag";
 }

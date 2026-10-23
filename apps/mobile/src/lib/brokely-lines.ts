@@ -192,7 +192,7 @@ export const homeStatus: Record<
 
 /** What Brokely says in an essential-card chat (D-35, D-36). */
 export const essentialLines = {
-  intro: (intro: string, emoji: string): Line => [`${intro} ${emoji}`],
+  intro: (intro: string): Line => [intro],
 
   askHowOften: (name: string): Line => [`How often do you spend on ${name.toLowerCase()}?`],
 

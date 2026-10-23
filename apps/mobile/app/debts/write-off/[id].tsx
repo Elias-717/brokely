@@ -5,7 +5,6 @@ import { useMemo, useState } from "react";
 import { Text, View } from "react-native";
 import { db, repo } from "../../../src/db/client";
 import { readDebt } from "../../../src/lib/debts-model";
-import { categoryEmoji } from "../../../src/lib/essentials-meta";
 import { refusalText } from "../../../src/lib/messages";
 import { occurredAtFor, today } from "../../../src/lib/today";
 import { Button } from "../../../src/ui/components";
@@ -70,14 +69,14 @@ export default function WriteOffSheet() {
       {toMe ? (
         <>
           <SheetNote
-            title={`Counts as spending in ${category?.name ?? "…"} ${category ? categoryEmoji(category.name) : ""}`.trim()}
+            title={`Counts as spending in ${category?.name ?? "…"}`}
             detail={`The money isn't coming back, so it comes off your plan today. ${debt.name}'s debt closes.`}
           />
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
             {debt.categories.map((c) => (
               <Chip
                 key={c.id}
-                label={`${c.name} ${categoryEmoji(c.name)}`.trim()}
+                label={c.name}
                 selected={c.id === categoryId}
                 onPress={() => {
                   setCategoryId(c.id);

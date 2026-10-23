@@ -23,6 +23,7 @@ import { useMemo, useState } from "react";
 import { Text, View } from "react-native";
 import { db, repo } from "../../src/db/client";
 import { BILL_PRESETS, BILL_TYPES, billTypeOf, OTHER_BILLS } from "../../src/lib/bill-types";
+import type { IconName } from "../../src/ui/icon";
 import { describeRepeat } from "../../src/lib/bills-model";
 import { refusalText } from "../../src/lib/messages";
 import { dayMonth, today } from "../../src/lib/today";
@@ -37,13 +38,13 @@ import { useUndo } from "../../src/ui/undo";
 
 type RepeatKind = RepeatRule["kind"];
 
-const KINDS: { kind: RepeatKind; label: string; emoji: string }[] = [
-  { kind: "monthly", label: "Monthly", emoji: "🗓️" },
-  { kind: "weekdays", label: "On some weekdays", emoji: "📆" },
-  { kind: "every_n_weeks", label: "Every few weeks", emoji: "🔁" },
-  { kind: "every_n_days", label: "Every few days", emoji: "⏱️" },
-  { kind: "daily", label: "Every day", emoji: "☀️" },
-  { kind: "once", label: "Once", emoji: "1️⃣" },
+const KINDS: { kind: RepeatKind; label: string; icon: IconName }[] = [
+  { kind: "monthly", label: "Monthly", icon: "calendar-blank" },
+  { kind: "weekdays", label: "On some weekdays", icon: "calendar-check" },
+  { kind: "every_n_weeks", label: "Every few weeks", icon: "arrows-clockwise" },
+  { kind: "every_n_days", label: "Every few days", icon: "timer" },
+  { kind: "daily", label: "Every day", icon: "sun" },
+  { kind: "once", label: "Once", icon: "number-circle-one" },
 ];
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -185,7 +186,7 @@ function BillForm({
           setTypeName(id);
           setProblem(null);
         }}
-        emojiOf={(n) => BILL_TYPES.find((t) => t.name === n)?.emoji ?? ""}
+        iconOf={(n) => BILL_TYPES.find((t) => t.name === n)?.icon ?? "receipt"}
       />
       {typeName === OTHER_BILLS ? (
         <Field
@@ -201,7 +202,7 @@ function BillForm({
         categories={KINDS.map((k) => ({ id: k.kind, name: k.label }))}
         selectedId={kind}
         onSelect={(id) => setKind(id as RepeatKind)}
-        emojiOf={(n) => KINDS.find((k) => k.label === n)?.emoji ?? ""}
+        iconOf={(n) => KINDS.find((k) => k.label === n)?.icon ?? "calendar-blank"}
       />
       {kind === "weekdays" ? (
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>

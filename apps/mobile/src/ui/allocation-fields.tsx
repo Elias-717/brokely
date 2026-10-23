@@ -2,7 +2,6 @@ import { parseAmount, sen, type AllocationInput, type Sen } from "@brokely/domai
 import type { listCategories } from "@brokely/local-db";
 import type { ReactNode } from "react";
 import { Text, View } from "react-native";
-import { categoryEmoji } from "../lib/essentials-meta";
 import { Heading, Sticker } from "./components";
 import { Field } from "./sheet-parts";
 import { fonts, space, type } from "./theme";
@@ -151,9 +150,7 @@ export function AllocationFields({
                 style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}
               >
                 <View style={{ flex: 1 }}>
-                  <Text style={[type.strong, { color: colors.text }]}>
-                    {c.name} {categoryEmoji(c.name)}
-                  </Text>
+                  <Text style={[type.strong, { color: colors.text }]}>{c.name}</Text>
                   {hints?.get(c.id) ? (
                     <Text style={[type.small, { color: colors.muted }]}>{hints.get(c.id)}</Text>
                   ) : null}

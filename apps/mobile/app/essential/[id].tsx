@@ -154,7 +154,7 @@ function Chat({
     const hint = tip
       ? [say.healthyHint(category.name, tip.percent, tip.totalSen, daily ? tip.perDaySen : null)]
       : [];
-    chat.say([say.intro(meta.intro, meta.emoji), ...hint, question], step);
+    chat.say([say.intro(meta.intro), ...hint, question], step);
     // Runs only when the chat first shows.
   }, []);
 

@@ -27,7 +27,6 @@ import { useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { repo } from "../../src/db/client";
 import { useRead } from "../../src/db/use-read";
-import { categoryEmoji } from "../../src/lib/essentials-meta";
 import { refusalText } from "../../src/lib/messages";
 import { dayMonth, occurredAtFor, today } from "../../src/lib/today";
 import { Button } from "../../src/ui/components";
@@ -274,8 +273,7 @@ function Sheet({
                 Up to {formatRM(refundable)} can be refunded
               </Text>
               <Text style={[type.small, { color: colors.muted }]}>
-                It goes back to {categoryName ?? "its category"}{" "}
-                {categoryName ? categoryEmoji(categoryName) : ""}, so that spending drops by the
+                It goes back to {categoryName ?? "its category"}, so that spending drops by the
                 refund.
               </Text>
             </View>

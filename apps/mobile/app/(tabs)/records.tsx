@@ -9,6 +9,7 @@ import { useRead } from "../../src/db/use-read";
 import { readRecords, type RecordFilter, type RecordRow } from "../../src/lib/records-model";
 import { dayMonth, today, weekdayName } from "../../src/lib/today";
 import { fonts, MIN_TOUCH, space, type } from "../../src/ui/theme";
+import { Icon } from "../../src/ui/icon";
 import { useTheme } from "../../src/ui/theme-context";
 import { useUndo } from "../../src/ui/undo";
 import { pickDate } from "../../src/ui/date-picker";
@@ -231,7 +232,11 @@ function Row({ row, onPress }: { row: RecordRow; onPress: () => void }) {
             justifyContent: "center",
           }}
         >
-          <Text style={{ fontSize: 20 }}>{isCheckIn ? "✓" : row.emoji}</Text>
+          {isCheckIn ? (
+            <Text style={{ fontSize: 20, color: colors.text }}>✓</Text>
+          ) : (
+            <Icon name={row.icon} size={24} />
+          )}
         </View>
         <View style={{ flex: 1 }}>
           <Text style={[type.strong, { color: colors.text }]} numberOfLines={1}>

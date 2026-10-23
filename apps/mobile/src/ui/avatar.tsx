@@ -21,7 +21,7 @@ export function Avatar({
 }) {
   const { colors } = useTheme();
   const [failed, setFailed] = useState(false);
-  const initial = (name?.trim()[0] ?? "🥦").toUpperCase();
+  const initial = (name?.trim()[0] ?? "B").toUpperCase();
   const offset = 2;
   const circle = { width: size, height: size, borderRadius: size / 2 };
   return (

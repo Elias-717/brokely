@@ -4,7 +4,6 @@ import { router, useLocalSearchParams } from "expo-router";
 import { Text, View } from "react-native";
 import { repo } from "../../src/db/client";
 import { useRead } from "../../src/db/use-read";
-import { categoryEmoji } from "../../src/lib/essentials-meta";
 import { dayMonth } from "../../src/lib/today";
 import { Button, Empty, Heading, PageScreen, Sticker } from "../../src/ui/components";
 import { space, type } from "../../src/ui/theme";
@@ -96,9 +95,7 @@ function Line({ line }: { line: SummaryLine }) {
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: space.sm, minHeight: 44 }}>
       <View style={{ flex: 1 }}>
-        <Text style={[type.strong, { color: colors.text }]}>
-          {line.name} {categoryEmoji(line.name)}
-        </Text>
+        <Text style={[type.strong, { color: colors.text }]}>{line.name}</Text>
         <Text style={[type.small, { color: colors.muted }]}>
           {formatRM(line.originalSen)} → {formatRM(line.finalSen)}
           {line.kind === "set_aside" ? " · set aside" : ""}

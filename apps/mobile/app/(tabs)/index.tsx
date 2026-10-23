@@ -13,7 +13,8 @@ import { Image, Pressable, Text, useWindowDimensions, View } from "react-native"
 import { repo } from "../../src/db/client";
 import { useRead } from "../../src/db/use-read";
 import { homeStatus } from "../../src/lib/brokely-lines";
-import { categoryEmoji, essentialMeta } from "../../src/lib/essentials-meta";
+import { categoryIcon, essentialMeta } from "../../src/lib/essentials-meta";
+import { Icon, type IconName } from "../../src/ui/icon";
 import { readHome } from "../../src/lib/home-model";
 import { readMascot } from "../../src/lib/mascot";
 import { dayMonth, today } from "../../src/lib/today";
@@ -275,7 +276,7 @@ export default function HomeScreen() {
               key={c.name}
               style={{ flexDirection: "row", gap: space.sm, alignItems: "center" }}
             >
-              <IconBubble emoji={categoryEmoji(c.name) || "🏷️"} />
+              <IconBubble icon={categoryIcon(c.name)} />
               <View style={{ flex: 1, gap: 4 }}>
                 <View
                   style={{ flexDirection: "row", justifyContent: "space-between", gap: space.sm }}
@@ -332,7 +333,7 @@ export default function HomeScreen() {
               </Text>
               <Text style={[type.body, { color: colors.text }]}>
                 {home.card.position === 1 ? "Let's cover your essentials. Up next: " : "Up next: "}
-                <Text style={{ fontFamily: fonts.heavy }}>{home.card.name}</Text> {meta.emoji}
+                <Text style={{ fontFamily: fonts.heavy }}>{home.card.name}</Text>
               </Text>
             </View>
           </View>
@@ -413,7 +414,7 @@ export default function HomeScreen() {
               onPress={() => router.push(`/record/${r.id}`)}
               style={{ flexDirection: "row", alignItems: "center", gap: space.sm, minHeight: 48 }}
             >
-              <IconBubble emoji={categoryEmoji(r.categoryName) || "🧾"} />
+              <IconBubble icon={categoryIcon(r.categoryName)} />
               <View style={{ flex: 1 }}>
                 <Text style={[type.strong, { color: colors.text }]} numberOfLines={1}>
                   {r.title}
@@ -518,7 +519,7 @@ function SectionHeader({
 }
 
 /** A round category picture for list rows. */
-function IconBubble({ emoji }: { emoji: string }) {
+function IconBubble({ icon }: { icon: IconName }) {
   const { colors } = useTheme();
   return (
     <View
@@ -531,7 +532,7 @@ function IconBubble({ emoji }: { emoji: string }) {
         justifyContent: "center",
       }}
     >
-      <Text style={{ fontSize: 18 }}>{emoji}</Text>
+      <Icon name={icon} size={22} />
     </View>
   );
 }

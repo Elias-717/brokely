@@ -12,7 +12,6 @@ import { Image, Pressable, Text, View } from "react-native";
 import { hideHeadsUp, showHeadsUp } from "@brokely/local-db";
 import { repo } from "../../src/db/client";
 import { useRead } from "../../src/db/use-read";
-import { categoryEmoji } from "../../src/lib/essentials-meta";
 import {
   categoryRecords,
   readInsights,
@@ -647,7 +646,7 @@ function PlanLine({ line, onPress }: { line: CategoryLine; onPress: () => void }
         }}
       >
         <Text style={[type.strong, { color: colors.text, flex: 1 }]}>
-          {line.name} {categoryEmoji(line.name)}
+          {line.name}
           {line.kind === "set_aside" ? (
             <Text style={[type.small, { color: colors.muted }]}> · set aside</Text>
           ) : null}

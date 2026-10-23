@@ -10,7 +10,6 @@ import { useMemo, useState } from "react";
 import { Text } from "react-native";
 import { db, repo } from "../../../src/db/client";
 import { readBills, type BillItem } from "../../../src/lib/bills-model";
-import { categoryEmoji } from "../../../src/lib/essentials-meta";
 import { refusalText } from "../../../src/lib/messages";
 import { dayMonth, occurredAtFor, today } from "../../../src/lib/today";
 import { Button } from "../../../src/ui/components";
@@ -104,7 +103,7 @@ function MarkPaidSheet({ item, day }: { item: BillItem; day: LocalDate }) {
     >
       <SheetAmount text={formatRM(amount ?? (0 as Sen))} />
       <SheetNote
-        title={`Counts as spending in ${item.categoryName} ${categoryEmoji(item.categoryName)}`.trim()}
+        title={`Counts as spending in ${item.categoryName}`}
         detail={
           changed
             ? `The bill said ${formatRM(item.amountSen)}; your record keeps what you really paid. It leaves Still to come.`

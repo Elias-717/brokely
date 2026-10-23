@@ -17,7 +17,6 @@ import { repo } from "../src/db/client";
 import { useRead } from "../src/db/use-read";
 import { categoriesByUse, guessHistory, recentNotesByCategory } from "../src/lib/category-order";
 import { readDebts } from "../src/lib/debts-model";
-import { categoryEmoji } from "../src/lib/essentials-meta";
 import { refusalText } from "../src/lib/messages";
 import { dayMonth, occurredAtFor, today } from "../src/lib/today";
 import { Button, Sticker } from "../src/ui/components";
@@ -27,6 +26,7 @@ import { SheetPanel, SheetScroll, WhenFull } from "../src/ui/sheet";
 import { DebtExtras, MoneyInExtras, SpentExtras } from "../src/ui/sheet-extras";
 import { asTyped } from "../src/ui/allocation-fields";
 import { CategoryPicker } from "../src/ui/category-picker";
+import { Icon, type IconName } from "../src/ui/icon";
 import { PayBackBy } from "../src/ui/pay-back-by";
 import { Chip, Field } from "../src/ui/sheet-parts";
 import { fonts, MIN_TOUCH, radius, space, type } from "../src/ui/theme";
@@ -51,29 +51,34 @@ const FRIEND = "From a friend";
 const BORROWED = "Borrowed (debt)";
 /** Meal money first: it is the default and the most common money in (D-55). */
 const FROM = ["Meal money", "From family", FRIEND, "Part-time", "Gift", BORROWED, "Other"];
-/** A small picture per money-in source, shown in the From list. */
-const FROM_EMOJI: Record<string, string> = {
-  "From family": "👨‍👩‍👧",
-  "Meal money": "🍱",
-  [FRIEND]: "🤝",
-  "Part-time": "💼",
-  Gift: "🎁",
-  [BORROWED]: "🧾",
-  Other: "✨",
+/** An icon per money-in source, shown in the From list (D-108). */
+const FROM_ICON: Record<string, IconName> = {
+  "From family": "users-three",
+  "Meal money": "fork-knife",
+  [FRIEND]: "user",
+  "Part-time": "briefcase",
+  Gift: "gift",
+  [BORROWED]: "hand-coins",
+  Other: "coins",
 };
 
 /** The More choices, each saying what it does (D-85). */
-const MORE: { kind: MoreKind; emoji: string; label: string; detail: string }[] = [
+const MORE: { kind: MoreKind; icon: IconName; label: string; detail: string }[] = [
   {
     kind: "transfer",
-    emoji: "🔁",
+    icon: "arrows-left-right",
     label: "Between my own wallets",
     detail: "e.g. bank to TNG · never spending",
   },
-  { kind: "lent", emoji: "📤", label: "I lent money", detail: "Someone owes you · shows in Debts" },
+  {
+    kind: "lent",
+    icon: "arrow-up-right",
+    label: "I lent money",
+    detail: "Someone owes you · shows in Debts",
+  },
   {
     kind: "borrowed",
-    emoji: "📥",
+    icon: "arrow-down-left",
     label: "I borrowed money",
     detail: "You owe someone · shows in Debts",
   },
@@ -391,7 +396,7 @@ export default function QuickAdd() {
                 categories={FROM.map((f) => ({ id: f, name: f }))}
                 selectedId={from}
                 onSelect={setFrom}
-                emojiOf={(name) => FROM_EMOJI[name] ?? ""}
+                iconOf={(name) => FROM_ICON[name] ?? "coins"}
               />
               {from === FRIEND ? (
                 <View style={{ gap: space.xs, marginTop: space.sm }}>
@@ -450,7 +455,7 @@ export default function QuickAdd() {
                           opacity: pressed ? 0.8 : 1,
                         })}
                       >
-                        <Text style={{ fontSize: 18 }}>{m.emoji}</Text>
+                        <Icon name={m.icon} size={24} />
                         <View style={{ flex: 1 }}>
                           <Text
                             style={{ fontFamily: fonts.heavy, fontSize: 15, color: colors.text }}
