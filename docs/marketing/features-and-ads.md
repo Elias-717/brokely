@@ -1,7 +1,7 @@
 # Brokely: features and what to advertise
 
 **Who this is for:** the Brokely author and any AI agent writing ads, store text or social posts.
-**Release covered:** 0.1 (Android, Malaysia, first pilot at AIU). Last checked: 24 Oct 2026 (up to D-117).
+**Release covered:** 0.1 (Android, Malaysia, first pilot at AIU). App version 0.1.1. Last checked: 24 Oct 2026 (up to D-119; matches SRS v1.8).
 **Keep it current:** when a feature ships or changes, update section 3 and, if needed, sections 4–6.
 
 ---
@@ -66,7 +66,7 @@ These come from the product rules (AGENTS.md section 4, glossary, D-07, D-23). A
 | **Drafts** | If the Add sheet closes by accident, what you typed is still there when you open it again (D-117). | Add |
 | **No spending today** | One tap counts a day with no spending, so streaks and averages stay honest. | Home, Records |
 | **Money in** | Log meal money, money from family, from a friend, part-time pay, a gift: never counted as spending. | Add → Money in |
-| **Transfers** | Bank → TNG top-ups are recorded but never counted as spending. | Add → More |
+| **Transfers** | Bank → TNG top-ups are recorded but never counted as spending. | Add → More → Transfer |
 | **Refunds and edits** | Refund part of a purchase; every edit is kept in the record's history. | Records |
 | **Records by day** | Everything you logged, by day, with filters. | Records tab |
 
@@ -74,6 +74,7 @@ These come from the product rules (AGENTS.md section 4, glossary, D-07, D-23). A
 | Feature | What the student gets | Where |
 |---|---|---|
 | **Split with a friend** | Paid for two? Only your share counts as spending; your friend's share becomes money they owe you. | Add → Split |
+| **Lent or borrowed in seconds** | Add → More → I lent / I borrowed: amount, name, optional pay-back date. Shows in Debts, never counted as spending. | Add → More |
 | **Debts** | "Owed to me" and "I owe" with totals, history, partial pay-backs. | Debts |
 | **Pay back by** | Set a date (a week, end of month, any date) and get a reminder. | Lending/borrowing, each debt |
 | **Paying someone back isn't spending** | From Add, "Paying someone back?" goes to that debt; the plan isn't hit twice. | Add |
@@ -242,3 +243,12 @@ Sample captions (fact first, then the fun):
 | Coins and cosmetics | Only if the pilot wants them (0.3) |
 | iPhone / iOS | Out of scope for v1 |
 | Bank connection, payments, loans | Never (out of scope by design) |
+
+---
+
+## 7. Changes to this file
+
+| Date | Change |
+|---|---|
+| 24 Oct 2026 | First version (up to D-117). |
+| 24 Oct 2026 | Add → More is now three tabs (D-119): Transfers row points to Add → More → Transfer; new "Lent or borrowed in seconds" row. App version 0.1.1. |
