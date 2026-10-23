@@ -25,8 +25,8 @@ and reviewable, and prefer clarity over cleverness. Ask the user before making p
 
 | What | Where |
 |---|---|
-| Behaviour, formulas (BR-xx), data model, quality targets (NFR-xx), acceptance tests (AC-xx) | `docs/requirements/Brokely_Software_Requirements_Specification_v1.6.docx` |
-| Why, users, scope per release, success measures | `docs/requirements/Brokely_Product_Requirements_Document_v1.5.docx` |
+| Behaviour, formulas (BR-xx), data model, quality targets (NFR-xx), acceptance tests (AC-xx) | `docs/requirements/Brokely_Software_Requirements_Specification_v1.7.docx` |
+| Why, users, scope per release, success measures | `docs/requirements/Brokely_Product_Requirements_Document_v1.6.docx` |
 | Every decision with its consequences (D-xx, R-xx) | `docs/project/decision-log.md` |
 | Data model and sync API | `docs/design/erd.md`, `docs/design/sync-api.md` |
 | Screens (wireframes) | `docs/design/wireframes.md` → Figma file `Hm2YNImm4pKtD11ke0iPKb` |
@@ -34,14 +34,14 @@ and reviewable, and prefer clarity over cleverness. Ask the user before making p
 | Student interview script | `docs/project/interview-guide.md` |
 
 To read a .docx: `pandoc -t markdown <file>`.
-SRS v1.6 (PRD v1.5) includes every decision up to D-27 and R-13; D-28 is layout only (no requirement change). SRS section 15 is the change record: **whenever a requirement changes, add a row there** (ID, type, what changed, decision) so traceability is never lost. Requirement IDs are never reused.
+SRS v1.7 (PRD v1.6, 23 Oct) includes every decision up to D-97 and R-14 (layout-only decisions are listed as "no requirement change" in section 15). To edit a .docx without pandoc/Word: `pip install python-docx`; the v1.7 update scripts copied a table row's XML and replaced its text, which keeps the formatting. SRS section 15 is the change record: **whenever a requirement changes, add a row there** (ID, type, what changed, decision) so traceability is never lost. Requirement IDs are never reused.
 
 ---
 
 ## 3. Current state (update every session)
 
-- **Date of last update:** 2026-10-22 (Phase 4 session 2)
-- **Phase:** 5 — Release 0.1 **started 2026-10-22**. Phase 3 (offline app) **closed 22 Oct**: the 0.1 screen checks passed on the reference phone (`docs/project/phase3-acceptance.md`). Phase 4 (backend + sync) **closed 22 Oct**: AC-20…AC-24 passed between two real phones (`docs/project/phase4-acceptance.md`). Everything is on `main`: Supabase `swkakkylbsewewulxgra` (Singapore) + API on Azure Container Apps (East Asia, automatic deploys from `main`), phone sign-in (Google + email), sync, conflict screen, push limit, speed fix, WebP mascots (1.0 MB). Phase 5: **PDPA done in code 22 Oct (D-92)**: notice EN+BM (`packages/contracts/src/privacy-notice.ts`), in-app screen `app/privacy.tsx`, public `GET /privacy`, review `docs/project/privacy-review.md` with author actions P-1…P-9 (owner/contact placeholders, Malay check, allowBackup, leaked passwords, backup retention, breach plan). **Terms of use + `/terms` + `/delete-account` done (D-93)**; author's legal to-do list: `docs/project/legal-checklist.md`. **Notifications built 22 Oct (D-94)**: `planNotifications` (domain), `apps/mobile/src/notifications/`, More → Notifications; needs `npx expo prebuild` + a new build (expo-notifications is native, its plugin sets the small icon). Next: TNG import (Phase 6) once the author has notification samples; meanwhile, then SRS v1.7 / PRD v1.6, NFR checklist, accessibility, backup drill, release signing key + Play internal testing, Google consent screen, usability pilot
+- **Date of last update:** 2026-10-23 (Phase 5 session 2)
+- **Phase:** 5 — Release 0.1 **started 2026-10-22**. Phase 3 (offline app) **closed 22 Oct**: the 0.1 screen checks passed on the reference phone (`docs/project/phase3-acceptance.md`). Phase 4 (backend + sync) **closed 22 Oct**: AC-20…AC-24 passed between two real phones (`docs/project/phase4-acceptance.md`). Everything is on `main`: Supabase `swkakkylbsewewulxgra` (Singapore) + API on Azure Container Apps (East Asia, automatic deploys from `main`), phone sign-in (Google + email), sync, conflict screen, push limit, speed fix, WebP mascots (1.0 MB). Phase 5: **PDPA done in code 22 Oct (D-92)**: notice EN+BM (`packages/contracts/src/privacy-notice.ts`), in-app screen `app/privacy.tsx`, public `GET /privacy`, review `docs/project/privacy-review.md` with author actions P-1…P-9 (owner/contact placeholders, Malay check, allowBackup, leaked passwords, backup retention, breach plan). **Terms of use + `/terms` + `/delete-account` done (D-93)**; author's legal to-do list: `docs/project/legal-checklist.md`. **Notifications built 22 Oct (D-94)**: `planNotifications` (domain), `apps/mobile/src/notifications/`, More → Notifications; needs `npx expo prebuild` + a new build (expo-notifications is native, its plugin sets the small icon). **23 Oct:** emojis removed from More → Notifications; **D-95 left to spend today** on Home (`todayGuide`, replaces the "/ day" line), **D-96 category heads-up** on Insights (`categoryHeadsUps`, optional categories ahead of Meals or past their plan, ≥ RM20); **D-97** Android Auto Backup off (`app.json`, needs a new native build) and the notice says so, P-7 stays a link, breach plan drafted (`docs/project/breach-plan.md`, author approves); **SRS v1.7 / PRD v1.6 written** (FR-ACC-08/09, FR-PLN-22/23, FR-TXN-12, FR-INS-09…11, FR-NOT-08/09, BR-32…35, NFR-21/22, AC-64…70; FR-NOT moved to 0.1; change record section 15). Next: TNG import (Phase 6) once the author has notification samples; meanwhile, NFR checklist, accessibility, backup drill, release signing key + Play internal testing, Google consent screen, usability pilot
 - **Done:**
   - PRD and SRS v1.1 written, then v1.2; decision log D-01…D-21, R-01…R-10
   - Interview guide written; research on the author's spending data done (kept private, not in repo)
@@ -104,7 +104,7 @@ SRS v1.6 (PRD v1.5) includes every decision up to D-27 and R-13; D-28 is layout 
   3. ~~Guided setup S2a–S2d~~ **done** (`app/guided.tsx`, D-63, drafts in `drafts.ts`). Done screens, for reference, each from its Figma frame (`docs/design/wireframes.md`; S1 = node 9:288, S1b 9:306, S1c 16:330, S1d 16:349): S3a Home with essential cards (`acceptEssentialCard`; card queue Later/Not for me per cycle in `local_prefs`, D-30) → S4/S4c quick add with Undo (`recordPurchase`, `recordMoneyIn`, `deleteTransaction`) → S5 Records → S6/S6b Bills + Mark paid → S7/S7b Debts → S8 Insights (`computeProgress`) → S11 Wallet check → S9 More, settings (`user_settings` repo still missing), export/delete → S10 cycle finished. Guided setup S2a–S2d after the main flow.
   4. All 0.1 features are built. **0.1 acceptance check (22 Oct): `docs/project/phase3-acceptance.md`** maps all 43 0.1 ACs; every rule is covered by automated tests (AC-49 test added 22 Oct); 10 screen checks remain for the author on the reference phone, then Phase 3 closes
   5. ~~D-46 part 2~~ done 22 Oct (D-91: `suggestFromHistory`, hints in Next plan and guided step 3)
-  6. ~~Server database schema~~ done (Phase 4). SRS v1.7 / PRD v1.6 (add D-29…D-74 and R-14 (D-47 rewords FR-MAS-08) to the change record (D-43 renames a default category); D-41 needs an FR/AC for debts in quick start; D-40 needs NFR-20 reworded; D-39 needs a new FR/AC for in-app money tips; dark mode is new 0.1 scope; D-36 rewords AC-02 and AC-54: laundry is never a dated bill) when interviews happen
+  6. ~~Server database schema~~ done (Phase 4). ~~SRS v1.7 / PRD v1.6~~ done 23 Oct. (Was: add D-29…D-74 and R-14 (D-47 rewords FR-MAS-08) to the change record (D-43 renames a default category); D-41 needs an FR/AC for debts in quick start; D-40 needs NFR-20 reworded; D-39 needs a new FR/AC for in-app money tips; dark mode is new 0.1 scope; D-36 rewords AC-02 and AC-54: laundry is never a dated bill) when interviews happen
 - **Open questions:** see section 11
 
 ---
@@ -196,6 +196,9 @@ Category remaining = Cᵢ − Nᵢ (may be negative). Left in plan = B − N.
 **Progress.** Covered day = a spending entry or a "No spending today" check-in. Elapsed days = days before today + today if covered. Coverage = covered ÷ elapsed. Daily average = N ÷ elapsed. Everyday rate = (N − bill-linked spending) ÷ elapsed.
 **Forecast** = N + still to come + everyday rate × days left, shown **only from day 14 with coverage ≥ 70%**, as a **range** (R-09): everyday part ×0.85 / ×1.15, low rounded down and high rounded up to RM10 (R-10). Pace = over pace if forecast (middle) > P, or > B while P = 0 (R-11). Estimated "gap fill" entries (0.2) count as spending but not as covered days and not in the everyday rate.
 
+**Daily guide and left today (D-58, D-95; BR-32, BR-33).** Free = left in plan − still to come − unused set-asides; a day = free ÷ days left (incl. today). Today's share = (free + today's everyday spending) ÷ days left, fixed for the day; left today = share − today's everyday spending (bills, estimates and set-asides left out).
+**Category heads-up (D-96, BR-34).** An optional category with ≥ RM20 spent is flagged when it passes Meals (or the biggest essential) or its plan amount; never essentials or set-asides. Fact, then one step.
+
 **Mid-month (D-25, R-12).** After the 1st, quick start offers Start fresh (today → month end, budget = what's left) or Catch me up (whole month + one "Spent before Brokely" entry dated the day before). Progress (covered/elapsed days, daily average, everyday rate) counts from `tracking_start_date`; earlier spending still counts in N.
 
 **Money in (D-26).** Transaction type `income`, no lines, never spending, never changes B; if money in during the cycle > B, suggest adding the difference (new revision).
@@ -240,7 +243,7 @@ apps/mobile          Expo Router app (app/ screens, src/db client, src/ui); READ
 packages/domain/src  money, dates, cycle, bills, plan, transactions, spending, progress (forecast), debts, wallet, xp, result (+ tests)
 packages/contracts   Zod schemas (entities, sync envelopes, fixtures)
 packages/local-db    phone database schema, repositories (record + outbox), drizzle/ migrations; tested in Node, used with expo-sqlite
-docs/requirements    PRD v1.5, SRS v1.6 (.docx)
+docs/requirements    PRD v1.6, SRS v1.7 (.docx)
 docs/design          erd.md, sync-api.md, mascot-brief.md, money-tips.md, domain-rules.md (BR → code → tests), wireframes.md (Figma link)
 docs/project         decision log, glossary, interview guide
 .github/workflows    ci.yml
@@ -265,7 +268,7 @@ pnpm --filter @brokely/api dev   # run the API locally
 | Before 0.2 mascot screen | XP thresholds for the 3 growth stages; priority between moods (e.g. proud vs worried on the same day) |
 | Before release | Author reviews the 50 money tips in `apps/mobile/src/lib/money-tips.ts` |
 | Before 0.3 AI mascot (D-40) | Image provider, one picture or all 12 moods, cost cap per student, photo consent wording |
-| During pilot | Coverage threshold (70%), XP values, notification cap |
+| During pilot | Coverage threshold (70%), XP values, notification cap, heads-up minimum (RM20, D-96) |
 
 ---
 
