@@ -1,4 +1,4 @@
-import { budgetAfterPayback, sen } from "@brokely/domain";
+import { budgetAfterPayback, moneyInSuggestion, sen } from "@brokely/domain";
 import { beforeEach, describe, expect, it } from "vitest";
 import { outboxOperations, planningCycles, planRevisions } from "../schema";
 import { createTestContext } from "../test-db";
@@ -13,8 +13,9 @@ import {
   quickStart,
   revisePlan,
   setAllocation,
+  setPlanBudget,
 } from "./plan";
-import { listTransactions } from "./transactions";
+import { listTransactions, recordMoneyIn } from "./transactions";
 
 describe("plan repository", () => {
   let ctx: RepoContext;
@@ -262,5 +263,45 @@ describe("plan repository", () => {
       amountSen: sen(100),
     });
     expect(result).toMatchObject({ ok: false, code: "REFERENCE_MISSING" });
+  });
+
+  it("money in over the budget: adding the difference is a new revision with the same amounts, Undo another (AC-61, FR-TXN-11, D-125)", () => {
+    const { cycleId } = novemberQuickStart();
+    setAllocation(ctx, { cycleId, categoryId: category("Meals"), amountSen: sen(30000) });
+    for (const amountSen of [sen(30000), sen(20000)]) {
+      const r = recordMoneyIn(ctx, {
+        amountSen,
+        occurredAt: "2026-11-03T04:00:00.000Z",
+        localDate: "2026-11-03",
+      });
+      if (!r.ok) throw new Error(r.message);
+    }
+
+    // Nothing changes until the student taps: spending and the budget stay as they were.
+    const before = getPlan(ctx.db, cycleId)!;
+    expect(before.revision.budgetSen).toBe(40000);
+    const suggestion = moneyInSuggestion(listTransactions(ctx.db), sen(before.revision.budgetSen));
+    expect(suggestion).toBe(10000);
+
+    const added = setPlanBudget(ctx, {
+      cycleId,
+      budgetSen: sen(40000 + suggestion!),
+      shortfallAcknowledged: before.revision.shortfallAcknowledged,
+    });
+    expect(added.ok).toBe(true);
+    const after = getPlan(ctx.db, cycleId)!;
+    expect(after.revision).toMatchObject({
+      budgetSen: 50000,
+      revisionNo: before.revision.revisionNo + 1,
+    });
+    expect(after.allocations.map((a) => [a.categoryId, a.amountSen])).toEqual([
+      [category("Meals"), 30000],
+    ]);
+    expect(moneyInSuggestion(listTransactions(ctx.db), sen(50000))).toBe(null);
+
+    // Undo: one more revision with the old budget; the earlier ones are kept (D-03).
+    setPlanBudget(ctx, { cycleId, budgetSen: sen(40000), shortfallAcknowledged: false });
+    expect(getPlan(ctx.db, cycleId)!.revision.budgetSen).toBe(40000);
+    expect(listRevisions(ctx.db, cycleId)).toHaveLength(before.revision.revisionNo + 2);
   });
 });

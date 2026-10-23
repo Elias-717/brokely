@@ -6,7 +6,10 @@ import {
   getNickname,
   getMascotIntroSeen,
   getSeenMascotStage,
+  hideMoneyIn,
   postponeCard,
+  setPlanBudget,
+  showMoneyIn,
   setMascotIntroSeen,
   setSeenMascotStage,
   undoCheckIn,
@@ -338,6 +341,53 @@ export default function HomeScreen() {
             }}
           />
         </View>
+      ) : null}
+
+      {/* Money in is more than the budget: offer to add the difference, nothing changes until a
+          tap (FR-TXN-11, AC-61, D-26, D-125) */}
+      {home.moneyIn ? (
+        <Sticker background={colors.cardTint} style={{ padding: space.md, gap: space.sm }}>
+          <View style={{ flexDirection: "row", gap: space.sm, alignItems: "flex-start" }}>
+            <BrokelyAvatar size={40} />
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={[type.small, { color: colors.muted, textTransform: "uppercase" }]}>
+                Money in · {formatRM(home.moneyIn.receivedSen)}
+              </Text>
+              <Text style={[type.body, { color: colors.text }]}>
+                That's {formatRM(home.moneyIn.suggestionSen)} more than your plan of{" "}
+                {formatRM(home.budgetSen)}. Add it to your plan?
+              </Text>
+            </View>
+          </View>
+          <View
+            style={{ flexDirection: "row", gap: space.sm, alignItems: "center", flexWrap: "wrap" }}
+          >
+            <Button
+              label={`Add ${formatRM(home.moneyIn.suggestionSen)}`}
+              onPress={() => {
+                const before = {
+                  cycleId: home.cycleId,
+                  budgetSen: home.budgetSen,
+                  shortfallAcknowledged: home.moneyIn!.shortfallAcknowledged,
+                };
+                const next = sen(home.budgetSen + home.moneyIn!.suggestionSen);
+                const saved = setPlanBudget(repo, { ...before, budgetSen: next });
+                if (!saved.ok) return;
+                savedBuzz();
+                // Undo is one more revision with the old budget; history is never rewritten (D-03).
+                showUndo(`Plan is now ${formatRM(next)}`, () => setPlanBudget(repo, before));
+              }}
+            />
+            <Button
+              label="Not now"
+              variant="link"
+              onPress={() => {
+                hideMoneyIn(repo, home.cycleId, home.moneyIn!.suggestionSen);
+                showUndo("Hidden until more money comes in", () => showMoneyIn(repo, home.cycleId));
+              }}
+            />
+          </View>
+        </Sticker>
       ) : null}
 
       {/* 2. Spending breakdown (FR-INS-02) */}

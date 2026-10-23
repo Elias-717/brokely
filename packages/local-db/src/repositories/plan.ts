@@ -315,6 +315,30 @@ export function revisePlan(ctx: RepoContext, input: RevisePlanInput) {
   return write(ctx, (scope) => revisePlanIn(scope, input));
 }
 
+/**
+ * The same plan with a new budget: every category amount kept (FR-TXN-11, D-26, D-125).
+ * Used by "Add RMx to your plan?" after money in, and by its Undo. Raising the budget never
+ * makes a shortfall; going back to an earlier budget keeps that plan's own acknowledgement.
+ */
+export function setPlanBudget(
+  ctx: RepoContext,
+  input: { cycleId: string; budgetSen: Sen; shortfallAcknowledged: boolean },
+) {
+  return write(ctx, (scope) => {
+    const plan = getPlan(scope.tx, input.cycleId);
+    if (!plan) throw new RepoError("NOT_FOUND", "That plan doesn't exist");
+    return revisePlanIn(scope, {
+      cycleId: input.cycleId,
+      budgetSen: input.budgetSen,
+      allocations: plan.allocations.map((a) => ({
+        categoryId: a.categoryId,
+        amountSen: sen(a.amountSen),
+      })),
+      shortfallAcknowledged: input.shortfallAcknowledged,
+    });
+  });
+}
+
 export interface SetAllocationInput {
   readonly cycleId: string;
   readonly categoryId: string;

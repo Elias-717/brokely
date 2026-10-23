@@ -118,6 +118,30 @@ export function showHeadsUp(ctx: RepoContext, cycleId: string, categoryId: strin
 }
 
 /**
+ * "Add RMx to your plan?" after money in (D-125), per cycle: the suggestion in sen when the
+ * student tapped Not now. It comes back only when more money in makes the suggestion bigger.
+ * Phone-only, never synced.
+ */
+const moneyInKey = (cycleId: string) => `money_in_hidden:${cycleId}`;
+
+export function getHiddenMoneyIn(db: Db, cycleId: string): number | null {
+  const value = getPref(db, moneyInKey(cycleId));
+  return typeof value === "number" ? value : null;
+}
+
+export function hideMoneyIn(ctx: RepoContext, cycleId: string, suggestionSen: number): void {
+  setPref(ctx, moneyInKey(cycleId), suggestionSen);
+}
+
+/** Undo of Not now. */
+export function showMoneyIn(ctx: RepoContext, cycleId: string): void {
+  ctx.db
+    .delete(localPrefs)
+    .where(eq(localPrefs.key, moneyInKey(cycleId)))
+    .run();
+}
+
+/**
  * The highest Brokely stage the student has seen celebrated (D-109); null before Home first
  * stores it. Phone-only, so a new phone celebrates nothing it has already passed.
  */

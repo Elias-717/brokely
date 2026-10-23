@@ -7,6 +7,7 @@ import {
   forecastCanShow,
   lengthInDays,
   localDate,
+  moneyInSuggestion,
   nextEssentialCard,
   percentHalfEven,
   sen,
@@ -20,6 +21,7 @@ import {
   findCycleOn,
   getCardChoices,
   getDraftCycle,
+  getHiddenMoneyIn,
   getPlan,
   lastEndedCycle,
   listCategories,
@@ -95,7 +97,9 @@ export type HomeModel =
       readonly endExclusive: LocalDate;
       /** "hidden" on plans shorter than 14 days (D-37); "waiting" before the gate opens (BR-17). */
       readonly forecast:
-        { kind: "hidden" } | { kind: "waiting" } | { kind: "shown"; value: Forecast };
+        | { kind: "hidden" }
+        | { kind: "waiting" }
+        | { kind: "shown"; value: Forecast };
       readonly stillToCome: readonly {
         id: string;
         name: string;
@@ -137,6 +141,15 @@ export type HomeModel =
       readonly card: { categoryId: string; name: string; position: number; total: number } | null;
       /** Nothing logged today yet: offer "No spending today" (FR-TXN-08, R-01). */
       readonly offerCheckIn: boolean;
+      /**
+       * Money in during this plan is more than the budget: offer to add the difference as a new
+       * revision (FR-TXN-11, AC-61, D-26, D-125). Null when not, or after Not now until it grows.
+       */
+      readonly moneyIn: {
+        readonly receivedSen: Sen;
+        readonly suggestionSen: Sen;
+        readonly shortfallAcknowledged: boolean;
+      } | null;
     };
 
 export function readHome(db: Db, today: LocalDate): HomeModel {
@@ -267,6 +280,19 @@ export function readHome(db: Db, today: LocalDate): HomeModel {
       };
     });
 
+  const suggestion = moneyInSuggestion(transactions, budgetSen);
+  const hiddenMoneyIn = getHiddenMoneyIn(db, cycle.id);
+  const moneyIn =
+    suggestion !== null && (hiddenMoneyIn === null || suggestion > hiddenMoneyIn)
+      ? {
+          receivedSen: sen(
+            transactions.filter((t) => t.type === "income").reduce((a, t) => a + t.amountSen, 0),
+          ),
+          suggestionSen: suggestion,
+          shortfallAcknowledged: plan.revision.shortfallAcknowledged,
+        }
+      : null;
+
   const essentials = categories
     .filter((c) => c.kind === "essential" && !c.archivedAt)
     .map((c) => c.id);
@@ -306,6 +332,7 @@ export function readHome(db: Db, today: LocalDate): HomeModel {
     stillToComeSen: progress.stillToComeSen,
     spentByCategory,
     offerCheckIn: !loggedToday && today >= trackingStart,
+    moneyIn,
     card: next
       ? {
           categoryId: next.id,

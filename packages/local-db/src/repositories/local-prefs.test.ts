@@ -19,6 +19,9 @@ import {
   setSeenMascotStage,
   hideHeadsUp,
   showHeadsUp,
+  getHiddenMoneyIn,
+  hideMoneyIn,
+  showMoneyIn,
   getMoneyTips,
   getNickname,
   getNotificationPrefs,
@@ -214,5 +217,14 @@ describe("phone-only preferences (D-30, D-32)", () => {
     expect(getAddDraft(ctx.db, "2026-10-24")).toBeNull();
     clearAddDraft(ctx); // nothing to clear: fine
     expect(ctx.db.select().from(outboxOperations).all()).toHaveLength(0); // phone-only
+  });
+
+  it("money in suggestion: Not now is kept per plan, Undo forgets it (D-125)", () => {
+    expect(getHiddenMoneyIn(ctx.db, "cycle-1")).toBeNull();
+    hideMoneyIn(ctx, "cycle-1", 10000);
+    expect(getHiddenMoneyIn(ctx.db, "cycle-1")).toBe(10000);
+    expect(getHiddenMoneyIn(ctx.db, "cycle-2")).toBeNull();
+    showMoneyIn(ctx, "cycle-1");
+    expect(getHiddenMoneyIn(ctx.db, "cycle-1")).toBeNull();
   });
 });
