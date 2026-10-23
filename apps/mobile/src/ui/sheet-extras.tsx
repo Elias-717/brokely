@@ -1,5 +1,4 @@
 import { formatRM, sen, type LocalDate, type Sen } from "@brokely/domain";
-import { listWalletChecks } from "@brokely/local-db";
 import { router } from "expo-router";
 import type { ReactNode } from "react";
 import { Pressable, Text, View } from "react-native";
@@ -263,30 +262,6 @@ export function DebtExtras() {
             first={i === 0}
             onPress={() => router.replace(`/debts/repay/${d.id}`)}
             action="Opens the repayment for this debt"
-          />
-        ))}
-      </List>
-    </Section>
-  );
-}
-
-/**
- * Wallet check: earlier checks with what was counted. What the records say now stays hidden
- * until this check is saved (D-85).
- */
-export function WalletExtras() {
-  const checks = useRead((db) => listWalletChecks(db, 3), []);
-  if (checks.length === 0) return null;
-  return (
-    <Section title="Your last checks">
-      <List>
-        {checks.map((c, i) => (
-          <Row
-            key={c.id}
-            title={dayMonth(c.localDate as LocalDate)}
-            detail={c.note || undefined}
-            amount={formatRM(sen(c.amountSen))}
-            first={i === 0}
           />
         ))}
       </List>

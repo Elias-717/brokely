@@ -39,7 +39,6 @@ const PLACES: { label: string; detail: string; href: Href }[] = [
     href: "/bills",
   },
   { label: "Debts", detail: "Who owes you, who you owe", href: "/debts" },
-  { label: "Wallet check", detail: "Compare your money with your records", href: "/wallet-check" },
 ];
 
 /** The phone's own time zone, e.g. "Asia/Kuala_Lumpur". */
@@ -47,7 +46,7 @@ const phoneTimeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone ?? 
 
 /**
  * S9 More: the profile card first (S13h, D-76: photo, name, backup; opens Profile, where the
- * nickname and sign-out live), places (Plan, Bills, Debts, Wallet check), then one compact
+ * nickname and sign-out live), places (Plan, Bills, Debts), then one compact
  * Settings card (appearance D-32, week start, money tips, time zone; FR-ACC-05, D-79) and Your
  * data as rows: export (FR-ACC-06) or delete everything (FR-ACC-07).
  */

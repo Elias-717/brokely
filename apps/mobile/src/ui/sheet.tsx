@@ -20,7 +20,7 @@ import { KeyboardScroll } from "./keyboard-scroll";
 import { useTheme } from "./theme-context";
 
 /**
- * A bottom sheet over the current screen (U-10: Mark paid, Write off, Wallet check). Tapping the
+ * A bottom sheet over the current screen (U-10: Mark paid, Write off). Tapping the
  * dimmed area or sliding the top down closes it. `footer` stays below the scrolling part, e.g. the keypad and Save.
  */
 export function SheetShell({
