@@ -26,6 +26,8 @@ export type CategoryHeadsUp = {
   readonly spentSen: Sen;
   /** About a day that keeps it inside its plan amount; null when nothing planned is left. */
   readonly perDaySen: Sen | null;
+  /** How far past Meals (or its plan amount) it is; used to bring a hidden card back (D-102). */
+  readonly gapSen: Sen;
 } & (
   | {
       readonly reason: "ahead_of_essential";
@@ -64,6 +66,7 @@ export function categoryHeadsUps(
       flagged.push({
         headsUp: {
           ...base,
+          gapSen: sen(c.spentSen - anchor.spentSen),
           reason: "ahead_of_essential",
           essential: { id: anchor.id, name: anchor.name, spentSen: anchor.spentSen },
         },
@@ -71,10 +74,29 @@ export function categoryHeadsUps(
       });
     } else if (c.plannedSen > 0 && c.spentSen > c.plannedSen) {
       flagged.push({
-        headsUp: { ...base, reason: "over_plan", plannedSen: c.plannedSen },
+        headsUp: {
+          ...base,
+          gapSen: sen(c.spentSen - c.plannedSen),
+          reason: "over_plan",
+          plannedSen: c.plannedSen,
+        },
         gap: c.spentSen - c.plannedSen,
       });
     }
   }
   return flagged.sort((a, b) => b.gap - a.gap).map((f) => f.headsUp);
+}
+
+/**
+ * Hidden heads-ups (D-102): a card the student dismissed stays away until its gap has grown by
+ * another HEADS_UP_MIN_SEN since it was hidden. `dismissed` maps a category to its gap then.
+ */
+export function headsUpsToShow(
+  headsUps: readonly CategoryHeadsUp[],
+  dismissed: Readonly<Record<string, number>>,
+): CategoryHeadsUp[] {
+  return headsUps.filter((h) => {
+    const hiddenAt = dismissed[h.categoryId];
+    return hiddenAt === undefined || h.gapSen >= hiddenAt + HEADS_UP_MIN_SEN;
+  });
 }

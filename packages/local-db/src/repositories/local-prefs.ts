@@ -87,6 +87,36 @@ export function postponeCard(ctx: RepoContext, cycleId: string, cardId: string):
   });
 }
 
+/**
+ * Hidden heads-ups in Insights (D-102), per cycle like the essential cards: category → how far
+ * ahead it was when hidden, in sen. Phone-only, never synced.
+ */
+const headsUpKey = (cycleId: string) => `heads_up:${cycleId}`;
+
+export function getHiddenHeadsUps(db: Db, cycleId: string): Record<string, number> {
+  const value = getPref(db, headsUpKey(cycleId));
+  if (!value || typeof value !== "object") return {};
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>).filter(
+      (e): e is [string, number] => typeof e[1] === "number",
+    ),
+  );
+}
+
+export function hideHeadsUp(ctx: RepoContext, cycleId: string, categoryId: string, gapSen: number) {
+  setPref(ctx, headsUpKey(cycleId), {
+    ...getHiddenHeadsUps(ctx.db, cycleId),
+    [categoryId]: gapSen,
+  });
+}
+
+/** Undo of a hide. */
+export function showHeadsUp(ctx: RepoContext, cycleId: string, categoryId: string) {
+  const hidden = getHiddenHeadsUps(ctx.db, cycleId);
+  delete hidden[categoryId];
+  setPref(ctx, headsUpKey(cycleId), hidden);
+}
+
 /** Money tips after saving an expense (D-39, D-67). Phone-only, never synced. */
 export interface MoneyTipsState {
   /** On by default; More → Settings turns it off. */

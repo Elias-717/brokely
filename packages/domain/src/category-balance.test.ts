@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { categoryHeadsUps, type CategorySpend } from "./category-balance";
+import { categoryHeadsUps, headsUpsToShow, type CategorySpend } from "./category-balance";
 import { sen } from "./money";
 import type { CategoryKind } from "./plan";
 
@@ -26,6 +26,7 @@ describe("category heads-up (D-96)", () => {
         name: "Fun & trips",
         spentSen: 21000,
         perDaySen: 1000, // (RM390 − RM210) ÷ 18 days
+        gapSen: 3000,
         reason: "ahead_of_essential",
         essential: { id: "meals", name: "Meals", spentSen: 18000 },
       },
@@ -87,5 +88,28 @@ describe("category heads-up (D-96)", () => {
       5,
     );
     expect(result.map((h) => h.categoryId)).toEqual(["fun", "snacks"]);
+  });
+});
+
+describe("hiding a heads-up (D-102)", () => {
+  const funAhead = (fun: number) =>
+    categoryHeadsUps(
+      [cat("meals", "Meals", "essential", 18000), cat("fun", "Fun & trips", "optional", fun)],
+      18,
+    );
+
+  it("a hidden card stays away while the gap grows by less than RM20", () => {
+    // Hidden at RM30 ahead of Meals; RM49.99 ahead is still hidden.
+    expect(headsUpsToShow(funAhead(22999), { fun: 3000 })).toEqual([]);
+  });
+
+  it("comes back once the gap has grown by RM20 more", () => {
+    expect(headsUpsToShow(funAhead(23000), { fun: 3000 }).map((h) => h.categoryId)).toEqual([
+      "fun",
+    ]);
+  });
+
+  it("other categories are not affected", () => {
+    expect(headsUpsToShow(funAhead(21000), { snacks: 5000 })).toHaveLength(1);
   });
 });

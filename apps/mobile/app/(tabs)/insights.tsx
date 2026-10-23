@@ -9,6 +9,8 @@ import {
 import { router } from "expo-router";
 import { useState } from "react";
 import { Image, Pressable, Text, View } from "react-native";
+import { hideHeadsUp, showHeadsUp } from "@brokely/local-db";
+import { repo } from "../../src/db/client";
 import { useRead } from "../../src/db/use-read";
 import { categoryEmoji } from "../../src/lib/essentials-meta";
 import {
@@ -23,6 +25,7 @@ import { Doughnut, type Slice } from "../../src/ui/doughnut";
 import { ProgressBar } from "../../src/ui/progress-bar";
 import { fonts, space, type } from "../../src/ui/theme";
 import { useTheme } from "../../src/ui/theme-context";
+import { useUndo } from "../../src/ui/undo";
 
 const OTHER = "other";
 /** Meals always gets its own red slice, first from 12 o'clock (D-48). */
@@ -46,6 +49,7 @@ export default function InsightsScreen() {
   const day = today();
   const model = useRead((db) => readInsights(db, day), [day]);
   const [selected, setSelected] = useState<string | null>(null);
+  const undo = useUndo();
   const toggle = (key: string) => setSelected((now) => (now === key ? null : key));
 
   if (model.kind === "no-plan") {
@@ -107,16 +111,21 @@ export default function InsightsScreen() {
       {/* An optional category ahead of Meals or past its plan amount: say so, with one step (D-96) */}
       {starting
         ? null
-        : model.headsUps
-            .slice(0, 2)
-            .map((h) => (
-              <HeadsUp
-                key={h.categoryId}
-                headsUp={h}
-                daysLeft={model.daysLeft}
-                onSee={() => setSelected(h.categoryId)}
-              />
-            ))}
+        : model.headsUps.slice(0, 2).map((h) => (
+            <HeadsUp
+              key={h.categoryId}
+              headsUp={h}
+              daysLeft={model.daysLeft}
+              onSee={() => setSelected(h.categoryId)}
+              onHide={() => {
+                // Hidden on this phone until it grows by another RM20 (D-102), with Undo.
+                hideHeadsUp(repo, model.cycleId, h.categoryId, h.gapSen);
+                undo(`Heads-up on ${h.name} hidden`, () =>
+                  showHeadsUp(repo, model.cycleId, h.categoryId),
+                );
+              }}
+            />
+          ))}
 
       {/* Daily average always with coverage (FR-INS-05) */}
       {starting ? null : (
@@ -199,15 +208,20 @@ export default function InsightsScreen() {
 }
 
 /** A: nothing to show yet and no plan. What Insights will show, and both ways in. */
-/** Category heads-up (D-96): the numbers, then one thing to try. Never on essentials. */
+/**
+ * Category heads-up (D-96): the numbers, then one thing to try. Never on essentials.
+ * ✕ or "Got it" hides it until the gap grows by another RM20 (D-102).
+ */
 function HeadsUp({
   headsUp: h,
   daysLeft,
   onSee,
+  onHide,
 }: {
   headsUp: CategoryHeadsUp;
   daysLeft: number;
   onSee: () => void;
+  onHide: () => void;
 }) {
   const { colors } = useTheme();
   const fact =
@@ -221,12 +235,34 @@ function HeadsUp({
       : `try pausing ${h.name} for a while, or give it more in Your plan.`;
   return (
     <Sticker background={colors.warningCard} style={{ padding: space.md, gap: space.xs }}>
-      <Heading>Heads-up</Heading>
+      <View style={{ flexDirection: "row", alignItems: "center" }}>
+        <View style={{ flex: 1 }}>
+          <Heading>Heads-up</Heading>
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Hide the heads-up on ${h.name}`}
+          onPress={onHide}
+          hitSlop={8}
+          style={({ pressed }) => ({
+            width: 48,
+            height: 48,
+            marginTop: -12,
+            marginRight: -12,
+            alignItems: "center",
+            justifyContent: "center",
+            opacity: pressed ? 0.6 : 1,
+          })}
+        >
+          <Text style={{ fontFamily: fonts.heavy, fontSize: 20, color: colors.muted }}>✕</Text>
+        </Pressable>
+      </View>
       <Body>
         {fact} {first}
         {first ? step : step.charAt(0).toUpperCase() + step.slice(1)}
       </Body>
       <Button variant="secondary" label={`See ${h.name} records`} onPress={onSee} />
+      <Button variant="link" label="Got it" onPress={onHide} />
     </Sticker>
   );
 }

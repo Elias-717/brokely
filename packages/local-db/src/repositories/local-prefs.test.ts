@@ -7,6 +7,9 @@ import {
   dismissCard,
   getAppearance,
   getCardChoices,
+  getHiddenHeadsUps,
+  hideHeadsUp,
+  showHeadsUp,
   getMoneyTips,
   getNickname,
   getNotificationPrefs,
@@ -126,6 +129,21 @@ describe("phone-only preferences (D-30, D-32)", () => {
 
     it("stays on this phone: no outbox entry", () => {
       dismissCard(ctx, NOV, "meals");
+      expect(ctx.db.select().from(outboxOperations).all()).toHaveLength(0);
+    });
+  });
+
+  describe("hidden heads-ups, per cycle (D-102)", () => {
+    const NOV = "0192f3a5-0000-7000-8000-000000000010";
+    const DEC = "0192f3a5-0000-7000-8000-000000000011";
+
+    it("remembers the gap when hidden, per cycle, and Undo shows it again", () => {
+      hideHeadsUp(ctx, NOV, "fun", 3000);
+      hideHeadsUp(ctx, NOV, "snacks", 2500);
+      expect(getHiddenHeadsUps(ctx.db, NOV)).toEqual({ fun: 3000, snacks: 2500 });
+      expect(getHiddenHeadsUps(ctx.db, DEC)).toEqual({});
+      showHeadsUp(ctx, NOV, "fun");
+      expect(getHiddenHeadsUps(ctx.db, NOV)).toEqual({ snacks: 2500 });
       expect(ctx.db.select().from(outboxOperations).all()).toHaveLength(0);
     });
   });

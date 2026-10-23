@@ -1,5 +1,6 @@
 import {
   categoryHeadsUps,
+  headsUpsToShow,
   computeProgress,
   daysBetween,
   FORECAST_MIN_COVERAGE_PERCENT,
@@ -21,6 +22,7 @@ import {
 } from "@brokely/domain";
 import {
   findCycleOn,
+  getHiddenHeadsUps,
   getPlan,
   listCategories,
   listCheckInDates,
@@ -55,6 +57,7 @@ export type InsightsModel =
     }
   | {
       readonly kind: "plan";
+      readonly cycleId: string;
       readonly range: DateRange;
       readonly spentSen: Sen;
       readonly budgetSen: Sen;
@@ -65,7 +68,8 @@ export type InsightsModel =
       readonly slices: readonly CategoryLine[];
       /** Every category with an amount in the plan or spending (FR-INS-02). */
       readonly lines: readonly CategoryLine[];
-      /** Optional categories ahead of Meals or past their plan amount, biggest first (D-96). */
+      /** Optional categories ahead of Meals or past their plan amount, biggest first (D-96),
+       * without the ones the student hid unless they have grown since (D-102). */
       readonly headsUps: readonly CategoryHeadsUp[];
       readonly daysLeft: number;
       readonly dailyAverageSen: Sen | null;
@@ -132,7 +136,7 @@ export function readInsights(db: Db, today: LocalDate): InsightsModel {
     });
 
   const daysLeft = Math.max(0, daysBetween(today, range.endExclusive));
-  const headsUps = categoryHeadsUps(
+  const allHeadsUps = categoryHeadsUps(
     lines.map((l) => ({
       id: l.id,
       name: l.name,
@@ -143,11 +147,14 @@ export function readInsights(db: Db, today: LocalDate): InsightsModel {
     daysLeft,
   );
 
+  const headsUps = headsUpsToShow(allHeadsUps, getHiddenHeadsUps(db, cycle.id));
+
   const planDays = lengthInDays({ start: trackingStart, endExclusive: range.endExclusive });
   const coveragePercent = progress.coverage ? percentHalfEven(progress.coverage) : null;
 
   return {
     kind: "plan",
+    cycleId: cycle.id,
     range,
     spentSen: progress.spentSen,
     budgetSen,
