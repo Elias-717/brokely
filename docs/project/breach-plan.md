@@ -1,6 +1,6 @@
 # Data breach plan (P-6)
 
-Drafted 23 Oct 2026 by the agent for the author (Elias Al-Sumairi) to approve. **Status: draft.**
+Drafted 23 Oct 2026 by the agent; **approved by the author (Elias Al-Sumairi) on 23 Oct 2026.**
 Basis: PDPA 2010 as amended 2024 (s.12B, in force 1 Jun 2025) and the Commissioner's Data Breach
 Notification guideline. This is an engineering plan, not legal advice.
 

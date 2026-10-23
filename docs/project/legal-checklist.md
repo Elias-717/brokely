@@ -15,7 +15,7 @@ Details and findings P-1…P-9: `privacy-review.md`.
 - [ ] Have the Malay notice and terms checked by a native speaker (P-2).
 - [x] Android Auto Backup switched off (P-3, D-97); the notice stays a link (P-7).
 - [x] Leaked-password protection and backups need Supabase Pro: both off for the pilot (P-4, P-5, D-100). Set up backups before a wider release.
-- [ ] Approve the one-page **breach plan** (`breach-plan.md`, drafted 23 Oct): who notices, how to judge harm, report to the Commissioner **within 72 hours**, tell affected students within 7 days if harm is likely, keep a record (P-6).
+- [x] One-page **breach plan** approved 23 Oct (`breach-plan.md`): who notices, how to judge harm, report to the Commissioner **within 72 hours**, tell affected students within 7 days if harm is likely, keep a record (P-6).
 - [ ] Answer access, correction and deletion requests within **21 days**; check the contact inbox (eliassumairi@gmail.com) regularly.
 - [ ] Check whether Brokely falls into a **class that must register** with the PDP Commissioner. Listed classes include education and financial services; a personal student project usually doesn't, but if Brokely is run **as an AIU project**, the university's own registration and rules may apply. Ask AIU.
 - [ ] Never put real student data, notification texts with names, or exports in the public repo (AGENTS rule 7).
