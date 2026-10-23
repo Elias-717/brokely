@@ -14,6 +14,7 @@ import { Pressable, Text, View } from "react-native";
 import { db, repo } from "../src/db/client";
 import { useRead } from "../src/db/use-read";
 import { shareExportFile } from "../src/lib/export-file";
+import { readMascot } from "../src/lib/mascot";
 import { today } from "../src/lib/today";
 import { signOutHere } from "../src/sync/auth";
 import { accountFirstName, accountPhoto, signedInWith } from "../src/sync/profile";
@@ -36,6 +37,11 @@ import { useTheme } from "../src/ui/theme-context";
  */
 export default function ProfileScreen() {
   const introSeen = useRead(getMascotIntroSeen);
+  // Days logged, for the growth path on the intro card (D-120); read only while it shows.
+  const loggedDays = useRead(
+    (d) => (introSeen ? 0 : readMascot(d, today(), false).loggedDays),
+    [introSeen],
+  );
   const { colors } = useTheme();
   const sync = useSync();
   const nickname = useRead(getNickname);
@@ -141,7 +147,9 @@ export default function ProfileScreen() {
       </View>
 
       {/* Once: how Brokely grows, with the three stages (D-110) */}
-      {introSeen ? null : <GrowIntroCard onDone={() => setMascotIntroSeen(repo)} />}
+      {introSeen ? null : (
+        <GrowIntroCard loggedDays={loggedDays} onDone={() => setMascotIntroSeen(repo)} />
+      )}
 
       {editing ? (
         <Sticker style={{ padding: space.md, gap: space.sm }}>

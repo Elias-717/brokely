@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Animated, Easing, Image, Modal, Pressable, Text, View } from "react-native";
 import type { ImageSourcePropType } from "react-native";
 import { Button, Sticker } from "./components";
+import { STAGE_2_DAYS, STAGE_3_DAYS } from "@brokely/domain";
 import { STAGE_PICTURES } from "../lib/mascot";
 import { grewBuzz } from "./haptics";
 import { useReduceMotion } from "./motion";
@@ -135,48 +136,166 @@ export function GrewCelebration({
   );
 }
 
+/** Where each stage starts, in days logged (D-105), and its picture size on the path. */
 const STAGES = [
-  { name: "Sprout", when: "to start" },
-  { name: "Growing", when: "7 days logged" },
-  { name: "Money-broccoli", when: "30 days logged" },
-];
+  { from: 0, label: "Start", size: 58 },
+  { from: STAGE_2_DAYS, label: `${STAGE_2_DAYS} days`, size: 74 },
+  { from: STAGE_3_DAYS, label: `${STAGE_3_DAYS} days`, size: 92 },
+] as const;
+
+/** How far along the path the student is: 1/6, 1/2 and 5/6 of the width are the 3 stages. */
+function pathProgress(days: number): number {
+  if (days >= STAGE_3_DAYS) return 5 / 6;
+  if (days >= STAGE_2_DAYS) {
+    return 1 / 2 + ((days - STAGE_2_DAYS) / (STAGE_3_DAYS - STAGE_2_DAYS)) * (1 / 3);
+  }
+  return 1 / 6 + (days / STAGE_2_DAYS) * (1 / 3);
+}
+
+/** The line under the path: where the student is and what's next. */
+function nextStep(days: number): string {
+  const d = (n: number) => `${n} ${n === 1 ? "day" : "days"}`;
+  if (days >= STAGE_3_DAYS) return `Fully grown! ${d(days)} logged.`;
+  const next = days >= STAGE_2_DAYS ? STAGE_3_DAYS : STAGE_2_DAYS;
+  const stage = days >= STAGE_2_DAYS ? 3 : 2;
+  return `${d(days)} logged · ${d(next - days)} more to stage ${stage}`;
+}
 
 /**
- * "How Brokely grows" (D-110): shown once on Profile, with the three stages side by side, and
- * gone for good after "Got it".
+ * The one-time "how Brokely grows" card on Profile (D-110), drawn as a growth path (D-120):
+ * the three pictures grow from left to right on a numbered track that fills with the days the
+ * student has logged; stages not reached yet are faded.
  */
-export function GrowIntroCard({ onDone }: { onDone: () => void }) {
+export function GrowIntroCard({ loggedDays, onDone }: { loggedDays: number; onDone: () => void }) {
   const { colors } = useTheme();
+  const reached = (i: number) => loggedDays >= STAGES[i]!.from;
+  const fill = `${pathProgress(loggedDays) * 100}%` as const;
   return (
-    <Sticker background={colors.cardTint} style={{ padding: space.md, gap: space.sm }}>
-      <Text accessibilityRole="header" style={[type.heading, { color: colors.text }]}>
-        Watch Brokely grow
-      </Text>
-      <Text style={[type.body, { color: colors.text }]}>
-        Brokely grows every day you log something, or tap “No spending today”. Log 3 days in a row
-        and it looks proud. Spending less never changes it, only the habit does.
-      </Text>
-      <View style={{ flexDirection: "row", gap: space.xs }}>
-        {STAGES.map((s, i) => (
-          <View
-            key={s.name}
-            accessible
-            accessibilityLabel={`Stage ${i + 1}, ${s.name}, ${s.when}`}
-            style={{ flex: 1, alignItems: "center", gap: 2 }}
-          >
-            <Image
-              source={STAGE_PICTURES[i]!}
-              style={{ width: 72, height: 90 }}
-              resizeMode="contain"
-              accessibilityIgnoresInvertColors
-            />
-            <Text style={{ fontFamily: fonts.heavy, fontSize: 13, color: colors.text }}>
-              {s.name}
-            </Text>
-            <Text style={[type.small, { color: colors.muted, textAlign: "center" }]}>{s.when}</Text>
-          </View>
-        ))}
+    <Sticker background={colors.cardTint} style={{ padding: space.md, gap: space.md }}>
+      <View style={{ gap: space.xs }}>
+        <Text accessibilityRole="header" style={[type.heading, { color: colors.text }]}>
+          Watch Brokely grow
+        </Text>
+        <Text style={[type.body, { color: colors.text }]}>
+          Brokely grows every day you log something, or tap “No spending today”. Log 3 days in a row
+          and it looks proud. Spending less never changes it, only the habit does.
+        </Text>
       </View>
+
+      <View
+        accessible
+        accessibilityLabel={`Brokely grows in 3 stages: at the start, at ${STAGE_2_DAYS} days logged and at ${STAGE_3_DAYS} days logged. ${nextStep(loggedDays)}`}
+        style={{ gap: space.sm }}
+      >
+        {/* The pictures stand on one line and get bigger, like a plant growing. */}
+        <View style={{ flexDirection: "row", alignItems: "flex-end" }}>
+          {STAGES.map((s, i) => (
+            <View key={s.label} style={{ flex: 1, alignItems: "center" }}>
+              <Image
+                source={STAGE_PICTURES[i]!}
+                style={{ width: s.size, height: s.size * 1.25, opacity: reached(i) ? 1 : 0.4 }}
+                resizeMode="contain"
+                accessibilityIgnoresInvertColors
+              />
+            </View>
+          ))}
+        </View>
+
+        {/* The track: filled as far as the student's logged days, a numbered stop per stage. */}
+        <View style={{ height: 28, justifyContent: "center" }}>
+          <View
+            style={{
+              position: "absolute",
+              left: "16.67%",
+              right: "16.67%",
+              height: 6,
+              borderRadius: 3,
+              backgroundColor: colors.background,
+            }}
+          />
+          <View
+            style={{
+              position: "absolute",
+              left: "16.67%",
+              width: `${(pathProgress(loggedDays) - 1 / 6) * 100}%`,
+              height: 6,
+              borderRadius: 3,
+              backgroundColor: colors.primary,
+            }}
+          />
+          <View style={{ flexDirection: "row" }}>
+            {STAGES.map((s, i) => (
+              <View key={s.label} style={{ flex: 1, alignItems: "center" }}>
+                <View
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 14,
+                    borderWidth: 2,
+                    borderColor: colors.outline,
+                    backgroundColor: reached(i) ? colors.primary : colors.card,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: fonts.heavy,
+                      fontSize: 14,
+                      color: reached(i) ? colors.onPrimary : colors.muted,
+                    }}
+                  >
+                    {i + 1}
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </View>
+          {/* "You" marker where the student is on the track */}
+          <View
+            pointerEvents="none"
+            style={{
+              position: "absolute",
+              left: fill,
+              marginLeft: -5,
+              width: 10,
+              height: 10,
+              borderRadius: 5,
+              backgroundColor: colors.text,
+              opacity: loggedDays >= STAGE_3_DAYS ? 0 : 1,
+            }}
+          />
+        </View>
+
+        <View style={{ flexDirection: "row" }}>
+          {STAGES.map((s) => (
+            <Text
+              key={s.label}
+              numberOfLines={1}
+              style={[type.small, { flex: 1, textAlign: "center", color: colors.muted }]}
+            >
+              {s.label}
+            </Text>
+          ))}
+        </View>
+      </View>
+
+      <View
+        style={{
+          alignSelf: "center",
+          paddingHorizontal: space.md,
+          paddingVertical: space.xs,
+          borderRadius: 99,
+          borderWidth: 2,
+          borderColor: colors.outline,
+          backgroundColor: colors.card,
+        }}
+      >
+        <Text style={{ fontFamily: fonts.heavy, fontSize: 15, color: colors.text }}>
+          {nextStep(loggedDays)}
+        </Text>
+      </View>
+
       <Button label="Got it" onPress={onDone} />
     </Sticker>
   );

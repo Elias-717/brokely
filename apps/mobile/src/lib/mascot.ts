@@ -57,6 +57,8 @@ export function readMascot(db: Db, today: LocalDate, overPace: boolean) {
   return {
     stage,
     mood,
+    /** Days with a record or "No spending today", for the growth path on Profile (D-120). */
+    loggedDays: logged.size,
     picture: PICTURES[stage][mood],
     /** For the "Brokely grew" moment (D-109). */
     proudPicture: PICTURES[stage].proud,
