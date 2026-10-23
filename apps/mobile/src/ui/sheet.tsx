@@ -265,6 +265,12 @@ export function SheetPanel({
         borderColor: colors.outline,
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
+        // Lifts the sheet off the page behind it, which is no longer dimmed for Add (D-121).
+        elevation: 16,
+        shadowColor: "#000",
+        shadowOpacity: 0.25,
+        shadowRadius: 12,
+        shadowOffset: { width: 0, height: -4 },
         paddingHorizontal: space.md,
         // The keyboard covers the gesture bar, so its inset is only needed while it's closed.
         paddingBottom: (keyboard > 0 ? 0 : insets.bottom) + space.md,

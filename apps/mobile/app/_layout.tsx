@@ -74,6 +74,17 @@ export default function RootLayout() {
 /** Bottom sheets that slide up over the current screen (U-10). */
 const SHEETS = ["bills/pay/[id]", "debts/repay/[id]", "debts/write-off/[id]"];
 
+/**
+ * A sheet's screen is see-through, so the page it opened from stays visible above it. The
+ * stack's own background must not apply here: it painted a solid grey-green screen behind
+ * every sheet, which hid the page and made the sheet blend into it (author, 24 Oct).
+ */
+const SHEET_OPTIONS = {
+  presentation: "transparentModal",
+  animation: "slide_from_bottom",
+  contentStyle: { backgroundColor: "transparent" },
+} as const;
+
 function AppStack() {
   const { colors, scheme } = useTheme();
   // Category names changed after some phones were set up (D-43).
@@ -92,20 +103,10 @@ function AppStack() {
         <Stack.Screen name="welcome-back" />
         <Stack.Screen name="profile" />
         <Stack.Screen name="backup" />
-        <Stack.Screen
-          name="quick-add"
-          options={{ presentation: "transparentModal", animation: "slide_from_bottom" }}
-        />
-        <Stack.Screen
-          name="record/[id]"
-          options={{ presentation: "transparentModal", animation: "slide_from_bottom" }}
-        />
+        <Stack.Screen name="quick-add" options={SHEET_OPTIONS} />
+        <Stack.Screen name="record/[id]" options={SHEET_OPTIONS} />
         {SHEETS.map((name) => (
-          <Stack.Screen
-            key={name}
-            name={name}
-            options={{ presentation: "transparentModal", animation: "slide_from_bottom" }}
-          />
+          <Stack.Screen key={name} name={name} options={SHEET_OPTIONS} />
         ))}
       </Stack>
       <StatusBar style={scheme === "dark" ? "light" : "dark"} />
