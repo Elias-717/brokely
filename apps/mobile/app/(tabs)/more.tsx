@@ -41,13 +41,11 @@ const PLACES: { label: string; detail: string; href: Href }[] = [
   { label: "Debts", detail: "Who owes you, who you owe", href: "/debts" },
 ];
 
-/** The phone's own time zone, e.g. "Asia/Kuala_Lumpur". */
-const phoneTimeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone ?? "Asia/Kuala_Lumpur";
-
 /**
  * S9 More: the profile card first (S13h, D-76: photo, name, backup; opens Profile, where the
  * nickname and sign-out live), places (Plan, Bills, Debts), then one compact
- * Settings card (appearance D-32, week start, money tips, time zone; FR-ACC-05, D-79) and Your
+ * Settings card (appearance D-32, week start, notifications, money tips; FR-ACC-05, D-79;
+ * dates follow the phone's time zone, D-101) and Your
  * data as rows: export (FR-ACC-06) or delete everything (FR-ACC-07).
  */
 export default function MoreScreen() {
@@ -57,7 +55,6 @@ export default function MoreScreen() {
   const notify = useRead((db) => getNotificationPrefs(db).settings, []);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const { session } = useSync();
-  const tz = phoneTimeZone();
 
   // A file through Android's share sheet: save to Drive or Files, email it to yourself…
   const share = (name: string, mimeType: string, text: string) =>
@@ -142,17 +139,6 @@ export default function MoreScreen() {
             trackColor={{ true: colors.primary, false: colors.outline }}
           />
         </Row>
-        <Row
-          title="Time zone"
-          detail={
-            settings.timeZone === tz
-              ? `${settings.timeZone.replace(/_/g, " ")} · money in RM`
-              : `${settings.timeZone.replace(/_/g, " ")} · tap to use this phone's (${tz.replace(/_/g, " ")})`
-          }
-          onPress={
-            settings.timeZone === tz ? undefined : () => updateSettings(repo, { timeZone: tz })
-          }
-        />
       </Sticker>
 
       {/* Your data (FR-ACC-06, FR-ACC-07): exports as rows; delete set apart in the warning colour. */}
