@@ -375,19 +375,13 @@ export default function QuickAdd() {
 
   return (
     <KeyboardSafe style={{ justifyContent: "flex-end" }}>
-      {/* Tapping the dimmed Home closes the sheet. */}
+      {/* Tapping the screen above the sheet closes it. No dimming: it read as a green layer
+          sliding in with the sheet (D-121). */}
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Close quick add"
         onPress={() => router.back()}
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: "rgba(5,6,5,0.55)",
-        }}
+        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
       />
       <SheetPanel
         top={
