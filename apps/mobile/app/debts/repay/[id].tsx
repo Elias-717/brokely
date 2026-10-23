@@ -92,7 +92,7 @@ export default function RepaySheet() {
       <SheetNote
         title={
           left === 0
-            ? "That settles it 🎉"
+            ? "That settles it"
             : left !== null
               ? `${formatRM(left as Sen)} still owed after this`
               : "Part or all of it"

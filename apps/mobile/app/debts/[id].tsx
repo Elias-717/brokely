@@ -88,7 +88,7 @@ export default function DebtScreen() {
         </View>
       ) : (
         <Empty>
-          {debt.status === "written_off" ? "This debt was written off." : "All paid back. 🎉"}
+          {debt.status === "written_off" ? "This debt was written off." : "All paid back."}
         </Empty>
       )}
 

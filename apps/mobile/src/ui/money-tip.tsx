@@ -144,7 +144,7 @@ function TipBanner({ tip, side, onDone }: { tip: MoneyTip; side: -1 | 1; onDone:
         <BrokelyAvatar size={40} />
         <View style={{ flex: 1, gap: 2 }}>
           <Text style={{ fontFamily: fonts.heavy, fontSize: 15, color: colors.text }}>
-            Saved! Here's a tip 💡
+            Saved! Here's a tip
           </Text>
           <Text style={[type.body, { color: colors.text, fontSize: 15 }]}>{tip.text}</Text>
           <Text style={[type.small, { color: colors.muted }]}>Tap to close</Text>

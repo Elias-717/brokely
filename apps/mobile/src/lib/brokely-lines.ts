@@ -20,7 +20,7 @@ export type Line = readonly (string | { readonly b: string })[];
 
 export const brokely = {
   greeting: (nickname: string | null): Line =>
-    nickname ? ["Nice to meet you, ", { b: nickname }, "! 🥦"] : ["Let's set up your plan! 🥦"],
+    nickname ? ["Nice to meet you, ", { b: nickname }, "!"] : ["Let's set up your plan!"],
 
   askAlreadySpent: (today: LocalDate): Line => [
     `It's ${dayMonth(today)}. Have you already spent some of this month's money?`,

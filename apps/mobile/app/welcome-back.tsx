@@ -39,7 +39,7 @@ export default function WelcomeBackScreen() {
           <Sticker style={{ padding: space.md, gap: space.xs, alignItems: "center" }}>
             <View accessibilityRole="header">
               <TypeText
-                text={name ? `Welcome back, ${name}! 🥦` : "Welcome back! 🥦"}
+                text={name ? `Welcome back, ${name}!` : "Welcome back!"}
                 delay={250}
                 style={[
                   type.title,

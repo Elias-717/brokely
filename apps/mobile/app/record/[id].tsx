@@ -314,7 +314,7 @@ function Sheet({
                 }}
               >
                 <Text style={[type.strong, { color: colors.text, fontSize: 15 }]}>
-                  📅 {date === day ? `Today, ${dayMonth(day)}` : dayMonth(date)}
+                  {date === day ? `Today, ${dayMonth(day)}` : dayMonth(date)}
                 </Text>
               </Pressable>
             )}

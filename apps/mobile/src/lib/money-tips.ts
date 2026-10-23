@@ -182,7 +182,7 @@ export const MONEY_TIPS: readonly MoneyTip[] = [
   {
     id: "b01",
     topics: ["savings"],
-    text: "Pay yourself first: move a little into Savings the day money comes in, even RM10. 🥦",
+    text: "Pay yourself first: move a little into Savings the day money comes in, even RM10.",
   },
   {
     id: "b02",
@@ -202,7 +202,7 @@ export const MONEY_TIPS: readonly MoneyTip[] = [
   {
     id: "b05",
     topics: ["snacks"],
-    text: "Little leaks sink big ships: RM3 a day of snacks is about RM90 a month. Worth it? Your call. 🍪",
+    text: "Little leaks sink big ships: RM3 a day of snacks is about RM90 a month. Worth it? Your call.",
   },
   {
     id: "b06",
@@ -227,7 +227,7 @@ export const MONEY_TIPS: readonly MoneyTip[] = [
   {
     id: "b10",
     topics: ["debt"],
-    text: "Paying a friend back quickly keeps the friendship, and your plan, healthy. 🤝",
+    text: "Paying a friend back quickly keeps the friendship, and your plan, healthy.",
   },
   {
     id: "b11",

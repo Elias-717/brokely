@@ -41,9 +41,9 @@ type MoreKind = "transfer" | "lent" | "borrowed";
 
 /** What the note box asks, per tab (D-49). */
 const NOTE_PROMPT: Record<Mode, string> = {
-  spent: "✏️ What was it? e.g. nasi lemak",
-  in: "✏️ What's it for? e.g. October money",
-  more: "✏️ Add a note, e.g. for the trip",
+  spent: "What was it? e.g. nasi lemak",
+  in: "What's it for? e.g. October money",
+  more: "Add a note, e.g. for the trip",
 };
 
 const FRIEND = "From a friend";
@@ -169,7 +169,7 @@ export default function QuickAdd() {
 
   const saveIn = (picked: { id: string; name: string }) => {
     if (amount === null) return;
-    const label = `${picked.name} ${categoryEmoji(picked.name)}`.trim();
+    const label = picked.name;
     if (split) {
       if (!friend.trim() || share === null || share <= 0) {
         return setProblem("Add your friend's name and their share.");
@@ -371,7 +371,7 @@ export default function QuickAdd() {
           ) : null}
           {mode === "spent" && guessed ? (
             <Text accessibilityLiveRegion="polite" style={[type.small, { color: colors.muted }]}>
-              ✨ Guessed from “{guess?.matched}” · tap Category to change
+              Guessed from “{guess?.matched}” · tap Category to change
             </Text>
           ) : null}
           {mode === "spent" && picked?.name === "Other" ? (
@@ -512,7 +512,7 @@ export default function QuickAdd() {
               }}
             >
               <Text style={[type.strong, { color: colors.text, fontSize: 15 }]} numberOfLines={1}>
-                📅 {date === day ? `Today, ${dayMonth(day)}` : dayMonth(date)}
+                {date === day ? `Today, ${dayMonth(day)}` : dayMonth(date)}
               </Text>
             </Pressable>
             {mode === "spent" ? (
@@ -535,7 +535,7 @@ export default function QuickAdd() {
                 }}
               >
                 <Text style={[type.strong, { color: colors.text, fontSize: 15 }]} numberOfLines={1}>
-                  🤝 Split
+                  Split
                 </Text>
                 <Switch
                   value={split}
@@ -701,7 +701,7 @@ function PayingBack({ amountText }: { amountText: string }) {
       }}
     >
       <Text style={{ fontFamily: fonts.heavy, fontSize: 16, color: colors.text }}>
-        🤝 Paying someone back?
+        Paying someone back?
       </Text>
       <Text style={[type.small, { color: colors.muted }]}>
         Pick the debt. Paying back isn't counted as spending.

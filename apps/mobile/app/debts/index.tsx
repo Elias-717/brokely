@@ -270,7 +270,7 @@ function AllSquare({ onAdd }: { onAdd: (side: Side) => void }) {
           ]}
           accessibilityRole="header"
         >
-          All square! 🤝
+          All square!
         </Text>
         <Text style={[type.body, { color: colors.muted, textAlign: "center" }]}>
           Nobody owes you and you owe nobody. If you split a bill or lend money, I'll keep track.

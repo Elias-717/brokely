@@ -59,7 +59,7 @@ export default function BillsScreen() {
           />
           {tab === "upcoming" ? (
             upcoming.length === 0 ? (
-              <Quiet text="Nothing still to come in this plan. 🎉" />
+              <Quiet text="Nothing still to come in this plan." />
             ) : (
               <>
                 {now.length > 0 ? (

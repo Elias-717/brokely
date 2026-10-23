@@ -51,7 +51,7 @@ export default function WelcomeScreen() {
             <Sticker style={{ padding: space.md, gap: space.xs, alignItems: "center" }}>
               <View accessibilityRole="header">
                 <TypeText
-                  text="Hi, I'm Brokely! 🥦"
+                  text="Hi, I'm Brokely!"
                   delay={350}
                   style={[type.title, { color: colors.text, textAlign: "center" }]}
                   onDone={() => setGreeted(true)}

@@ -117,7 +117,7 @@ export default function HomeScreen() {
           {home.ended ? (
             <Sticker style={{ padding: space.md, gap: space.sm }}>
               <Text style={[type.heading, { color: colors.text }]}>
-                Your plan ended on {dayMonth(home.ended.lastDay)} 🎉
+                Your plan ended on {dayMonth(home.ended.lastDay)}
               </Text>
               <Text style={[type.body, { color: colors.muted }]}>
                 See how it went: what you planned at the start, at the end, and what you spent.

@@ -148,7 +148,7 @@ export default function SignInScreen() {
     else router.replace("/more");
     if (firstLink) {
       toast(
-        backedUp ? "You're backed up 🥦" : "Signed in · backs up when you're online",
+        backedUp ? "You're backed up" : "Signed in · backs up when you're online",
         "cloud-check",
       );
     }
@@ -519,7 +519,7 @@ export default function SignInScreen() {
           {picture(150)}
           <Sticker style={{ padding: space.md, gap: space.xs, alignItems: "center" }}>
             <TypeText
-              text="Check your email 📬"
+              text="Check your email"
               delay={200}
               style={[
                 type.heading,

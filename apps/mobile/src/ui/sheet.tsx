@@ -349,7 +349,7 @@ export function SheetNote({ title, detail }: { title: string; detail?: string })
   );
 }
 
-/** A date button: "📅 Today, 20 Oct". */
+/** A date button: "Today, 20 Oct". */
 export function DateButton({
   label,
   onPress,
@@ -375,7 +375,7 @@ export function DateButton({
         backgroundColor: colors.card,
       }}
     >
-      <Text style={[type.strong, { color: colors.text, fontSize: 15 }]}>📅 {label}</Text>
+      <Text style={[type.strong, { color: colors.text, fontSize: 15 }]}>{label}</Text>
     </Pressable>
   );
 }

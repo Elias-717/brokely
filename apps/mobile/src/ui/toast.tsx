@@ -15,7 +15,7 @@ import { fonts } from "./theme";
 import { useTheme } from "./theme-context";
 
 /**
- * A short message at the bottom for good news, e.g. "You're backed up 🥦" after a first
+ * A short message at the bottom for good news, e.g. "You're backed up" after a first
  * backup (S13g). Shown for 3 s above the tab bar, read aloud by screen readers, no buttons.
  * With Reduce motion it fades without sliding.
  */

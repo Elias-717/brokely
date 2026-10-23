@@ -25,7 +25,7 @@ interface Pending {
 const UndoContext = createContext<((message: string, undo: () => void) => void) | null>(null);
 
 /**
- * "Saved RM12.00 · Meals 🍛 · Undo": after any save the app offers Undo for a few seconds
+ * "Saved RM12.00 · Meals · Undo": after any save the app offers Undo for a few seconds
  * instead of asking "Are you sure?" first (FR-TXN-10, D-24, D-38).
  */
 export function UndoProvider({ children }: { children: ReactNode }) {
