@@ -14,6 +14,7 @@ import { DateButton, SheetAmount, SheetNote, SheetShell } from "../../../src/ui/
 import { type } from "../../../src/ui/theme";
 import { useTheme } from "../../../src/ui/theme-context";
 import { useUndo } from "../../../src/ui/undo";
+import { savedBuzz } from "../../../src/ui/haptics";
 
 const asTyped = (amount: Sen) =>
   `${Math.floor(amount / 100)}.${String(amount % 100).padStart(2, "0")}`;
@@ -52,6 +53,7 @@ export default function RepaySheet() {
       occurredAt: occurredAtFor(date, day),
     });
     if (!saved.ok) return setProblem(refusalText(saved.code, saved.message));
+    savedBuzz();
     router.back();
     showUndo(
       toMe ? `${debt.name} paid back ${formatRM(amount)}` : `Paid ${debt.name} ${formatRM(amount)}`,

@@ -29,6 +29,7 @@ import { fonts, radius, space, type } from "../../src/ui/theme";
 import { useTheme } from "../../src/ui/theme-context";
 import { FirstVisit, MonthSoFar } from "../../src/ui/home-no-plan";
 import { useUndo } from "../../src/ui/undo";
+import { savedBuzz } from "../../src/ui/haptics";
 
 /** A forecast bound is a whole RM10 step (R-10), so it reads best without sen. */
 const wholeRM = (amount: Sen) => `RM${Math.round(amount / 100)}`;
@@ -268,6 +269,7 @@ export default function HomeScreen() {
             label="No spending today"
             onPress={() => {
               checkInNoSpending(repo, day, day);
+              savedBuzz();
               showUndo("Marked today as no spending", () => undoCheckIn(repo, day));
             }}
           />

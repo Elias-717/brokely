@@ -20,6 +20,7 @@ import { BillExtras } from "../../../src/ui/sheet-extras";
 import { type } from "../../../src/ui/theme";
 import { useTheme } from "../../../src/ui/theme-context";
 import { useUndo } from "../../../src/ui/undo";
+import { savedBuzz } from "../../../src/ui/haptics";
 
 /** Sen as text the keypad can keep editing: 1600 → "16.00". */
 const asTyped = (amount: Sen) =>
@@ -56,6 +57,7 @@ function MarkPaidSheet({ item, day }: { item: BillItem; day: LocalDate }) {
       occurredAt: occurredAtFor(date, day),
     });
     if (!paid.ok) return setProblem(refusalText(paid.code, paid.message));
+    savedBuzz();
     router.back();
     showUndo(`Paid ${item.name} · ${formatRM(amount)}`, () =>
       deleteTransaction(repo, paid.value.transactionId),

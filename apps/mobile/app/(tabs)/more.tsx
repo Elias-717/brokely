@@ -2,9 +2,11 @@ import {
   deleteAllData,
   exportJson,
   exportTransactionsCsv,
+  getHapticsEnabled,
   getMoneyTips,
   getNotificationPrefs,
   getSettings,
+  setHapticsEnabled,
   setMoneyTipsEnabled,
   updateSettings,
   type Appearance,
@@ -52,6 +54,7 @@ export default function MoreScreen() {
   const { colors, appearance, setAppearance } = useTheme();
   const settings = useRead(getSettings);
   const tips = useRead(getMoneyTips);
+  const haptics = useRead(getHapticsEnabled);
   const notify = useRead((db) => getNotificationPrefs(db).settings, []);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const { session } = useSync();
@@ -136,6 +139,15 @@ export default function MoreScreen() {
             value={tips.enabled}
             onValueChange={(on) => setMoneyTipsEnabled(repo, on)}
             accessibilityLabel="Money tips after adding spending"
+            trackColor={{ true: colors.primary, false: colors.outline }}
+          />
+        </Row>
+        {/* A short buzz when something is saved, and when Brokely grows (D-109, D-111). */}
+        <Row title="Vibration" detail="A short buzz when you save">
+          <Switch
+            value={haptics}
+            onValueChange={(on) => setHapticsEnabled(repo, on)}
+            accessibilityLabel="Vibration when you save"
             trackColor={{ true: colors.primary, false: colors.outline }}
           />
         </Row>

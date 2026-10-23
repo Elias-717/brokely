@@ -7,7 +7,9 @@ import {
   dismissCard,
   getAppearance,
   getCardChoices,
+  getHapticsEnabled,
   getHiddenHeadsUps,
+  setHapticsEnabled,
   getMascotIntroSeen,
   setMascotIntroSeen,
   getSeenMascotStage,
@@ -135,6 +137,12 @@ describe("phone-only preferences (D-30, D-32)", () => {
       dismissCard(ctx, NOV, "meals");
       expect(ctx.db.select().from(outboxOperations).all()).toHaveLength(0);
     });
+  });
+
+  it("vibration is on until turned off (D-111)", () => {
+    expect(getHapticsEnabled(ctx.db)).toBe(true);
+    setHapticsEnabled(ctx, false);
+    expect(getHapticsEnabled(ctx.db)).toBe(false);
   });
 
   it("the 'how Brokely grows' card is shown until Got it, once (D-110)", () => {

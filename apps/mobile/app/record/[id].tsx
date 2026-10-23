@@ -39,6 +39,7 @@ import { fonts, MIN_TOUCH, radius, space, type } from "../../src/ui/theme";
 import { KeyboardSafe } from "../../src/ui/keyboard-safe";
 import { useTheme } from "../../src/ui/theme-context";
 import { useUndo } from "../../src/ui/undo";
+import { savedBuzz } from "../../src/ui/haptics";
 import { useKeyboardOpen } from "../../src/ui/use-keyboard";
 
 /** Sen as text the keypad can keep editing: 700 → "7.00". */
@@ -157,6 +158,7 @@ function Sheet({
     if (amount === null || amount <= 0) return setProblem("Type an amount above zero.");
     const saved = editTransaction(repo, t.id, input(amount));
     if (!saved.ok) return setProblem(refusalText(saved.code, saved.message));
+    savedBuzz();
     router.back();
     showUndo(`Saved changes · ${formatRM(split ? t.amountSen : amount)}`, () =>
       editTransaction(repo, t.id, asBefore()),
@@ -197,6 +199,7 @@ function Sheet({
       lines: [{ kind: "spending", categoryId: firstSpending.categoryId, amountSen: amount }],
     });
     if (!saved.ok) return setProblem(refusalText(saved.code, saved.message));
+    savedBuzz();
     router.back();
     showUndo(`Saved refund ${formatRM(amount)}`, () => deleteTransaction(repo, saved.value.id));
   };

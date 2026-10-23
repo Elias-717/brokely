@@ -13,6 +13,7 @@ import { Chip } from "../../../src/ui/sheet-parts";
 import { space, type } from "../../../src/ui/theme";
 import { useTheme } from "../../../src/ui/theme-context";
 import { useUndo } from "../../../src/ui/undo";
+import { savedBuzz } from "../../../src/ui/haptics";
 
 /**
  * S7b Write off (FR-DEBT-04, R-07, BR-23, AC-11). Money a friend owed the student is gone, so
@@ -43,6 +44,7 @@ export default function WriteOffSheet() {
       occurredAt: occurredAtFor(day, day),
     });
     if (!saved.ok) return setProblem(refusalText(saved.code, saved.message));
+    savedBuzz();
     router.back();
     showUndo(`Wrote off ${formatRM(debt.outstandingSen)} · ${debt.name}`, () =>
       deleteTransaction(repo, saved.value.id),

@@ -12,6 +12,7 @@ import { fonts, MIN_TOUCH, space, type } from "../../src/ui/theme";
 import { Icon } from "../../src/ui/icon";
 import { useTheme } from "../../src/ui/theme-context";
 import { useUndo } from "../../src/ui/undo";
+import { savedBuzz } from "../../src/ui/haptics";
 import { pickDate } from "../../src/ui/date-picker";
 import { Button } from "../../src/ui/components";
 import { Float } from "../../src/ui/motion";
@@ -43,6 +44,7 @@ export default function RecordsScreen() {
     if (!chosen) return;
     const saved = checkInNoSpending(repo, chosen, day);
     if (!saved.ok) return setProblem(saved.message);
+    savedBuzz();
     showUndo(`Marked ${dayMonth(chosen)} as no spending`, () => undoCheckIn(repo, chosen));
   };
 

@@ -139,6 +139,15 @@ export function setMascotIntroSeen(ctx: RepoContext): void {
   setPref(ctx, "mascot_intro_seen", true);
 }
 
+/** Vibration when saving (D-111): on by default; More → Settings turns it off. */
+export function getHapticsEnabled(db: Db): boolean {
+  return getPref(db, "haptics") !== false;
+}
+
+export function setHapticsEnabled(ctx: RepoContext, enabled: boolean): void {
+  setPref(ctx, "haptics", enabled);
+}
+
 /** Money tips after saving an expense (D-39, D-67). Phone-only, never synced. */
 export interface MoneyTipsState {
   /** On by default; More → Settings turns it off. */
