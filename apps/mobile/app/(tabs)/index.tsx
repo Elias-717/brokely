@@ -26,7 +26,7 @@ import { readHome } from "../../src/lib/home-model";
 import { readMascot } from "../../src/lib/mascot";
 import { dayMonth, today } from "../../src/lib/today";
 import { AnimatedAmount } from "../../src/ui/animated-amount";
-import { BrokelyAvatar } from "../../src/ui/chat";
+import { BrokelyCard } from "../../src/ui/brokely-card";
 import { Button, Screen, Sticker } from "../../src/ui/components";
 import { GrewCelebration, GrowIntroPopup, StageRing } from "../../src/ui/mascot-image";
 import { ProgressRing } from "../../src/ui/progress-ring";
@@ -243,49 +243,31 @@ export default function HomeScreen() {
           <View style={{ gap: space.sm }}>
             {/* Two columns instead of one long line: left today | about a day after today */}
             <View style={{ flexDirection: "row" }}>
-              <View
-                style={{ flex: 1, gap: 2, paddingRight: space.md }}
-                accessible
+              <HeroColumn
+                side="left"
+                label="Left today"
+                value={formatRM(todayText.columns.leftTodaySen)}
+                sub={todayText.columns.todaySub}
                 accessibilityLabel={`${formatRM(todayText.columns.leftTodaySen)} left today, ${todayText.columns.todaySub}`}
-              >
-                <Text style={[type.small, { color: colors.onHero, opacity: 0.9 }]}>Left today</Text>
-                <Text
-                  style={{ fontFamily: fonts.heavy, fontSize: 24, color: colors.onHero }}
-                  numberOfLines={1}
-                  adjustsFontSizeToFit
-                >
-                  {formatRM(todayText.columns.leftTodaySen)}
-                </Text>
-                <Text style={[type.small, { color: colors.onHero, opacity: 0.85 }]}>
-                  {todayText.columns.todaySub}
-                </Text>
-              </View>
+              />
               <View style={{ width: 1, backgroundColor: colors.onHero, opacity: 0.18 }} />
-              <View
-                style={{ flex: 1, gap: 2, paddingLeft: space.md }}
-                accessible
-                accessibilityLabel={
-                  todayText.columns.thenPerDaySen !== null
-                    ? `About ${formatRM(todayText.columns.thenPerDaySen)} a day after today`
-                    : "Today is the last day of this plan"
-                }
-              >
-                <Text style={[type.small, { color: colors.onHero, opacity: 0.9 }]}>
-                  After today
-                </Text>
-                <Text
-                  style={{ fontFamily: fonts.heavy, fontSize: 24, color: colors.onHero }}
-                  numberOfLines={1}
-                  adjustsFontSizeToFit
-                >
-                  {todayText.columns.thenPerDaySen !== null
-                    ? `~${formatRM(todayText.columns.thenPerDaySen)}`
-                    : "Last day"}
-                </Text>
-                <Text style={[type.small, { color: colors.onHero, opacity: 0.85 }]}>
-                  {todayText.columns.thenPerDaySen !== null ? "a day" : "of this plan"}
-                </Text>
-              </View>
+              {todayText.columns.thenPerDaySen !== null ? (
+                <HeroColumn
+                  side="right"
+                  label="After today"
+                  value={`~${formatRM(todayText.columns.thenPerDaySen)}`}
+                  sub="a day"
+                  accessibilityLabel={`About ${formatRM(todayText.columns.thenPerDaySen)} a day after today`}
+                />
+              ) : (
+                <HeroColumn
+                  side="right"
+                  label="After today"
+                  value="Last day"
+                  sub="of this plan"
+                  accessibilityLabel="Today is the last day of this plan"
+                />
+              )}
             </View>
             {forecastLine ? (
               <Text style={[type.small, { color: colors.onHero, opacity: 0.7 }]}>
@@ -346,48 +328,42 @@ export default function HomeScreen() {
       {/* Money in is more than the budget: offer to add the difference, nothing changes until a
           tap (FR-TXN-11, AC-61, D-26, D-125) */}
       {home.moneyIn ? (
-        <Sticker background={colors.cardTint} style={{ padding: space.md, gap: space.sm }}>
-          <View style={{ flexDirection: "row", gap: space.sm, alignItems: "flex-start" }}>
-            <BrokelyAvatar size={40} />
-            <View style={{ flex: 1, gap: 2 }}>
-              <Text style={[type.small, { color: colors.muted, textTransform: "uppercase" }]}>
-                Money in · {formatRM(home.moneyIn.receivedSen)}
-              </Text>
-              <Text style={[type.body, { color: colors.text }]}>
-                That's {formatRM(home.moneyIn.suggestionSen)} more than your plan of{" "}
-                {formatRM(home.budgetSen)}. Add it to your plan?
-              </Text>
-            </View>
-          </View>
-          <View
-            style={{ flexDirection: "row", gap: space.sm, alignItems: "center", flexWrap: "wrap" }}
-          >
-            <Button
-              label={`Add ${formatRM(home.moneyIn.suggestionSen)}`}
-              onPress={() => {
-                const before = {
-                  cycleId: home.cycleId,
-                  budgetSen: home.budgetSen,
-                  shortfallAcknowledged: home.moneyIn!.shortfallAcknowledged,
-                };
-                const next = sen(home.budgetSen + home.moneyIn!.suggestionSen);
-                const saved = setPlanBudget(repo, { ...before, budgetSen: next });
-                if (!saved.ok) return;
-                savedBuzz();
-                // Undo is one more revision with the old budget; history is never rewritten (D-03).
-                showUndo(`Plan is now ${formatRM(next)}`, () => setPlanBudget(repo, before));
-              }}
-            />
-            <Button
-              label="Not now"
-              variant="link"
-              onPress={() => {
-                hideMoneyIn(repo, home.cycleId, home.moneyIn!.suggestionSen);
-                showUndo("Hidden until more money comes in", () => showMoneyIn(repo, home.cycleId));
-              }}
-            />
-          </View>
-        </Sticker>
+        <BrokelyCard
+          label={`Money in · ${formatRM(home.moneyIn.receivedSen)}`}
+          actions={
+            <>
+              <Button
+                label={`Add ${formatRM(home.moneyIn.suggestionSen)}`}
+                onPress={() => {
+                  const before = {
+                    cycleId: home.cycleId,
+                    budgetSen: home.budgetSen,
+                    shortfallAcknowledged: home.moneyIn!.shortfallAcknowledged,
+                  };
+                  const next = sen(home.budgetSen + home.moneyIn!.suggestionSen);
+                  const saved = setPlanBudget(repo, { ...before, budgetSen: next });
+                  if (!saved.ok) return;
+                  savedBuzz();
+                  // Undo is one more revision with the old budget; history is never rewritten (D-03).
+                  showUndo(`Plan is now ${formatRM(next)}`, () => setPlanBudget(repo, before));
+                }}
+              />
+              <Button
+                label="Not now"
+                variant="link"
+                onPress={() => {
+                  hideMoneyIn(repo, home.cycleId, home.moneyIn!.suggestionSen);
+                  showUndo("Hidden until more money comes in", () =>
+                    showMoneyIn(repo, home.cycleId),
+                  );
+                }}
+              />
+            </>
+          }
+        >
+          That's {formatRM(home.moneyIn.suggestionSen)} more than your plan of{" "}
+          {formatRM(home.budgetSen)}. Add it to your plan?
+        </BrokelyCard>
       ) : null}
 
       {/* 2. Spending breakdown (FR-INS-02) */}
@@ -453,38 +429,30 @@ export default function HomeScreen() {
 
       {/* The next essential card, one at a time (FR-PLN-20, D-30, D-35) */}
       {home.card && meta ? (
-        <Sticker background={colors.cardTint} style={{ padding: space.md, gap: space.sm }}>
-          <View style={{ flexDirection: "row", gap: space.sm, alignItems: "flex-start" }}>
-            <BrokelyAvatar size={40} />
-            <View style={{ flex: 1, gap: 2 }}>
-              <Text style={[type.small, { color: colors.muted, textTransform: "uppercase" }]}>
-                Essentials · {home.card.position} of {home.card.total}
-              </Text>
-              <Text style={[type.body, { color: colors.text }]}>
-                {home.card.position === 1 ? "Let's cover your essentials. Up next: " : "Up next: "}
-                <Text style={{ fontFamily: fonts.heavy }}>{home.card.name}</Text>
-              </Text>
-            </View>
-          </View>
-          <View
-            style={{ flexDirection: "row", gap: space.sm, alignItems: "center", flexWrap: "wrap" }}
-          >
-            <Button
-              label="Add"
-              onPress={() => router.push(`/essential/${home.card!.categoryId}`)}
-            />
-            <Button
-              label="Not for me"
-              variant="secondary"
-              onPress={() => dismissCard(repo, home.cycleId, home.card!.categoryId)}
-            />
-            <Button
-              label="Later"
-              variant="link"
-              onPress={() => postponeCard(repo, home.cycleId, home.card!.categoryId)}
-            />
-          </View>
-        </Sticker>
+        <BrokelyCard
+          label={`Essentials · ${home.card.position} of ${home.card.total}`}
+          actions={
+            <>
+              <Button
+                label="Add"
+                onPress={() => router.push(`/essential/${home.card!.categoryId}`)}
+              />
+              <Button
+                label="Not for me"
+                variant="secondary"
+                onPress={() => dismissCard(repo, home.cycleId, home.card!.categoryId)}
+              />
+              <Button
+                label="Later"
+                variant="link"
+                onPress={() => postponeCard(repo, home.cycleId, home.card!.categoryId)}
+              />
+            </>
+          }
+        >
+          {home.card.position === 1 ? "Let's cover your essentials. Up next: " : "Up next: "}
+          <Text style={{ fontFamily: fonts.heavy }}>{home.card.name}</Text>
+        </BrokelyCard>
       ) : null}
 
       {/* 3. Still to come, separate from spending (FR-INS-07) */}
@@ -674,6 +642,43 @@ function IconBubble({ icon }: { icon: IconName }) {
       }}
     >
       <Icon name={icon} size={22} />
+    </View>
+  );
+}
+
+/** One of the two columns under today's share on the hero card: label, big amount, small line. */
+function HeroColumn({
+  side,
+  label,
+  value,
+  sub,
+  accessibilityLabel,
+}: {
+  side: "left" | "right";
+  label: string;
+  value: string;
+  sub: string;
+  accessibilityLabel: string;
+}) {
+  const { colors } = useTheme();
+  return (
+    <View
+      style={[
+        { flex: 1, gap: 2 },
+        side === "left" ? { paddingRight: space.md } : { paddingLeft: space.md },
+      ]}
+      accessible
+      accessibilityLabel={accessibilityLabel}
+    >
+      <Text style={[type.small, { color: colors.onHero, opacity: 0.9 }]}>{label}</Text>
+      <Text
+        style={{ fontFamily: fonts.heavy, fontSize: 24, color: colors.onHero }}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+      >
+        {value}
+      </Text>
+      <Text style={[type.small, { color: colors.onHero, opacity: 0.85 }]}>{sub}</Text>
     </View>
   );
 }
