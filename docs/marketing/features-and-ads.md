@@ -12,7 +12,7 @@ These come from the product rules (AGENTS.md section 4, glossary, D-07, D-23). A
 
 | Do | Don't |
 |---|---|
-| Say **"plan"**, **"left in plan"**, **"left today"**, **"money in"**, **"from family"** | Say **"balance"**, **"allowance"**, **"target"**, "track your bank account" |
+| Say **"plan"**, **"left in plan"**, **"to spend today"**, **"money in"**, **"from family"** | Say **"balance"**, **"allowance"**, **"target"**, "track your bank account" |
 | Say Brokely helps you **plan** and **see** your spending | Promise "you'll never go broke", "save RMx", "guaranteed" |
 | Say **no bank login, no PIN, no OTP** | Suggest it connects to banks, TNG or payments (it doesn't) |
 | Say **works offline** and **no account needed** to start | Say "AI-powered" or "smart AI" (there is no AI in the app; smart categories are simple rules on the phone) |
@@ -123,7 +123,7 @@ Compare with a typical expense tracker (a list of transactions and a pie chart).
 
 1. **It plans, not just tracks.** You decide the month first; every number is about your plan, not a bank balance.
 2. **Essentials come first.** Meals, laundry and home necessities are planned before treats, and the heads-up tells you when treats overtake meals.
-3. **"Left today" in one number.** Not a monthly total to divide in your head: what's fine to spend *today*, adjusted daily.
+3. **"To spend today" in one number.** Not a monthly total to divide in your head: what's fine to spend *today*, adjusted daily.
 4. **Built for students' friend money.** Splits, IOUs, pay-back dates and write-offs are part of the plan, and paying back is never counted as spending twice.
 5. **Honest numbers.** Forecasts only when there's enough data, shown as a range; no fake precision, no shaming.
 6. **A mascot that rewards the habit, not starving yourself.** Brokely grows from logging, never from spending less.
@@ -152,7 +152,7 @@ Lead with the problem students feel ("money runs out before the month does"), th
 ### 5.2 Google Play screenshots (phone), in this order
 Short caption above each screen (2–6 words in big type, one small line under it).
 
-1. **"Know what's left today"**: *Your plan, in one number.* (Home)
+1. **"Know what you can spend today"**: *Your plan, in one number.* (Home)
 2. **"Meals and laundry first"**: *Plan the essentials, then the fun.* (Home with an essential card, or Your plan)
 3. **"Set up in a minute"**: *Just chat with Brokely.* (Quick start chat)
 4. **"Log it in seconds"**: *Keypad with a calculator. Category guessed from the note.* (Add)
@@ -164,7 +164,7 @@ Short caption above each screen (2–6 words in big type, one small line under i
 If only 4 are used: 1, 2, 4, 7.
 
 ### 5.3 Feature graphic (1024 × 500)
-Brokely (stage 3, happy) on the left, and on the right: **"Plan it. Cover meals first. Know what's left today."** No price, no "#1", no small text (it's often covered by a play button).
+Brokely (stage 3, happy) on the left, and on the right: **"Plan it. Cover meals first. Know what you can spend today."** No price, no "#1", no small text (it's often covered by a play button).
 
 ### 5.4 Store text
 **Title options (≤ 30 characters):**
@@ -218,7 +218,7 @@ Brokely (stage 3, happy) on the left, and on the right: **"Plan it. Cover meals 
 ### 5.5 Angles for ads and social posts
 | Audience moment | Hook | Feature to show |
 |---|---|---|
-| Week 3 of the month, money tight | "Day 20. RM80 left. How much for today?" | Left today |
+| Week 3 of the month, money tight | "Day 20. RM80 left. How much for today?" | To spend today |
 | New semester / first month away from home | "Meal money first, bubble tea later." | Essentials first |
 | Group dinner / trip | "You paid for 4. Who still owes you?" | Split + Debts |
 | "Tracking is boring" | "3 taps. Even offline." | Add + calculator |

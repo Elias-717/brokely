@@ -241,11 +241,11 @@ export default function HomeScreen() {
         {/* Left to spend today; once over, what a day from tomorrow (D-95, D-98) */}
         {todayText?.columns ? (
           <View style={{ gap: space.sm }}>
-            {/* Two columns instead of one long line: left today | about a day after today */}
+            {/* Two columns instead of one long line: to spend today | about a day after today (D-127) */}
             <View style={{ flexDirection: "row" }}>
               <HeroColumn
                 side="left"
-                label="Left today"
+                label="To spend today"
                 value={formatRM(todayText.columns.leftTodaySen)}
                 sub={todayText.columns.todaySub}
                 accessibilityLabel={todayText.columns.todayA11y}
@@ -534,7 +534,7 @@ export default function HomeScreen() {
 
 /**
  * What the budget card says about today (D-95, D-98, D-124, D-126). While there is a share for
- * today, two columns: left today | about a day after today. Over today's share, the same columns
+ * today, two columns: to spend today | about a day after today. Over today's share, the same columns
  * show RM0.00 with how much over, and the new (smaller) amount a day. Nothing free or over the
  * whole plan: one big amount and one plain line. Never a telling-off (rule 9).
  */
@@ -583,12 +583,12 @@ function todayCard(
     // Same two columns as under the share (D-126); the full sentence stays for screen readers.
     return {
       amountSen: guide.thenPerDaySen ?? sen(0),
-      unit: guide.thenPerDaySen !== null ? "a day from tomorrow" : "left today",
+      unit: guide.thenPerDaySen !== null ? "a day from tomorrow" : "to spend today",
       line,
       columns: {
         leftTodaySen: sen(0),
         todaySub: `${formatRM(overSen)} over`,
-        todayA11y: `Nothing left today. ${line}`,
+        todayA11y: `Nothing more to spend today. ${line}`,
         thenPerDaySen: guide.thenPerDaySen,
         thenSub: "a day · a little less",
       },
@@ -596,7 +596,7 @@ function todayCard(
   }
   return {
     amountSen: guide.leftTodaySen,
-    unit: "left today",
+    unit: "to spend today",
     line:
       guide.thenPerDaySen !== null
         ? `of ${formatRM(guide.todaySen)} for today · about ${formatRM(guide.thenPerDaySen)} a day after that`
@@ -605,7 +605,7 @@ function todayCard(
       leftTodaySen: guide.leftTodaySen,
       todaySub:
         guide.leftTodaySen === guide.todaySen ? "None used yet" : `of ${formatRM(guide.todaySen)}`,
-      todayA11y: `${formatRM(guide.leftTodaySen)} left today, of ${formatRM(guide.todaySen)}`,
+      todayA11y: `${formatRM(guide.leftTodaySen)} to spend today, of ${formatRM(guide.todaySen)}`,
       thenPerDaySen: guide.thenPerDaySen,
       thenSub: "a day",
     },

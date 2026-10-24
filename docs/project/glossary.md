@@ -1,4 +1,4 @@
-# Brokely Glossary (v1.6)
+# Brokely Glossary (v1.7)
 
 Plain meanings only. The exact formulas live in the SRS business rules (section 5).
 
@@ -29,6 +29,8 @@ Plain meanings only. The exact formulas live in the SRS business rules (section 
 
 ## Your progress
 - **Left in plan**: budget minus what you've spent.
+- **To spend today**: how much of your plan is fine to spend today, after bills still to come and set-asides; it goes down as you log today's spending. Once today goes over, it shows RM0.00 and how much over. (Replaces "left today", D-127.)
+- **After today**: about how much a day the rest of your plan allows, from tomorrow.
 - **Daily average**: how much you spend per day so far.
 - **Logged day**: a day where you recorded something or tapped "No spending today".
 - **Forecast**: a guess (shown as a range) of your total spending by the end of the cycle. Shown after two weeks of mostly logged days.
