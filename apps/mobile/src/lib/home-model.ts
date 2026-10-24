@@ -119,7 +119,8 @@ export type HomeModel =
       readonly usedPercent: number;
       readonly usedArc: number;
       /** Brokely's one-line status under the greeting (D-58). */
-      readonly status: "fresh" | "on-plan" | "ahead" | "over" | "nothing-free" | "today-over";
+      readonly status:
+        "fresh" | "on-plan" | "ahead" | "over" | "nothing-free" | "today-over" | "today-over-last";
       /** The latest spending, newest first (D-58). */
       readonly recent: readonly {
         id: string;
@@ -248,7 +249,9 @@ export function readHome(db: Db, today: LocalDate): HomeModel {
       : guide.freeSen <= 0 && progress.spentSen > 0
         ? "nothing-free"
         : todayShare && todayShare.leftTodaySen < 0
-          ? "today-over"
+          ? todayShare.thenPerDaySen === null
+            ? "today-over-last"
+            : "today-over"
           : progress.spentSen === 0
             ? "fresh"
             : progress.forecast?.pace === "over_pace"

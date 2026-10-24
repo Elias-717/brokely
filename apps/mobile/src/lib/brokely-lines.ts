@@ -176,13 +176,14 @@ const PERIODS: Record<Period, [string, string]> = {
  * (rule 9), never a balance (rule 6).
  */
 export const homeStatus: Record<
-  "fresh" | "on-plan" | "ahead" | "over" | "nothing-free" | "today-over",
+  "fresh" | "on-plan" | "ahead" | "over" | "nothing-free" | "today-over" | "today-over-last",
   string
 > = {
   fresh: "Fresh start! Log your first spending when it happens.",
   "on-plan": "You're on plan. Nice going!",
   "nothing-free": "Bills still to come need what's left.",
   "today-over": "Today went a bit over. Tomorrow's a fresh start.",
+  "today-over-last": "Today went a bit over. That's the last day of this plan.",
   ahead: "Spending is running a bit ahead of plan. Small days help.",
   over: "The plan is used up. Keep logging, every record still helps.",
 };

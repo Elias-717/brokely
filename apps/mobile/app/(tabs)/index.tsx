@@ -248,7 +248,7 @@ export default function HomeScreen() {
                 label="Left today"
                 value={formatRM(todayText.columns.leftTodaySen)}
                 sub={todayText.columns.todaySub}
-                accessibilityLabel={`${formatRM(todayText.columns.leftTodaySen)} left today, ${todayText.columns.todaySub}`}
+                accessibilityLabel={todayText.columns.todayA11y}
               />
               <View style={{ width: 1, backgroundColor: colors.onHero, opacity: 0.18 }} />
               {todayText.columns.thenPerDaySen !== null ? (
@@ -256,8 +256,8 @@ export default function HomeScreen() {
                   side="right"
                   label="After today"
                   value={`~${formatRM(todayText.columns.thenPerDaySen)}`}
-                  sub="a day"
-                  accessibilityLabel={`About ${formatRM(todayText.columns.thenPerDaySen)} a day after today`}
+                  sub={todayText.columns.thenSub}
+                  accessibilityLabel={`About ${formatRM(todayText.columns.thenPerDaySen)} a day after today${todayText.columns.thenSub === "a day" ? "" : ", a little less"}`}
                 />
               ) : (
                 <HeroColumn
@@ -532,11 +532,11 @@ export default function HomeScreen() {
   );
 }
 
-/** A card title in the text font, with an optional amount and a small action on the right. */
 /**
- * What the budget card says about today (D-95, D-98): one big amount and one plain line. Under
- * today's share: what is left today. Over it: the amount a day from tomorrow, with why it changed.
- * Never a telling-off (rule 9).
+ * What the budget card says about today (D-95, D-98, D-124, D-126). While there is a share for
+ * today, two columns: left today | about a day after today. Over today's share, the same columns
+ * show RM0.00 with how much over, and the new (smaller) amount a day. Nothing free or over the
+ * whole plan: one big amount and one plain line. Never a telling-off (rule 9).
  */
 function todayCard(
   guide: TodayGuide,
@@ -547,8 +547,15 @@ function todayCard(
   amountSen: Sen;
   unit: string;
   line: string;
-  /** Set while under today's share: the card shows two columns instead of one line. */
-  columns?: { leftTodaySen: Sen; todaySub: string; thenPerDaySen: Sen | null };
+  /** Set while there is a share for today: the card shows two columns instead of one line. */
+  columns?: {
+    leftTodaySen: Sen;
+    todaySub: string;
+    /** What a screen reader hears for the left column. */
+    todayA11y: string;
+    thenPerDaySen: Sen | null;
+    thenSub: string;
+  };
 } {
   const after = daysLeft - 1;
   const days = (n: number) => (n === 1 ? "tomorrow gets" : `the next ${n} days get`);
@@ -567,14 +574,25 @@ function todayCard(
     };
   }
   if (guide.leftTodaySen < 0) {
-    const over = `Today went ${formatRM(sen(-guide.leftTodaySen))} over its ${formatRM(guide.todaySen)}`;
-    return guide.thenPerDaySen !== null
-      ? {
-          amountSen: guide.thenPerDaySen,
-          unit: "a day from tomorrow",
-          line: `${over}, so ${days(after)} a little less.`,
-        }
-      : { amountSen: sen(0), unit: "left today", line: `${over}, the last day of this plan.` };
+    const overSen = sen(-guide.leftTodaySen);
+    const over = `Today went ${formatRM(overSen)} over its ${formatRM(guide.todaySen)}`;
+    const line =
+      guide.thenPerDaySen !== null
+        ? `${over}, so ${days(after)} a little less.`
+        : `${over}, the last day of this plan.`;
+    // Same two columns as under the share (D-126); the full sentence stays for screen readers.
+    return {
+      amountSen: guide.thenPerDaySen ?? sen(0),
+      unit: guide.thenPerDaySen !== null ? "a day from tomorrow" : "left today",
+      line,
+      columns: {
+        leftTodaySen: sen(0),
+        todaySub: `${formatRM(overSen)} over`,
+        todayA11y: `Nothing left today. ${line}`,
+        thenPerDaySen: guide.thenPerDaySen,
+        thenSub: "a day · a little less",
+      },
+    };
   }
   return {
     amountSen: guide.leftTodaySen,
@@ -587,11 +605,14 @@ function todayCard(
       leftTodaySen: guide.leftTodaySen,
       todaySub:
         guide.leftTodaySen === guide.todaySen ? "None used yet" : `of ${formatRM(guide.todaySen)}`,
+      todayA11y: `${formatRM(guide.leftTodaySen)} left today, of ${formatRM(guide.todaySen)}`,
       thenPerDaySen: guide.thenPerDaySen,
+      thenSub: "a day",
     },
   };
 }
 
+/** A card title in the text font, with an optional amount and a small action on the right. */
 function SectionHeader({
   title,
   detail,
