@@ -3,7 +3,6 @@ package expo.modules.tnglistener
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.os.PowerManager
 import android.provider.Settings
 import androidx.core.app.NotificationManagerCompat
@@ -43,11 +42,10 @@ class TngListenerModule : Module() {
       start(detail) || start(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
     }
 
+    // Opens the battery-optimisation list (the student finds Brokely and picks "Don't optimise").
+    // The direct "allow" prompt needs a permission that Google Play restricts, so it is not used.
     Function("openBatterySettings") {
-      val request =
-        Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
-          .setData(Uri.parse("package:${context.packageName}"))
-      start(request) || start(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+      start(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
     }
   }
 
