@@ -42,6 +42,24 @@ class TngListenerModule : Module() {
       start(detail) || start(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
     }
 
+    // Raw TNG notifications caught on this phone, newest first (sample collection only).
+    Function("getCaptures") {
+      TngCaptureStore.all(context).map { item ->
+        val extras = item.optJSONObject("extras")
+        mapOf(
+          "key" to item.optString("key"),
+          "postTime" to item.optLong("postTime"),
+          "title" to item.optString("title"),
+          "text" to item.optString("text"),
+          "bigText" to item.optString("bigText"),
+          "extras" to
+            (extras?.keys()?.asSequence()?.associateWith { extras.optString(it) } ?: emptyMap())
+        )
+      }
+    }
+
+    Function("clearCaptures") { TngCaptureStore.clear(context) }
+
     // Opens the battery-optimisation list (the student finds Brokely and picks "Don't optimise").
     // The direct "allow" prompt needs a permission that Google Play restricts, so it is not used.
     Function("openBatterySettings") {

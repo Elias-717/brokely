@@ -1,8 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
   <application>
     <!--
-      Makes Brokely appear in Android's "Notification access" list. The service is a stub in this
-      step: it receives notifications but does not read or store anything yet (D-02, FR-IMP-11).
+      Makes Brokely appear in Android's "Notification access" list. The service is capture-only in
+      this step: it keeps only Touch 'n Go's notifications, as raw samples on this phone (D-02, FR-IMP-11).
     -->
     <service
       android:name=".TngNotificationListenerService"

@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
-import { AppState, Text, View } from "react-native";
+import { AppState, Share, Text, View } from "react-native";
 import {
+  clearCaptures,
+  getCaptures,
   isIgnoringBatteryOptimizations,
   isNotificationAccessGranted,
   openBatterySettings,
   openNotificationAccessSettings,
   tngListenerAvailable,
+  type TngCapture,
 } from "../modules/tng-listener";
 import { Button, PageScreen, Sticker } from "../src/ui/components";
 import { space, type } from "../src/ui/theme";
@@ -14,17 +17,20 @@ import { useTheme } from "../src/ui/theme-context";
 /**
  * TNG auto-collect setup (0.2, Phase 6): step 1 notification access, step 2 battery. The status
  * is re-read whenever the student comes back from Android's settings, because access can also be
- * switched off there at any time. Nothing is read from notifications yet; this screen only gets
- * the phone ready (every capture will still wait for the student's yes, D-02).
+ * switched off there at any time. Below the two steps, development builds list the raw TNG
+ * notifications caught so far, to collect real formats; nothing is parsed or imported yet and
+ * every future import will still wait for the student's yes (D-02).
  */
 export default function TngSetupScreen() {
   const { colors } = useTheme();
   const [access, setAccess] = useState(false);
   const [battery, setBattery] = useState(false);
+  const [captures, setCaptures] = useState<TngCapture[]>([]);
 
   const refresh = useCallback(() => {
     setAccess(isNotificationAccessGranted());
     setBattery(isIgnoringBatteryOptimizations());
+    setCaptures(getCaptures());
   }, []);
 
   useEffect(() => {
@@ -73,6 +79,45 @@ export default function TngSetupScreen() {
           onPress={() => openBatterySettings()}
         />
         <Status ok={battery} on="Battery limits are off" off="Battery limits may stop Brokely" />
+      </Sticker>
+
+      <Sticker style={{ padding: space.md, gap: space.sm }}>
+        <Text style={[type.strong, { color: colors.text }]}>
+          Samples caught ({captures.length})
+        </Text>
+        <Text style={[type.small, { color: colors.muted }]}>
+          Development only. These are TNG's raw notifications and can include people's full names.
+          They stay on this phone (50 at most, 30 days at most). Hide the names before you share
+          any, and never put them in the repo.
+        </Text>
+        {captures.slice(0, 5).map((c) => (
+          <View key={`${c.key}-${c.postTime}`} style={{ gap: 2 }}>
+            <Text style={[type.small, { color: colors.muted }]}>
+              {new Date(c.postTime).toLocaleString()}
+            </Text>
+            <Text style={[type.body, { color: colors.text }]}>{c.title}</Text>
+            <Text style={[type.body, { color: colors.text }]}>{c.text || c.bigText}</Text>
+            <Text style={[type.small, { color: colors.muted }]}>
+              Hidden fields: {Object.keys(c.extras).join(", ")}
+            </Text>
+          </View>
+        ))}
+        <Button label="Refresh" variant="secondary" onPress={refresh} />
+        <Button
+          label="Share all samples"
+          variant="secondary"
+          disabled={captures.length === 0}
+          onPress={() => void Share.share({ message: JSON.stringify(captures, null, 2) })}
+        />
+        <Button
+          label="Delete all samples"
+          variant="destructive"
+          disabled={captures.length === 0}
+          onPress={() => {
+            clearCaptures();
+            refresh();
+          }}
+        />
       </Sticker>
 
       <View style={{ height: space.md }} />
