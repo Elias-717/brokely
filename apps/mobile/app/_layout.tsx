@@ -103,6 +103,7 @@ function AppStack() {
         <Stack.Screen name="welcome-back" />
         <Stack.Screen name="profile" />
         <Stack.Screen name="backup" />
+        <Stack.Screen name="tng-setup" />
         <Stack.Screen name="quick-add" options={SHEET_OPTIONS} />
         <Stack.Screen name="record/[id]" options={SHEET_OPTIONS} />
         {SHEETS.map((name) => (

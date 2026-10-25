@@ -133,6 +133,14 @@ export default function MoreScreen() {
           }
           onPress={() => router.push("/notifications")}
         />
+        {/* Development builds only until TNG import ships in 0.2 (Phase 6). */}
+        {__DEV__ ? (
+          <Row
+            title="TNG auto-collect"
+            detail="Dev only: notification access setup"
+            onPress={() => router.push("/tng-setup")}
+          />
+        ) : null}
         {/* Money tips after saving an expense (D-39, D-67); on by default. */}
         <Row title="Money tips" detail="After you add spending, up to 10 a day">
           <Switch

@@ -1,0 +1,19 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <application>
+    <!--
+      Makes Brokely appear in Android's "Notification access" list. The service is a stub in this
+      step: it receives notifications but does not read or store anything yet (D-02, FR-IMP-11).
+    -->
+    <service
+      android:name=".TngNotificationListenerService"
+      android:exported="true"
+      android:label="Brokely"
+      android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+      <intent-filter>
+        <action android:name="android.service.notification.NotificationListenerService" />
+      </intent-filter>
+    </service>
+  </application>
+  <!-- Lets Brokely open the "ignore battery optimisations" request page (not the silent grant). -->
+  <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+</manifest>
