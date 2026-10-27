@@ -72,6 +72,16 @@ export function formatRM(amount: Sen): string {
 }
 
 /**
+ * An amount as plain typed text for a text box, e.g. 6 → "0.06", 123450 → "1234.50". Integer
+ * maths only, so there is no floating-point ringgit (BR-01, rule 1); {@link parseAmount} reads
+ * it back exactly.
+ */
+export function plainAmount(amount: Sen): string {
+  const abs = Math.abs(amount);
+  return `${amount < 0 ? "-" : ""}${Math.floor(abs / 100)}.${String(abs % 100).padStart(2, "0")}`;
+}
+
+/**
  * Reads money a student typed ("250", "250.5", "RM 1,234.56") as whole sen, or null if it is
  * not an amount. Works on the digits as text, never on floating-point ringgit (BR-01, rule 1):
  * "0.29" is exactly 29 sen. At most two decimals; no signs, exponents or spaces inside.

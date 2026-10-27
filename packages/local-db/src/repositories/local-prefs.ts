@@ -1,4 +1,9 @@
-import { DEFAULT_NOTIFICATION_SETTINGS, type NotificationSettings } from "@brokely/domain";
+import {
+  DEFAULT_NOTIFICATION_SETTINGS,
+  readTngQueue,
+  type NotificationSettings,
+  type TngQueue,
+} from "@brokely/domain";
 import { eq } from "drizzle-orm";
 import { localPrefs } from "../schema";
 import type { Db, RepoContext } from "./context";
@@ -323,4 +328,22 @@ export function setAddDraft(ctx: RepoContext, draft: AddDraft): void {
 export function clearAddDraft(ctx: RepoContext): void {
   if (getPref(ctx.db, ADD_DRAFT_KEY) === undefined) return; // no write, so no screen re-reads
   ctx.db.delete(localPrefs).where(eq(localPrefs.key, ADD_DRAFT_KEY)).run();
+}
+
+// ── TNG imports waiting for the student (D-02, D-128) ──────────────────────────
+
+const TNG_QUEUE_KEY = "tng_queue";
+
+/**
+ * The TNG transfers the phone caught that the student has not dealt with yet, plus a short memory
+ * of those already dealt with (FR-IMP-04, FR-IMP-05). Phone-only, never synced: it holds other
+ * people's names. It is wiped with everything else by "Delete everything" (FR-ACC-07).
+ */
+export function getTngQueue(db: Db): TngQueue {
+  return readTngQueue(getPref(db, TNG_QUEUE_KEY));
+}
+
+/** Callers write only when the queue changed: each write makes every open screen read again. */
+export function setTngQueue(ctx: RepoContext, queue: TngQueue): void {
+  setPref(ctx, TNG_QUEUE_KEY, queue);
 }

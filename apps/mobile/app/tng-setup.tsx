@@ -87,8 +87,9 @@ export default function TngSetupScreen() {
         </Text>
         <Text style={[type.small, { color: colors.muted }]}>
           Development only. These are TNG's raw notifications and can include people's full names.
-          They stay on this phone (50 at most, 30 days at most). Hide the names before you share
-          any, and never put them in the repo.
+          They stay on this phone (50 at most, 30 days at most). Transfers Brokely understands move
+          to Home as payments waiting for you, so only other notifications stay here. Hide the names
+          before you share any, and never put them in the repo.
         </Text>
         {captures.slice(0, 5).map((c) => (
           <View key={`${c.key}-${c.postTime}`} style={{ gap: 2 }}>

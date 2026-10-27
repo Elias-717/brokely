@@ -37,6 +37,25 @@ object TngCaptureStore {
 
   @Synchronized fun all(context: Context): List<JSONObject> = load(context)
 
+  /**
+   * The identity of one capture: when Android posted it, then its key. Keep this exactly in step
+   * with `tngImportId` in `@brokely/domain` (packages/domain/src/tng-import.ts); the app uses it
+   * to say which captures it has taken in.
+   */
+  fun captureId(item: JSONObject): String = "${item.optLong("postTime")}|${item.optString("key")}"
+
+  /**
+   * Deletes the raw copies of captures the app has taken in or the student has dealt with
+   * (FR-IMP-11). Unknown ids are ignored, so calling it twice is harmless.
+   */
+  @Synchronized
+  fun remove(context: Context, ids: Set<String>) {
+    if (ids.isEmpty()) return
+    val items = load(context)
+    val kept = items.filter { captureId(it) !in ids }
+    if (kept.size != items.size) save(context, kept)
+  }
+
   @Synchronized
   fun clear(context: Context) {
     context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().remove(KEY).apply()

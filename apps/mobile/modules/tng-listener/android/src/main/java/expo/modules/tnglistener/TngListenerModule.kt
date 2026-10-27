@@ -60,6 +60,9 @@ class TngListenerModule : Module() {
 
     Function("clearCaptures") { TngCaptureStore.clear(context) }
 
+    // Deletes the raw captures with these ids once the app has taken them in (FR-IMP-11).
+    Function("deleteCaptures") { ids: List<String> -> TngCaptureStore.remove(context, ids.toSet()) }
+
     // Opens the battery-optimisation list (the student finds Brokely and picks "Don't optimise").
     // The direct "allow" prompt needs a permission that Google Play restricts, so it is not used.
     Function("openBatterySettings") {

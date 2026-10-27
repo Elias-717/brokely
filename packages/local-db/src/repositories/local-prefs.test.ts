@@ -1,3 +1,4 @@
+import { sen } from "@brokely/domain";
 import { sql } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { outboxOperations } from "../schema";
@@ -25,6 +26,8 @@ import {
   getMoneyTips,
   getNickname,
   getNotificationPrefs,
+  getTngQueue,
+  setTngQueue,
   postponeCard,
   recordTipShown,
   setAppearance,
@@ -216,6 +219,26 @@ describe("phone-only preferences (D-30, D-32)", () => {
     clearAddDraft(ctx);
     expect(getAddDraft(ctx.db, "2026-10-24")).toBeNull();
     clearAddDraft(ctx); // nothing to clear: fine
+    expect(ctx.db.select().from(outboxOperations).all()).toHaveLength(0); // phone-only
+  });
+
+  it("the TNG queue starts empty and keeps pending and settled imports on this phone only (D-128)", () => {
+    expect(getTngQueue(ctx.db)).toEqual({ pending: [], handled: [] });
+
+    const queue = {
+      pending: [
+        {
+          id: "1793001879800|key",
+          postTime: 1793001879800,
+          direction: "in" as const,
+          amountSen: sen(12),
+          counterparty: "[FRIEND A]",
+        },
+      ],
+      handled: [{ id: "1793001822940|key", postTime: 1793001822940 }],
+    };
+    setTngQueue(ctx, queue);
+    expect(getTngQueue(ctx.db)).toEqual(queue);
     expect(ctx.db.select().from(outboxOperations).all()).toHaveLength(0); // phone-only
   });
 

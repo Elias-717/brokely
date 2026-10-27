@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { divideSen, formatRM, parseAmount, roundHalfEven, sen, sumSen } from "./money";
+import { divideSen, formatRM, parseAmount, plainAmount, roundHalfEven, sen, sumSen } from "./money";
 
 describe("sen", () => {
   it("accepts whole numbers of sen", () => {
@@ -91,4 +91,14 @@ describe("parseAmount (typed money to whole sen, BR-01)", () => {
       expect(parseAmount(typed)).toBeNull();
     },
   );
+});
+
+describe("plainAmount (BR-01)", () => {
+  it("writes whole sen as typed text that parseAmount reads back exactly", () => {
+    for (const amount of [1, 6, 29, 100, 12345, 123450, 5000000].map(sen)) {
+      expect(parseAmount(plainAmount(amount))).toBe(amount);
+    }
+    expect(plainAmount(sen(6))).toBe("0.06");
+    expect(plainAmount(sen(123450))).toBe("1234.50");
+  });
 });

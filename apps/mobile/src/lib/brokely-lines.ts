@@ -294,3 +294,19 @@ export const essentialLines = {
 export function plain(line: Line): string {
   return line.map((part) => (typeof part === "string" ? part : part.b)).join("");
 }
+
+/**
+ * Brokely's words on Home for a TNG payment the phone caught (D-128, FR-IMP-04): fact first, the
+ * exact amount and name, then one question. The payment counts for nothing until the student
+ * saves it (D-02).
+ */
+export const tngLines = {
+  label: (when: LocalDate): string => `From TNG · ${dayMonth(when)}`,
+  out: (amount: Sen, name: string): string =>
+    `You sent ${formatRM(amount)} to ${name}. Add it to your records?`,
+  in: (amount: Sen, name: string): string =>
+    `${name} sent you ${formatRM(amount)}. Add it to your records?`,
+  more: (count: number): string =>
+    count === 1 ? "1 more TNG payment is waiting." : `${count} more TNG payments are waiting.`,
+  declined: (amount: Sen): string => `Left out ${formatRM(amount)} from TNG`,
+};

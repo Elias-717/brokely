@@ -20,6 +20,7 @@ const native = requireOptionalNativeModule<{
   openBatterySettings(): boolean;
   getCaptures(): TngCapture[];
   clearCaptures(): void;
+  deleteCaptures(ids: string[]): void;
 }>("TngListener");
 
 /** True when this build contains the TNG listener (needs a new development build). */
@@ -53,4 +54,12 @@ export function getCaptures(): TngCapture[] {
 /** Deletes every captured notification from this phone. */
 export function clearCaptures(): void {
   native?.clearCaptures();
+}
+
+/**
+ * Deletes the raw captures with these ids (`tngImportId` in `@brokely/domain`), once the app has
+ * taken them into its pending list (FR-IMP-11).
+ */
+export function deleteCaptures(ids: readonly string[]): void {
+  if (ids.length > 0) native?.deleteCaptures([...ids]);
 }

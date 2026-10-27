@@ -3,8 +3,12 @@ import {
   formatRM,
   guessCategory,
   noteSuggestions,
+  plainAmount,
+  reopenTngImport,
   sen,
+  settleTngImport,
   type LocalDate,
+  type PendingTngImport,
 } from "@brokely/domain";
 import {
   addCategory,
@@ -13,11 +17,13 @@ import {
   deleteDebt,
   deleteTransaction,
   getAddDraft,
+  getTngQueue,
   recordMoneyIn,
   recordPurchase,
   recordSplitPurchase,
   recordTransaction,
   setAddDraft,
+  setTngQueue,
   type AddDraft,
   type RepoResult,
 } from "@brokely/local-db";
@@ -30,7 +36,7 @@ import { categoriesByUse, guessHistory } from "../src/lib/category-order";
 import { categoryIcon } from "../src/lib/essentials-meta";
 import { readDebts } from "../src/lib/debts-model";
 import { refusalText } from "../src/lib/messages";
-import { dayMonth, occurredAtFor, today } from "../src/lib/today";
+import { dayMonth, occurredAtFor, today, toLocalDate } from "../src/lib/today";
 import { Button } from "../src/ui/components";
 import { pickDate } from "../src/ui/date-picker";
 import { Keypad, SumLine } from "../src/ui/keypad";
@@ -116,13 +122,21 @@ export default function QuickAdd() {
   const history = useRead((db) => guessHistory(db, day), [day]);
 
   // Debts opens it on More → I lent / I borrowed (S7 "+ Add").
-  const params = useLocalSearchParams<{ more?: MoreKind }>();
-  // What was typed when the sheet last closed without saving, today (D-117). Opened from
-  // Debts for a new debt, it starts empty and leaves that draft alone.
-  const [restored, setRestored] = useState(() =>
-    params.more ? null : readDraft(getAddDraft(db, day)),
+  // Home opens it with `tng` for a TNG payment the phone caught (D-128): amount, date and name
+  // are filled in, and the student chooses the rest.
+  const params = useLocalSearchParams<{ more?: MoreKind; tng?: string }>();
+  // Read once: saving settles the import, and the sheet must keep what it opened with.
+  const [tngItem] = useState<PendingTngImport | null>(
+    () => getTngQueue(db).pending.find((p) => p.id === params.tng) ?? null,
   );
-  const [start] = useState(() => restored ?? emptyDraft(params.more, day));
+  // What was typed when the sheet last closed without saving, today (D-117). Opened from
+  // Debts for a new debt or from a TNG payment, it starts fresh and leaves that draft alone.
+  const [restored, setRestored] = useState(() =>
+    params.more || tngItem ? null : readDraft(getAddDraft(db, day)),
+  );
+  const [start] = useState(
+    () => restored ?? (tngItem ? tngDraft(tngItem, day) : emptyDraft(params.more, day)),
+  );
   const [mode, setMode] = useState<Mode>(start.mode);
   const [amountText, setAmountText] = useState(start.amountText);
   const [date, setDate] = useState<LocalDate>(start.date);
@@ -167,7 +181,7 @@ export default function QuickAdd() {
   const saved = useRef(false);
   useEffect(() => {
     const keep = () => {
-      if (saved.current) return;
+      if (saved.current || tngItem) return; // a TNG payment stays pending instead (D-128)
       if (hasTyped(latest.current)) setAddDraft(repo, { day, fields: { ...latest.current } });
       else clearAddDraft(repo);
     };
@@ -211,8 +225,11 @@ export default function QuickAdd() {
     () => (mode === "spent" && !pickedByHand ? guessCategory(note, history, categories) : null),
     [mode, pickedByHand, note, history, categories],
   );
+  // A TNG payment has no default category: the student chooses (or the note's name was filed
+  // before and is guessed), so a tap on Save never files it under whichever comes first (D-128).
   const picked =
-    categories.find((c) => c.id === (guess?.categoryId ?? categoryId)) ?? categories[0];
+    categories.find((c) => c.id === (guess?.categoryId ?? categoryId)) ??
+    (tngItem ? undefined : categories[0]);
   const guessed = guess !== null && picked?.id === guess.categoryId;
   const when = { localDate: date, occurredAt: occurredAtFor(date, day) };
   const cleanNote = note.trim();
@@ -231,16 +248,22 @@ export default function QuickAdd() {
     if (!result.ok) return setProblem(refusalText(result.code, result.message));
     saved.current = true;
     clearAddDraft(repo);
+    // Saving is the confirmation: the import leaves the pending list for good (FR-IMP-04).
+    if (tngItem) setTngQueue(repo, settleTngImport(getTngQueue(db), tngItem.id));
     savedBuzz();
     router.back();
-    showUndo(message, () => undo(result.value));
+    showUndo(message, () => {
+      undo(result.value);
+      // Undo takes the record away, so the payment waits on Home again.
+      if (tngItem) setTngQueue(repo, reopenTngImport(getTngQueue(db), tngItem));
+    });
     if (tipFor !== undefined) offerTip(tipFor);
   };
 
   const save = () => {
     if (amount === null || amount <= 0) return setProblem("Type an amount above zero first.");
     if (mode === "spent") {
-      if (!picked) return;
+      if (!picked) return setProblem("Pick a category first.");
       // A name typed under Other becomes a category of its own, kept for next time (D-44).
       const typed = customName.trim();
       if (picked.name === "Other" && typed) {
@@ -359,7 +382,9 @@ export default function QuickAdd() {
     amount === null || amount <= 0
       ? "Save"
       : mode === "spent"
-        ? `Save ${formatRM(amount)} · ${picked?.name ?? ""}`
+        ? picked
+          ? `Save ${formatRM(amount)} · ${picked.name}`
+          : `Save ${formatRM(amount)}`
         : mode === "in" && from === BORROWED
           ? `Save borrowed · ${formatRM(amount)}`
           : mode === "in"
@@ -394,6 +419,16 @@ export default function QuickAdd() {
               }}
             />
 
+            {tngItem ? (
+              <Text
+                accessibilityLiveRegion="polite"
+                style={[type.small, { color: colors.muted, textAlign: "center" }]}
+              >
+                {tngItem.direction === "out"
+                  ? `Sent to ${tngItem.counterparty} on TNG. Choose what it was.`
+                  : `Received from ${tngItem.counterparty} on TNG. Choose what it was.`}
+              </Text>
+            ) : null}
             {restored ? (
               <View
                 style={{
@@ -893,6 +928,25 @@ function emptyDraft(more: MoreKind | undefined, day: LocalDate): Draft {
     moreKind: more ?? "transfer",
     person: "",
     payBackBy: null,
+  };
+}
+
+/**
+ * A TNG payment as the sheet's starting fields (D-128): the amount and the day it happened, and
+ * the name, in the note for money sent (so a name filed before suggests its category, D-84) or as
+ * the friend for money received. Money sent opens on Spent but nothing is saved until the student
+ * taps Save with a category; the other tabs are one tap away (FR-IMP-08, AC-35).
+ */
+function tngDraft(item: PendingTngImport, day: LocalDate): Draft {
+  const received = item.direction === "in";
+  return {
+    ...emptyDraft(undefined, day),
+    mode: received ? "in" : "spent",
+    amountText: plainAmount(item.amountSen),
+    date: toLocalDate(new Date(item.postTime)),
+    note: received ? "" : item.counterparty,
+    from: received ? FRIEND : FROM[0]!,
+    person: received ? item.counterparty : "",
   };
 }
 

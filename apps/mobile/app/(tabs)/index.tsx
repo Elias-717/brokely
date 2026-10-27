@@ -33,6 +33,7 @@ import { ProgressRing } from "../../src/ui/progress-ring";
 import { fonts, radius, space, type } from "../../src/ui/theme";
 import { useTheme } from "../../src/ui/theme-context";
 import { FirstVisit, MonthSoFar } from "../../src/ui/home-no-plan";
+import { TngPendingCards } from "../../src/ui/tng-pending";
 import { useUndo } from "../../src/ui/undo";
 import { savedBuzz } from "../../src/ui/haptics";
 
@@ -137,6 +138,7 @@ export default function HomeScreen() {
         {header}
         {/* The card sits in the middle of the space below the greeting, a little above centre. */}
         <View style={{ flex: 1, justifyContent: "center", gap: space.md, paddingBottom: 72 }}>
+          <TngPendingCards />
           {home.draftId ? (
             <Sticker background={colors.cardTint} style={{ padding: space.md, gap: space.sm }}>
               <Text style={[type.heading, { color: colors.text }]}>Your next plan is ready</Text>
@@ -294,6 +296,9 @@ export default function HomeScreen() {
           </View>
         ) : null}
       </View>
+
+      {/* TNG payments the phone caught, waiting for a yes or no (FR-IMP-04, D-02, D-128) */}
+      <TngPendingCards />
 
       {/* Nothing logged today: one tap marks a covered day (FR-TXN-08, R-01) */}
       {home.offerCheckIn ? (
