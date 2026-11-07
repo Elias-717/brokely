@@ -1,7 +1,8 @@
 import type { PullChange } from "@brokely/contracts";
+import type { DataCounts } from "@brokely/domain";
 import { inArray, isNull, and } from "drizzle-orm";
 import type { Db } from "../repositories/context";
-import { debts, outboxOperations, planningCycles, transactions } from "../schema";
+import { bills, debts, outboxOperations, planningCycles, transactions } from "../schema";
 
 /**
  * What a side holds, for the "Your account already has records" choice (D-73 b): concrete
@@ -28,6 +29,13 @@ export function phoneSummary(db: Db): RecordSummary {
   const live = <T extends typeof transactions | typeof debts>(table: T) =>
     db.select({ id: table.id }).from(table).where(isNull(table.deletedAt)).all().length;
   return { plans, records: live(transactions), debts: live(debts) };
+}
+
+/** What "Delete all my data" would remove, in numbers (D-129). */
+export function phoneDataCounts(db: Db): DataCounts {
+  const { plans, records, debts: debtCount } = phoneSummary(db);
+  const billRows = db.select({ id: bills.id }).from(bills).where(isNull(bills.deletedAt)).all();
+  return { records, plans: plans.length, debts: debtCount, bills: billRows.length };
 }
 
 /** The account's records, from a full pull (every row's latest state, delete markers too). */

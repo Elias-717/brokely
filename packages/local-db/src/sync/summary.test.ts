@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { listCategories, quickStart, recordPurchase, seedDefaultCategories } from "../repositories";
 import { createTestContext, testId } from "../test-db";
 import { outboxOperations } from "../schema";
-import { phoneSummary, stuckChanges, summarizeChanges } from "./summary";
+import { phoneDataCounts, phoneSummary, stuckChanges, summarizeChanges } from "./summary";
 
 describe("what each side holds (D-73 b)", () => {
   it("counts this phone's plans, records and debts", async () => {
@@ -29,6 +29,25 @@ describe("what each side holds (D-73 b)", () => {
       records: 1,
       debts: 0,
     });
+  });
+
+  it("counts what Delete all my data would remove (D-129)", async () => {
+    const { ctx } = await createTestContext();
+    seedDefaultCategories(ctx);
+    expect(phoneDataCounts(ctx.db)).toEqual({ records: 0, plans: 0, debts: 0, bills: 0 });
+    quickStart(ctx, {
+      budgetSen: sen(40000),
+      startDate: "2026-11-01",
+      endDateInclusive: "2026-11-30",
+    });
+    const meals = listCategories(ctx.db).find((c) => c.name === "Meals")!.id;
+    recordPurchase(ctx, {
+      amountSen: sen(800),
+      categoryId: meals,
+      occurredAt: "2026-11-02T04:00:00Z",
+      localDate: "2026-11-02",
+    });
+    expect(phoneDataCounts(ctx.db)).toEqual({ records: 1, plans: 1, debts: 0, bills: 0 });
   });
 
   it("counts the account's latest state from a pull, without deleted rows or drafts", () => {
