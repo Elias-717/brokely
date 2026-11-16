@@ -61,6 +61,7 @@ erDiagram
         int budget_sen
         instant approved_at "NULL while draft"
         bool shortfall_acknowledged
+        text reason "why it changed, D-139 (nullable)"
     }
     ALLOCATION {
         uuid id PK
@@ -153,7 +154,7 @@ Sync-only tables (not shown): `outbox_operation` and `sync_state` on the phone; 
 | Table | Key columns | Constraints and rules |
 |---|---|---|
 | `planning_cycle` | `start_date`, `end_date_exclusive`, `tracking_start_date`, `status` | `start_date < end_date_exclusive`; `start_date ≤ tracking_start_date < end_date_exclusive` (tracking starts later only after a mid-month catch-up, D-25, BR-29). The user enters an inclusive end date; stored as end + 1 day (BR-03). **No two cycles with status `active` or `completed` may share a date** (BR-05 extended by D-18: completed cycles still own their dates). Drafts and archived cycles may overlap. Postgres: `EXCLUDE USING gist (user_id WITH =, daterange(start_date, end_date_exclusive) WITH &&) WHERE status IN ('active','completed')`. SQLite: checked by the domain before saving. |
-| `plan_revision` | `cycle_id`, `revision_no`, `budget_sen`, `approved_at`, `shortfall_acknowledged` | `UNIQUE (cycle_id, revision_no)`. Revision 1 is the original. Once `approved_at` is set, the row and its allocations are never edited; a change creates revision n+1 (D-03). Allowed in completed cycles too (D-19). The *current* revision = highest approved `revision_no`. **At most one unapproved (draft) revision per cycle**, discarded if not approved (D-20, FR-PLN-16). Approval requires `shortfall_acknowledged = true` when U < 0 (FR-PLN-10). |
+| `plan_revision` | `cycle_id`, `revision_no`, `budget_sen`, `approved_at`, `shortfall_acknowledged`, `reason` (nullable, ≤ 120 characters, why it changed, D-139) | `UNIQUE (cycle_id, revision_no)`. Revision 1 is the original. Once `approved_at` is set, the row and its allocations are never edited; a change creates revision n+1 (D-03). Allowed in completed cycles too (D-19). The *current* revision = highest approved `revision_no`. **At most one unapproved (draft) revision per cycle**, discarded if not approved (D-20, FR-PLN-16). Approval requires `shortfall_acknowledged = true` when U < 0 (FR-PLN-10). |
 | `allocation` | `revision_id`, `category_id`, `amount_sen` | `UNIQUE (revision_id, category_id)`; `amount_sen >= 0`. Set-asides are allocations to categories of kind `set_aside` (D-04). |
 | `category` | `name`, `kind`, `sort_order`, `archived_at` | `kind IN ('essential','optional','set_aside')`. Unique name per user among non-deleted rows. Archiving keeps history (FR-CAT-02). **A category with any allocation or transaction can only be archived, never deleted** (D-21, FR-CAT-08, BR-28). |
 
