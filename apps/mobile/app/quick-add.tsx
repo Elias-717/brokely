@@ -139,7 +139,7 @@ export default function QuickAdd() {
     params.more || tngItem ? null : readDraft(getAddDraft(db, day)),
   );
   const [start] = useState(
-    () => restored ?? (tngItem ? tngDraft(tngItem, day) : emptyDraft(params.more, day)),
+    () => restored ?? (tngItem ? tngDraft(tngItem, day, categories) : emptyDraft(params.more, day)),
   );
   const [mode, setMode] = useState<Mode>(start.mode);
   const [amountText, setAmountText] = useState(start.amountText);
@@ -229,7 +229,7 @@ export default function QuickAdd() {
 
   // Money sent on TNG: who it went to has its own field, so "What was it?" stays for the student
   // (author, 17 Nov). It still suggests a category from a name filed before (D-84).
-  const sentToShown = mode === "spent" && tngItem?.direction === "out";
+  const sentToShown = mode === "spent" && tngItem?.direction === "out" && !tngItem.payment;
   const sentTo = sentToShown ? person.trim() : "";
   // A sum such as 12.50+8 is worked out as it is typed (D-115).
   const amount = evaluateAmount(amountText);
@@ -478,9 +478,11 @@ export default function QuickAdd() {
                 accessibilityLiveRegion="polite"
                 style={[type.small, { color: colors.muted, textAlign: "center" }]}
               >
-                {tngItem.direction === "out"
-                  ? `Sent to ${tngItem.counterparty} on TNG. Choose what it was.`
-                  : `Received from ${tngItem.counterparty} on TNG. Choose what it was.`}
+                {tngItem.payment
+                  ? `Paid on TNG: ${tngItem.counterparty}. Check the category and save.`
+                  : tngItem.direction === "out"
+                    ? `Sent to ${tngItem.counterparty} on TNG. Choose what it was.`
+                    : `Received from ${tngItem.counterparty} on TNG. Choose what it was.`}
               </Text>
             ) : null}
             {restored ? (
@@ -1033,11 +1035,31 @@ function emptyDraft(more: MoreKind | undefined, day: LocalDate): Draft {
 /**
  * A TNG payment as the sheet's starting fields (D-128): the amount and the day it happened, and
  * the name: "Sent to" for money sent (it still suggests a category filed before, D-84), the
- * friend for money received. The note stays empty for the student (author, 17 Nov). Money sent opens on Spent but nothing is saved until the student
- * taps Save with a category; the other tabs are one tap away (FR-IMP-08, AC-35).
+ * friend for money received. The note stays empty for the student (author, 17 Nov). A payment to
+ * a business fills the note and suggests its category. Money sent opens on Spent but nothing is
+ * saved until the student taps Save with a category; the other tabs are one tap away (FR-IMP-08, AC-35).
  */
-function tngDraft(item: PendingTngImport, day: LocalDate): Draft {
+function tngDraft(
+  item: PendingTngImport,
+  day: LocalDate,
+  categories: readonly { id: string; name: string }[],
+): Draft {
   const received = item.direction === "in";
+  if (item.payment) {
+    // A payment to a business (17 Nov): what TNG called it as the note, and its category
+    // suggested, e.g. Mobile prepaid top up → Phone & internet. Still saved only on Save (D-02).
+    const hinted = categories.find((c) => c.name === item.payment?.categoryHint);
+    return {
+      ...emptyDraft(undefined, day),
+      mode: "spent",
+      amountText: plainAmount(item.amountSen),
+      date: toLocalDate(new Date(item.postTime)),
+      note: item.counterparty,
+      categoryId: hinted?.id ?? null,
+      // TNG said what it was, so a guess from the note doesn't replace it; a tap still can.
+      pickedByHand: hinted !== undefined,
+    };
+  }
   return {
     ...emptyDraft(undefined, day),
     mode: received ? "in" : "spent",

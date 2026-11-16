@@ -17,6 +17,11 @@ import { parseAmount, type Sen } from "./money";
  * - Reload (17 Nov): title "Reload Successful" text "Your money is in! RM42.00 has been reloaded
  *   to your Touch 'n Go eWallet balance. Reference No. <digits>". The student's own money moving
  *   into TNG: never spending and never money in, so it is recognised and left out.
+ * - Mobile prepaid top up (17 Nov): title "Mobile prepaid top up" text "RM5.00 deducted from
+ *   your TNG eWallet. If you did not receive your top up within 30 minutes, please call …".
+ *   Spending; Phone & internet is suggested, the student confirms (D-02).
+ * - Points (17 Nov): title "You've just earned 5 points!", posted with a payment (half a second
+ *   after the top up). Recognised and left out: the payment's own notification carries the amount.
  *
  * Not sampled yet, so deliberately unreadable: QR merchant payment, refund, bill payment.
  * Add each one only from a real sample, with a test.
@@ -29,6 +34,17 @@ export type TngParse =
       readonly amount: Sen;
       readonly counterparty: string;
     }
+  /** Money paid to a business, e.g. a mobile prepaid top up. Spending once confirmed (D-02). */
+  | {
+      readonly kind: "payment";
+      readonly amount: Sen;
+      /** What it was, as TNG names it, e.g. "Mobile prepaid top up". */
+      readonly description: string;
+      /** The default category's name to suggest, or null to let the student choose. */
+      readonly categoryHint: string | null;
+    }
+  /** TNG reward points, posted next to a payment. Never an amount of money. */
+  | { readonly kind: "points"; readonly points: number }
   /** A top-up from the student's own bank or card: own money moving, so it counts for nothing. */
   | { readonly kind: "reload"; readonly amount: Sen; readonly reference: string | null }
   /** Not a payment Brokely understands: ignore it, or keep it pending with no amount. */
@@ -59,6 +75,9 @@ const RELOAD_TEXT = new RegExp(
   `^Your money is in! ${AMOUNT} has been reloaded to your Touch 'n Go eWallet balance\\.(?: Reference No\\. (\\w+))?$`,
   "i",
 );
+
+const PREPAID_TEXT = new RegExp(`^${AMOUNT} deducted from your TNG eWallet\\.`, "i");
+const POINTS_TITLE = /^you've just earned (\d+) points?!$/;
 
 /** Trims, turns non-breaking and repeated spaces into one space, and curly quotes into '. */
 function tidy(value: string | undefined): string {
@@ -92,6 +111,18 @@ export function parseTngNotification(notification: TngNotificationText): TngPars
     if (amount === null) return UNREADABLE;
     return { kind: "reload", amount, reference: match?.[2] ?? null };
   }
+  if (title === "mobile prepaid top up") {
+    const amount = amountOf(PREPAID_TEXT.exec(text)?.[1]);
+    if (amount === null) return UNREADABLE;
+    return {
+      kind: "payment",
+      amount,
+      description: "Mobile prepaid top up",
+      categoryHint: "Phone & internet",
+    };
+  }
+  const points = POINTS_TITLE.exec(title);
+  if (points) return { kind: "points", points: Number(points[1]) };
   return UNREADABLE;
 }
 

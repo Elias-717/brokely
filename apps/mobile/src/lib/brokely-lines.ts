@@ -302,6 +302,8 @@ export function plain(line: Line): string {
  */
 export const tngLines = {
   label: (when: LocalDate): string => `From TNG · ${dayMonth(when)}`,
+  paid: (amount: Sen, what: string): string =>
+    `You paid ${formatRM(amount)} for ${what}. Add it to your spending?`,
   out: (amount: Sen, name: string): string =>
     `You sent ${formatRM(amount)} to ${name}. Add it to your records?`,
   in: (amount: Sen, name: string): string =>

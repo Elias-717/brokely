@@ -217,6 +217,8 @@ Known TNG formats (package `my.com.tngdigital.ewallet`; **no transaction ID in t
 - Transfer in — title `Ka-ching! Incoming Money.` body `RM 0.50 received from [NAME] for Fund Transfer.`
 - Transfer in, second wording (17 Nov) — title `You’ve received money!` (curly apostrophe) body `[NAME] has transferred RM 1.52 to you. Tap here to check the transaction details.`
 - Reload (17 Nov) — title `Reload Successful` body `Your money is in! RM42.00 has been reloaded to your Touch 'n Go eWallet balance. Reference No. <37 digits>`: own money moving, recognised (`kind: "reload"`) and left out, never a card. **It has a reference number**, the first unique ID seen
+- Mobile prepaid top up (17 Nov) — title `Mobile prepaid top up` body `RM5.00 deducted from your TNG eWallet. If you did not receive your top up within 30 minutes, please call Careline at …`: a payment (`kind: "payment"`, pending with `payment.categoryHint` "Phone & internet"); the card opens Add on Spent with the note and category filled in
+- Points (17 Nov) — title `You've just earned 5 points!` body `You've received 5 points from your transaction! …`, posted ~0.5 s after a payment; points ≈ ringgit spent (author). Recognised (`kind: "points"`) and dropped for now
 - Noise to ignore (seen 26 Oct): TNG's blank group summary (empty title and text) and promotions such as `Your eWallet balance is low. Reload now!`. The parser accepts only known title + sentence pairs; unknown wording is never guessed (FR-IMP-09).
 - Not sampled yet: QR merchant payment, refund, bill payment, amounts with a thousands comma (the parser already accepts `1,234.50` and `1234.50`).
 

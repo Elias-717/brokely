@@ -158,3 +158,28 @@ describe("parseTngNotification: formats seen 17 Nov (D-128)", () => {
     ).toEqual({ kind: "unreadable" });
   });
 });
+
+describe("parseTngNotification: payments and points (17 Nov)", () => {
+  it("reads a mobile prepaid top up as spending, suggesting Phone & internet", () => {
+    expect(
+      parseTngNotification({
+        title: "Mobile prepaid top up",
+        text: "RM5.00 deducted from your TNG eWallet. If you did not receive your top up within 30 minutes, please call Careline at +603-5022 3888",
+      }),
+    ).toEqual({
+      kind: "payment",
+      amount: sen(500),
+      description: "Mobile prepaid top up",
+      categoryHint: "Phone & internet",
+    });
+  });
+
+  it("recognises reward points, which are never an amount of money", () => {
+    expect(
+      parseTngNotification({
+        title: "You've just earned 5 points!",
+        text: "You've received 5 points from your transaction! Use them now to redeem great rewards.",
+      }),
+    ).toEqual({ kind: "points", points: 5 });
+  });
+});

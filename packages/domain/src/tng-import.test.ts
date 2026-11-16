@@ -106,6 +106,36 @@ describe("ingestTngCaptures (FR-IMP-04, FR-IMP-05, FR-IMP-06, FR-IMP-08)", () =>
     expect(result.consumed).toEqual([tngImportId(reload.key, reload.postTime)]);
   });
 
+  it("turns a prepaid top up into a pending payment, and drops the points next to it", () => {
+    const topUp: TngCaptured = {
+      key: "0|my.com.tngdigital.ewallet|3|null|10340",
+      postTime: NOW - 10_000,
+      title: "Mobile prepaid top up",
+      text: "RM5.00 deducted from your TNG eWallet. If you did not receive your top up within 30 minutes, please call Careline at +603-5022 3888",
+      bigText: "",
+    };
+    const points: TngCaptured = {
+      key: "0|my.com.tngdigital.ewallet|4|null|10340",
+      postTime: NOW - 9_500,
+      title: "You've just earned 5 points!",
+      text: "You've received 5 points from your transaction! Use them now to redeem great rewards.",
+      bigText: "",
+    };
+    const result = ingestTngCaptures([topUp, points], EMPTY_TNG_QUEUE, NOW);
+    expect(result.queue.pending).toEqual([
+      {
+        id: tngImportId(topUp.key, topUp.postTime),
+        postTime: topUp.postTime,
+        direction: "out",
+        amountSen: sen(500),
+        counterparty: "Mobile prepaid top up",
+        payment: { categoryHint: "Phone & internet" },
+      },
+    ]);
+    expect(result.consumed).toHaveLength(2);
+    expect(readTngQueue(JSON.parse(JSON.stringify(result.queue)))).toEqual(result.queue);
+  });
+
   it("does not bring back an import that was already confirmed or declined", () => {
     const first = ingestTngCaptures([incoming], EMPTY_TNG_QUEUE, NOW);
     const id = tngImportId(incoming.key, incoming.postTime);
