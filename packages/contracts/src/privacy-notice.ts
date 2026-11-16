@@ -12,7 +12,7 @@ export const PRIVACY_OWNER = "Elias Al-Sumairi";
 /** Where students send questions, access/correction requests and complaints. */
 export const PRIVACY_CONTACT = "eliassumairi@gmail.com";
 /** Shown on the notice; change it whenever the text changes. */
-export const PRIVACY_NOTICE_DATE = "23 October 2026";
+export const PRIVACY_NOTICE_DATE = "17 November 2026";
 
 export interface NoticeSection {
   readonly title: string;
@@ -40,7 +40,16 @@ const en: PrivacyNotice = {
       paragraphs: [
         "Without an account, everything stays on your phone: your plans, records (amounts, dates, categories and notes), bills, debts, money in, wallet checks, no-spending days and settings. Nothing is sent anywhere.",
         "With an account (optional, for backup and sync), we also keep: your email address; if you sign in with Google, your name, Google profile picture link and Google account ID; and a copy of your plans, records, bills, debts, wallet checks and settings. Your nickname, theme and card choices stay on your phone only.",
-        "We never ask for or keep bank logins, PINs, one-time passwords or card numbers. Brokely has no ads, no analytics and no tracking, and it doesn't read your contacts or your location.",
+        "We never ask for or keep bank logins, PINs, one-time passwords or card numbers. Brokely has no ads, no analytics and no tracking, and it doesn't read your contacts or your location. It reads Touch 'n Go notifications only if you allow it (see below).",
+      ],
+    },
+    {
+      title: "Touch 'n Go notifications (optional)",
+      paragraphs: [
+        "If you turn on notification access for Brokely in Android's settings, Brokely can suggest records from your Touch 'n Go eWallet notifications. It is off unless you turn it on, and Brokely works fully without it.",
+        "Android then shows Brokely every notification on your phone. Brokely ignores every app except Touch 'n Go without reading or keeping anything from them. From Touch 'n Go notifications it reads the amount, the time, what it was (for example a mobile top up or reward points) and, for transfers, the other person's name as Touch 'n Go shows it.",
+        "Nothing becomes a record until you confirm it; you can decline any suggestion. Until then the notification text stays on your phone only, in Brokely's private storage: it is never sent to our server, and it is deleted once you deal with it, or after 30 days. A record you confirm is kept like any other record.",
+        "To stop it, turn off notification access for Brokely in Android's settings (Settings → Notifications → Notification access, or similar on your phone).",
       ],
     },
     {
@@ -53,6 +62,7 @@ const en: PrivacyNotice = {
       title: "Names of friends",
       paragraphs: [
         "When you record a debt or split a bill, you type a friend's name. It is kept like your notes: only you can see it. A first name or nickname is enough.",
+        "If you use Touch 'n Go notifications, a transfer's suggestion shows the person's full name as Touch 'n Go gives it. You can shorten it before saving.",
       ],
     },
     {
@@ -110,7 +120,16 @@ const ms: PrivacyNotice = {
       paragraphs: [
         "Tanpa akaun, semuanya kekal dalam telefon anda: pelan, rekod (jumlah, tarikh, kategori dan catatan), bil, hutang, wang masuk, semakan dompet, hari tanpa belanja dan tetapan. Tiada apa-apa dihantar ke mana-mana.",
         "Dengan akaun (pilihan, untuk sandaran dan penyegerakan), kami juga menyimpan: alamat e-mel anda; jika anda log masuk dengan Google, nama anda, pautan gambar profil Google dan ID akaun Google; serta salinan pelan, rekod, bil, hutang, semakan dompet dan tetapan anda. Nama panggilan, tema dan pilihan kad anda kekal dalam telefon sahaja.",
-        "Kami tidak sekali-kali meminta atau menyimpan maklumat log masuk bank, PIN, kata laluan sekali guna atau nombor kad. Brokely tiada iklan, tiada analitik dan tiada penjejakan, dan tidak membaca kenalan atau lokasi anda.",
+        "Kami tidak sekali-kali meminta atau menyimpan maklumat log masuk bank, PIN, kata laluan sekali guna atau nombor kad. Brokely tiada iklan, tiada analitik dan tiada penjejakan, dan tidak membaca kenalan atau lokasi anda. Ia membaca pemberitahuan Touch 'n Go hanya jika anda membenarkannya (lihat di bawah).",
+      ],
+    },
+    {
+      title: "Pemberitahuan Touch 'n Go (pilihan)",
+      paragraphs: [
+        "Jika anda menghidupkan akses pemberitahuan untuk Brokely dalam tetapan Android, Brokely boleh mencadangkan rekod daripada pemberitahuan Touch 'n Go eWallet anda. Ia dimatikan melainkan anda menghidupkannya, dan Brokely berfungsi sepenuhnya tanpanya.",
+        "Android kemudian menunjukkan setiap pemberitahuan dalam telefon anda kepada Brokely. Brokely mengabaikan semua aplikasi kecuali Touch 'n Go tanpa membaca atau menyimpan apa-apa daripadanya. Daripada pemberitahuan Touch 'n Go, ia membaca jumlah, masa, jenisnya (contohnya tambah nilai mudah alih atau mata ganjaran) dan, untuk pemindahan, nama orang itu seperti yang ditunjukkan oleh Touch 'n Go.",
+        "Tiada apa-apa menjadi rekod sehingga anda mengesahkannya; anda boleh menolak sebarang cadangan. Sebelum itu, teks pemberitahuan kekal dalam telefon anda sahaja, dalam storan peribadi Brokely: ia tidak sekali-kali dihantar ke pelayan kami, dan ia dipadam sebaik sahaja anda menguruskannya, atau selepas 30 hari. Rekod yang anda sahkan disimpan seperti rekod lain.",
+        "Untuk menghentikannya, matikan akses pemberitahuan untuk Brokely dalam tetapan Android (Tetapan → Pemberitahuan → Akses pemberitahuan, atau seumpamanya dalam telefon anda).",
       ],
     },
     {
@@ -123,6 +142,7 @@ const ms: PrivacyNotice = {
       title: "Nama rakan",
       paragraphs: [
         "Apabila anda merekod hutang atau berkongsi bil, anda menaip nama rakan. Nama itu disimpan seperti catatan anda: hanya anda yang dapat melihatnya. Nama pertama atau nama panggilan sudah memadai.",
+        "Jika anda menggunakan pemberitahuan Touch 'n Go, cadangan pemindahan menunjukkan nama penuh orang itu seperti yang diberikan oleh Touch 'n Go. Anda boleh memendekkannya sebelum menyimpan.",
       ],
     },
     {

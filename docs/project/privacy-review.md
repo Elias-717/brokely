@@ -69,3 +69,7 @@ Sources consulted 22 Oct 2026: [Baker McKenzie on the Amendment Act's commenceme
 [DLA Piper on the breach and DPO guidelines](https://privacymatters.dlapiper.com/2025/03/malaysia-guidelines-issued-on-data-breach-notification-and-data-protection-officer-appointment/),
 [CMS on mandatory breach notification](https://cms.law/en/sgp/legal-updates/new-guidelines-on-mandatory-breach-notifications-under-malaysia-s-personal-data-protection-act-2010),
 [Chambers practice guide (bilingual notice)](https://practiceguides.chambers.com/practice-guides/data-protection-privacy-2026/malaysia).
+
+## 17 Nov 2026: Touch 'n Go notifications (D-128…D-137)
+
+The notice (EN + BM, `packages/contracts/src/privacy-notice.ts`, date 17 November 2026) gains a section "Touch 'n Go notifications (optional)": off unless the student grants Android notification access; every other app's notifications are ignored without being read or kept; from TNG it reads amount, time, type and, for transfers, the other person's name; nothing becomes a record until confirmed; raw text stays in the app's private storage on the phone, never reaches the server, and is deleted when dealt with or after 30 days; how to switch it off. "Names of friends" says TNG shows full names and the student can shorten them. Still to do before testers use it: Play Console notification-access (sensitive permission) declaration, and a native speaker's check of the new Malay paragraphs.
