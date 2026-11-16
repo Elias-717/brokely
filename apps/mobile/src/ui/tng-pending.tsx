@@ -95,6 +95,7 @@ export function TngPendingCards() {
         to,
         amountSen: item.amountSen,
         localDate,
+        ...(saved.value.revisionId ? { revisionId: saved.value.revisionId } : {}),
       });
     }
     setTngQueue(repo, settleTngImport(getTngQueue(db), item.id));

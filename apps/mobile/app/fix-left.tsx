@@ -82,7 +82,6 @@ export default function FixLeftInPlan() {
   return (
     <SheetShell
       title="How much do you really have left?"
-      subtitle={`${dayMonth(localDate(plan.cycle.startDate))}–${dayMonth(end)}`}
       footer={
         <>
           <Keypad
@@ -113,7 +112,8 @@ export default function FixLeftInPlan() {
       }
     >
       <Text style={[type.small, { color: colors.muted }]}>
-        Brokely says {formatRM(home.leftInPlanSen)}.
+        Brokely says {formatRM(home.leftInPlanSen)} for {dayMonth(localDate(plan.cycle.startDate))}–
+        {dayMonth(end)}.
       </Text>
       <SumLine text={amountText} />
       <SheetAmount text={formatRM(wanted ?? (0 as Sen))} />

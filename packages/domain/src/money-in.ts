@@ -72,6 +72,8 @@ export interface MoneyInRouteRecord {
   readonly to: MoneyInRoute;
   readonly amountSen: Sen;
   readonly localDate: string;
+  /** The plan revision it made, so deleting the record can undo it too (D-139). */
+  readonly revisionId?: string;
 }
 
 /**

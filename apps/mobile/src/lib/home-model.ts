@@ -253,7 +253,11 @@ export function readHome(db: Db, today: LocalDate): HomeModel {
     [...todaysEveryday].reduce((sum, [id, amount]) => sum + (setAsideIds.has(id) ? 0 : amount), 0),
   );
   // Money in the student put on today goes on top of today's share (D-134).
-  const routes = getMoneyInRoutes(db, cycle.id);
+  // Only money in that still exists counts: a deleted record leaves its note behind (D-139).
+  const liveIncome = new Set(transactions.filter((t) => t.type === "income").map((t) => t.id));
+  const routes = Object.fromEntries(
+    Object.entries(getMoneyInRoutes(db, cycle.id)).filter(([id]) => liveIncome.has(id)),
+  );
   const todayShare = todayGuide({
     freeSen: guide.freeSen,
     everydayTodaySen,

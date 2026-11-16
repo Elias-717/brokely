@@ -372,6 +372,7 @@ export default function QuickAdd() {
           to: goesTo.kind,
           amountSen: amount,
           localDate: date,
+          ...(saved.value.revisionId ? { revisionId: saved.value.revisionId } : {}),
         });
       }
       const cycleId = goes.cycleId;

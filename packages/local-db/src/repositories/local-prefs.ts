@@ -367,7 +367,12 @@ export function getMoneyInRoutes(db: Db, cycleId: string): Record<string, MoneyI
     const r = raw as Partial<Record<keyof MoneyInRouteRecord, unknown>> | null;
     if (!r || !ROUTES.includes(r.to as MoneyInRoute)) continue;
     if (typeof r.amountSen !== "number" || typeof r.localDate !== "string") continue;
-    out[id] = { to: r.to as MoneyInRoute, amountSen: sen(r.amountSen), localDate: r.localDate };
+    out[id] = {
+      to: r.to as MoneyInRoute,
+      amountSen: sen(r.amountSen),
+      localDate: r.localDate,
+      ...(typeof r.revisionId === "string" ? { revisionId: r.revisionId } : {}),
+    };
   }
   return out;
 }

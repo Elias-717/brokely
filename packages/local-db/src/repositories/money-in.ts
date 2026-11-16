@@ -40,7 +40,7 @@ export function recordMoneyInTo(ctx: RepoContext, input: MoneyInToInput) {
     });
     const plan = input.cycleId ? getPlan(scope.tx, input.cycleId) : undefined;
     const reason = (input.reason ?? "Money in").slice(0, 120);
-    if (!plan || !input.cycleId) return { id, before: null, reason };
+    if (!plan || !input.cycleId) return { id, before: null, reason, revisionId: null };
     const before: PlanBefore = {
       cycleId: input.cycleId,
       budgetSen: sen(plan.revision.budgetSen),
@@ -51,15 +51,15 @@ export function recordMoneyInTo(ctx: RepoContext, input: MoneyInToInput) {
       shortfallAcknowledged: plan.revision.shortfallAcknowledged,
     };
     const next = planAfterMoneyIn(before, input.amountSen, input.goesTo);
-    if (!next) return { id, before: null, reason };
-    revisePlanIn(scope, {
+    if (!next) return { id, before: null, reason, revisionId: null };
+    const { revisionId } = revisePlanIn(scope, {
       cycleId: input.cycleId,
       budgetSen: next.budgetSen,
       allocations: next.allocations,
       shortfallAcknowledged: before.shortfallAcknowledged,
       reason,
     });
-    return { id, before, reason };
+    return { id, before, reason, revisionId };
   });
 }
 

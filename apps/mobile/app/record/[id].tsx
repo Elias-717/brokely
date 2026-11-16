@@ -26,6 +26,7 @@ import { Redirect, router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { repo } from "../../src/db/client";
+import { takeBackMoneyIn } from "../../src/lib/money-in-delete";
 import { useRead } from "../../src/db/use-read";
 import { refusalText } from "../../src/lib/messages";
 import { dayMonth, occurredAtFor, today } from "../../src/lib/today";
@@ -171,8 +172,13 @@ function Sheet({
       (t.type === "lend" || t.type === "borrow") && debtLines[0]?.kind === "debt"
         ? debtLines[0].debtId
         : null;
+    // Money in that changed the plan: its plan change and today's boost go with it (D-139).
+    const putBack = t.type === "income" ? takeBackMoneyIn(t.id, t.localDate) : null;
     const deleted = deleteTransaction(repo, t.id);
-    if (!deleted.ok) return setProblem(refusalText(deleted.code, deleted.message));
+    if (!deleted.ok) {
+      putBack?.();
+      return setProblem(refusalText(deleted.code, deleted.message));
+    }
     const debtGone =
       openedDebt !== null &&
       getDebt(repo.db, openedDebt)?.summary.principalSen === 0 &&
@@ -181,6 +187,7 @@ function Sheet({
     showUndo(`Deleted ${formatRM(t.amountSen)}`, () => {
       if (debtGone && openedDebt) restoreDebt(repo, openedDebt);
       restoreTransaction(repo, t.id);
+      putBack?.();
     });
   };
 
