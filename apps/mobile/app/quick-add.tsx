@@ -666,7 +666,7 @@ export default function QuickAdd() {
                       }}
                     >
                       <Text style={[type.small, { flex: 1, color: colors.text }]}>
-                        Small one! Add {formatRM(amount ?? sen(0))} to today instead?
+                        Add {formatRM(amount ?? sen(0))} to today instead?
                       </Text>
                       <Chip label="Yes, to today" onPress={() => setGoesToId("today")} />
                     </View>

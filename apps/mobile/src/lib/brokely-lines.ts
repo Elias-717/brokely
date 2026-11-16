@@ -307,7 +307,7 @@ export const tngLines = {
   in: (amount: Sen, name: string): string =>
     `${name} sent you ${formatRM(amount)}. Add it to your plan?`,
   inSmall: (amount: Sen, name: string): string =>
-    `${name} sent you ${formatRM(amount)}. Small one! Add it to your plan, or to today?`,
+    `${name} sent you ${formatRM(amount)}. Add it to your plan, or to today?`,
   more: (count: number): string =>
     count === 1 ? "1 more TNG payment is waiting." : `${count} more TNG payments are waiting.`,
   declined: (amount: Sen): string => `Left out ${formatRM(amount)} from TNG`,

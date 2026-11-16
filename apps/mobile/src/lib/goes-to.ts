@@ -41,7 +41,7 @@ export interface GoesTo {
   readonly choice: MoneyInGoesTo;
   /** One line under the row, in numbers: what happens to the plan. */
   readonly detail: string;
-  /** "Small one! Add RMx to today instead?" (D-134). */
+  /** "Add RMx to today instead?" (D-134). */
   readonly offerToday: boolean;
   readonly saveLabel: string;
   /** The Undo bar's words after saving. */
