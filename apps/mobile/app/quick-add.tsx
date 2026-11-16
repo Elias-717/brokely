@@ -227,13 +227,20 @@ export default function QuickAdd() {
     clearAddDraft(repo);
   };
 
+  // Money sent on TNG: who it went to has its own field, so "What was it?" stays for the student
+  // (author, 17 Nov). It still suggests a category from a name filed before (D-84).
+  const sentToShown = mode === "spent" && tngItem?.direction === "out";
+  const sentTo = sentToShown ? person.trim() : "";
   // A sum such as 12.50+8 is worked out as it is typed (D-115).
   const amount = evaluateAmount(amountText);
   const share = evaluateAmount(shareText);
   // Smart categorization (D-84): the note suggests a category until one is picked by hand.
   const guess = useMemo(
-    () => (mode === "spent" && !pickedByHand ? guessCategory(note, history, categories) : null),
-    [mode, pickedByHand, note, history, categories],
+    () =>
+      mode === "spent" && !pickedByHand
+        ? guessCategory(note.trim() || sentTo, history, categories)
+        : null,
+    [mode, pickedByHand, note, sentTo, history, categories],
   );
   // A TNG payment has no default category: the student chooses (or the note's name was filed
   // before and is guessed), so a tap on Save never files it under whichever comes first (D-128).
@@ -299,6 +306,12 @@ export default function QuickAdd() {
   const saveIn = (picked: { id: string; name: string }) => {
     if (amount === null) return;
     const label = picked.name;
+    // "nasi lemak · to Ali", or "To Ali" with no note: the name is kept with the record.
+    const spentNote = sentTo
+      ? cleanNote
+        ? `${cleanNote} · to ${sentTo}`
+        : `To ${sentTo}`
+      : cleanNote;
     if (split) {
       if (!friend.trim() || share === null || share <= 0) {
         return setProblem("Add your friend's name and their share.");
@@ -309,7 +322,7 @@ export default function QuickAdd() {
           amountSen: amount,
           categoryId: picked.id,
           friends: [{ counterparty: friend.trim(), amountSen: share }],
-          note: cleanNote,
+          note: spentNote,
           ...when,
         }),
         `Saved ${formatRM(amount)} · ${label} · ${friend.trim()} owes ${formatRM(share)}`,
@@ -324,7 +337,7 @@ export default function QuickAdd() {
       recordPurchase(repo, {
         amountSen: amount,
         categoryId: picked.id,
-        note: cleanNote,
+        note: spentNote,
         ...when,
       }),
       `Saved ${formatRM(amount)} · ${label}`,
@@ -571,6 +584,13 @@ export default function QuickAdd() {
               ) : null}
             </View>
           )}
+
+          {sentToShown ? (
+            <View style={{ gap: space.xs }}>
+              <Text style={[type.small, { color: colors.muted }]}>Sent to</Text>
+              <NameField value={person} onChange={setPerson} placeholder="Who you sent it to" />
+            </View>
+          ) : null}
 
           {mode === "spent" ? (
             // One Category row; the list opens on tap and closes after a choice (D-51).
@@ -1012,8 +1032,8 @@ function emptyDraft(more: MoreKind | undefined, day: LocalDate): Draft {
 
 /**
  * A TNG payment as the sheet's starting fields (D-128): the amount and the day it happened, and
- * the name, in the note for money sent (so a name filed before suggests its category, D-84) or as
- * the friend for money received. Money sent opens on Spent but nothing is saved until the student
+ * the name: "Sent to" for money sent (it still suggests a category filed before, D-84), the
+ * friend for money received. The note stays empty for the student (author, 17 Nov). Money sent opens on Spent but nothing is saved until the student
  * taps Save with a category; the other tabs are one tap away (FR-IMP-08, AC-35).
  */
 function tngDraft(item: PendingTngImport, day: LocalDate): Draft {
@@ -1023,9 +1043,10 @@ function tngDraft(item: PendingTngImport, day: LocalDate): Draft {
     mode: received ? "in" : "spent",
     amountText: plainAmount(item.amountSen),
     date: toLocalDate(new Date(item.postTime)),
-    note: received ? "" : item.counterparty,
+    note: "",
     from: received ? FRIEND : FROM[0]!,
-    person: received ? item.counterparty : "",
+    // Who it came from or went to; for money sent it shows as "Sent to" (author, 17 Nov).
+    person: item.counterparty,
   };
 }
 
