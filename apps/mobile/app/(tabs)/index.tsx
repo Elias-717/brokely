@@ -8,6 +8,8 @@ import {
   getSeenMascotStage,
   hideMoneyIn,
   postponeCard,
+  removeMoneyInRoute,
+  setMoneyInRoute,
   setPlanBudget,
   showMoneyIn,
   setMascotIntroSeen,
@@ -346,11 +348,32 @@ export default function HomeScreen() {
                     shortfallAcknowledged: home.moneyIn!.shortfallAcknowledged,
                   };
                   const next = sen(home.budgetSen + home.moneyIn!.suggestionSen);
+                  const leftOut = home.moneyIn!.leftOut;
                   const saved = setPlanBudget(repo, { ...before, budgetSen: next });
                   if (!saved.ok) return;
+                  // That money is in the plan now, so the card doesn't come back for it (D-130).
+                  for (const m of leftOut) {
+                    setMoneyInRoute(repo, home.cycleId, m.id, {
+                      to: "plan",
+                      amountSen: m.amountSen,
+                      localDate: m.localDate,
+                    });
+                  }
                   savedBuzz();
                   // Undo is one more revision with the old budget; history is never rewritten (D-03).
-                  showUndo(`Plan is now ${formatRM(next)}`, () => setPlanBudget(repo, before));
+                  showUndo(`Plan is now ${formatRM(next)}`, () => {
+                    setPlanBudget(repo, before);
+                    for (const m of leftOut) {
+                      if (m.route === null) removeMoneyInRoute(repo, home.cycleId, m.id);
+                      else {
+                        setMoneyInRoute(repo, home.cycleId, m.id, {
+                          to: "record",
+                          amountSen: m.amountSen,
+                          localDate: m.localDate,
+                        });
+                      }
+                    }
+                  });
                 }}
               />
               <Button

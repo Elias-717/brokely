@@ -150,6 +150,16 @@ export type HomeModel =
         readonly receivedSen: Sen;
         readonly suggestionSen: Sen;
         readonly shortfallAcknowledged: boolean;
+        /**
+         * The money in the card counts (only recorded, or saved before Goes to). Add marks them
+         * as in the plan, so the card doesn't come back for the same money.
+         */
+        readonly leftOut: readonly {
+          readonly id: string;
+          readonly amountSen: Sen;
+          readonly localDate: string;
+          readonly route: "record" | null;
+        }[];
       } | null;
     };
 
@@ -307,6 +317,14 @@ export function readHome(db: Db, today: LocalDate): HomeModel {
           ),
           suggestionSen: suggestion,
           shortfallAcknowledged: plan.revision.shortfallAcknowledged,
+          leftOut: transactions
+            .filter((t) => t.type === "income")
+            .flatMap((t) => {
+              const route = routes[t.id]?.to ?? null;
+              return route === null || route === "record"
+                ? [{ id: t.id, amountSen: sen(t.amountSen), localDate: t.localDate, route }]
+                : [];
+            }),
         }
       : null;
 
