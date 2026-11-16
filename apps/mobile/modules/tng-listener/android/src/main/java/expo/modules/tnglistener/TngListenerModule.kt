@@ -46,14 +46,15 @@ class TngListenerModule : Module() {
     Function("getCaptures") {
       TngCaptureStore.all(context).map { item ->
         val extras = item.optJSONObject("extras")
+        val captureExtras: Map<String, String> =
+          extras?.keys()?.asSequence()?.associateWith { key -> extras.optString(key) } ?: emptyMap()
         mapOf(
           "key" to item.optString("key"),
           "postTime" to item.optLong("postTime"),
           "title" to item.optString("title"),
           "text" to item.optString("text"),
           "bigText" to item.optString("bigText"),
-          "extras" to
-            (extras?.keys()?.asSequence()?.associateWith { extras.optString(it) } ?: emptyMap())
+          "extras" to captureExtras
         )
       }
     }

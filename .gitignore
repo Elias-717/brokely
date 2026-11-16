@@ -36,3 +36,6 @@ Thumbs.db
 # Real notification samples contain names (D-13, rule 7): never commit them
 *tng-sample*
 *tng-captures*
+
+# Gradle cache from opening a native module on its own
+.gradle/
