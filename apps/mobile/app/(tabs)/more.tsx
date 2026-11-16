@@ -1,5 +1,4 @@
 import {
-  deleteAllData,
   exportJson,
   exportTransactionsCsv,
   getHapticsEnabled,
@@ -17,12 +16,12 @@ import { useState, type ReactNode } from "react";
 import { Pressable, Switch, Text, View } from "react-native";
 import { db, repo } from "../../src/db/client";
 import { ProfileCard } from "../../src/sync/profile-card";
-import { signOutHere } from "../../src/sync/auth";
 import { useSync } from "../../src/sync/sync-provider";
 import { useRead } from "../../src/db/use-read";
 import { shareExportFile } from "../../src/lib/export-file";
 import { clockTime, today } from "../../src/lib/today";
-import { Button, Card, Heading, Screen, Sticker, Title } from "../../src/ui/components";
+import { Card, Heading, Screen, Sticker, Title } from "../../src/ui/components";
+import { DeleteDataSheet } from "../../src/ui/delete-data-sheet";
 import { Segmented } from "../../src/ui/segmented";
 import { space, type } from "../../src/ui/theme";
 import { useTheme } from "../../src/ui/theme-context";
@@ -200,37 +199,16 @@ export default function MoreScreen() {
         />
         <Row
           title="Delete all my data"
-          detail="From this phone; can't be undone"
+          detail={
+            session
+              ? "From this phone; your account backup stays"
+              : "From this phone; can't be undone"
+          }
           warning
           onPress={() => setConfirmDelete(true)}
         />
-        {confirmDelete ? (
-          <View style={{ padding: space.md, paddingTop: 0 }}>
-            <Sticker background={colors.warningCard} style={{ padding: space.md, gap: space.sm }}>
-              <Text style={[type.strong, { color: colors.text }]}>
-                Delete everything on this phone? Plans, records, debts, bills and settings go, and
-                this can't be undone. Export first if you want a copy.
-                {session ? " You'll also be signed out; the backup in your account stays." : ""}
-              </Text>
-              <Button
-                label="Delete everything"
-                variant="destructive"
-                onPress={async () => {
-                  deleteAllData(db);
-                  // Signed in, the next sync would bring everything back (D-73 c).
-                  if (session) await signOutHere();
-                  router.replace("/welcome");
-                }}
-              />
-              <Button
-                label="Keep my data"
-                variant="secondary"
-                onPress={() => setConfirmDelete(false)}
-              />
-            </Sticker>
-          </View>
-        ) : null}
       </Sticker>
+      <DeleteDataSheet visible={confirmDelete} onClose={() => setConfirmDelete(false)} />
       {/* The version, quietly at the very bottom (author). */}
       <Text
         style={[type.small, { color: colors.muted, textAlign: "center", marginBottom: space.lg }]}

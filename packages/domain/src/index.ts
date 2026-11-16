@@ -20,5 +20,6 @@ export * from "./category-balance";
 export * from "./mascot";
 export * from "./calculator";
 export * from "./names";
+export * from "./delete-data";
 export * from "./tng-parser";
 export * from "./tng-import";

@@ -67,7 +67,7 @@ Offline, signed out, a fresh install (or More → Your data → Delete all my da
 | AC-30 | Home → No spending today → Undo | Day covered after the tap, not after Undo | |
 | AC-61 | Add money in RM300 (Meal money) and RM200 (Part-time) on a RM400 plan | Left in plan unchanged; Home suggests adding RM100; nothing changes without a tap | |
 | AC-62, AC-63 | More → Wallet check twice with a gap (see SRS example) | The difference is worded from your own check; Log it only after a tap | |
-| AC-25 | More → Your data → Export records (CSV) and Export everything (JSON), then Delete all my data | Files open in the share sheet and hold the plans, records and debts; after deleting, the app starts at Welcome | |
+| AC-25 | More → Your data → Export records (CSV) and Export everything (JSON), then Delete all my data (type DELETE in the sheet, D-133) | Files open in the share sheet and hold the plans, records and debts; after deleting, the app starts at Welcome | |
 
 ## Run log
 
