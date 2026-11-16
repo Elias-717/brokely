@@ -35,7 +35,7 @@ and reviewable, and prefer clarity over cleverness. Ask the user before making p
 | Features, what's different, what to advertise (Play listing, ads, AI agents) | `docs/marketing/features-and-ads.md` (update when a feature ships) |
 
 To read a .docx: `pandoc -t markdown <file>`.
-SRS v1.9 (17 Nov; PRD still v1.7) includes every decision up to D-134 and R-14 (v1.9 reworded FR-TXN-11, BR-33, FR-IMP-08, AC-61 and added AC-79/80 for money in, D-130…D-134; v1.8 added FR-TXN-13/14, FR-DEBT-09, AC-76…78) (layout-only decisions are listed as "no requirement change" in section 15). To edit a .docx without pandoc/Word: `pip install python-docx`; the v1.7 update scripts copied a table row's XML and replaced its text, which keeps the formatting. SRS section 15 is the change record: **whenever a requirement changes, add a row there** (ID, type, what changed, decision) so traceability is never lost. Requirement IDs are never reused.
+SRS v1.9 (17 Nov; PRD still v1.7) includes every decision up to D-136 and R-14 (v1.9 reworded FR-TXN-11, BR-33, FR-IMP-08, FR-DEBT-09, AC-61, AC-78 and added AC-79/80 for money in, D-130…D-134; v1.8 added FR-TXN-13/14, FR-DEBT-09, AC-76…78) (layout-only decisions are listed as "no requirement change" in section 15). To edit a .docx without pandoc/Word: `pip install python-docx`; the v1.7 update scripts copied a table row's XML and replaced its text, which keeps the formatting. SRS section 15 is the change record: **whenever a requirement changes, add a row there** (ID, type, what changed, decision) so traceability is never lost. Requirement IDs are never reused.
 
 ---
 

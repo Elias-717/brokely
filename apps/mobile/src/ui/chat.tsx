@@ -365,7 +365,7 @@ export function AmountComposer(props: { label: string; onSend: (text: string) =>
 export function TextComposer(props: {
   label: string;
   placeholder?: string;
-  /** A person's name: at most 4 words and 30 characters (D-116). */
+  /** A person's name: at most 8 words and 60 characters (D-116, D-136). */
   name?: boolean;
   onSend: (text: string) => void;
 }) {

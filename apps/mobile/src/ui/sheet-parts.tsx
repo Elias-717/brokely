@@ -119,10 +119,10 @@ export function Field({
 }
 
 /** What a name box says when more than a name is typed (D-116). */
-export const NAME_LIMIT_MESSAGE = "Just their name, up to 4 words, not a sentence.";
+export const NAME_LIMIT_MESSAGE = "Just their name, up to 8 words, not a sentence.";
 
 /**
- * A box for a person's name (D-116): at most 4 words and 30 characters. Typing past that keeps
+ * A box for a person's name (D-116): at most 8 words and 60 characters (D-136). Typing past that keeps
  * the name and says why, with a pointer to the note for details.
  */
 export function NameField({
