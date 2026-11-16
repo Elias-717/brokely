@@ -366,8 +366,8 @@ export default function HomeScreen() {
             </>
           }
         >
-          That's {formatRM(home.moneyIn.suggestionSen)} more than your plan of{" "}
-          {formatRM(home.budgetSen)}. Add it to your plan?
+          {formatRM(home.moneyIn.suggestionSen)} of it isn't in your plan of{" "}
+          {formatRM(home.budgetSen)} yet. Add it to your plan?
         </BrokelyCard>
       ) : null}
 

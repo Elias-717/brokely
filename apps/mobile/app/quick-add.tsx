@@ -18,12 +18,15 @@ import {
   deleteTransaction,
   getAddDraft,
   getTngQueue,
-  recordMoneyIn,
+  recordMoneyInTo,
   recordPurchase,
   recordSplitPurchase,
   recordTransaction,
+  removeMoneyInRoute,
   setAddDraft,
+  setMoneyInRoute,
   setTngQueue,
+  undoMoneyInTo,
   type AddDraft,
   type RepoResult,
 } from "@brokely/local-db";
@@ -35,6 +38,7 @@ import { useRead } from "../src/db/use-read";
 import { categoriesByUse, guessHistory } from "../src/lib/category-order";
 import { categoryIcon } from "../src/lib/essentials-meta";
 import { readDebts } from "../src/lib/debts-model";
+import { useGoesTo } from "../src/lib/goes-to";
 import { refusalText } from "../src/lib/messages";
 import { dayMonth, occurredAtFor, today, toLocalDate } from "../src/lib/today";
 import { Button } from "../src/ui/components";
@@ -152,7 +156,13 @@ export default function QuickAdd() {
   const [friend, setFriend] = useState(start.friend);
   const [shareText, setShareText] = useState(start.shareText);
   // Money in / More
-  const [from, setFrom] = useState(start.from);
+  const [from, setFromState] = useState(start.from);
+  // "Goes to" (D-130): null follows the source's default; a tap picks one.
+  const [goesToId, setGoesToId] = useState<string | null>(null);
+  const setFrom = (source: string) => {
+    setFromState(source);
+    setGoesToId(null);
+  };
   const [moreKind, setMoreKind] = useState<MoreKind>(start.moreKind);
   const [person, setPerson] = useState(start.person);
   const [payBackBy, setPayBackBy] = useState<LocalDate | null>(start.payBackBy);
@@ -233,6 +243,7 @@ export default function QuickAdd() {
   const guessed = guess !== null && picked?.id === guess.categoryId;
   const when = { localDate: date, occurredAt: occurredAtFor(date, day) };
   const cleanNote = note.trim();
+  const goes = useGoesTo({ date, day, from, amount, chosenId: goesToId, categories });
   // One-tap notes typed recently for this category, e.g. "nasi lemak".
   // Past notes that match what is being typed (D-112); nothing while empty or unmatched.
   const noteIdeas = mode === "spent" ? noteSuggestions(history, note) : [];
@@ -244,6 +255,8 @@ export default function QuickAdd() {
     undo: (value: T) => void,
     /** For spending: the category, so a money tip can relate to it (D-67). */
     tipFor?: string,
+    /** Where to go instead of back, e.g. the debt's pay back sheet. */
+    next?: Href,
   ) => {
     if (!result.ok) return setProblem(refusalText(result.code, result.message));
     saved.current = true;
@@ -251,7 +264,8 @@ export default function QuickAdd() {
     // Saving is the confirmation: the import leaves the pending list for good (FR-IMP-04).
     if (tngItem) setTngQueue(repo, settleTngImport(getTngQueue(db), tngItem.id));
     savedBuzz();
-    router.back();
+    if (next) router.replace(next);
+    else router.back();
     showUndo(message, () => {
       undo(result.value);
       // Undo takes the record away, so the payment waits on Home again.
@@ -331,10 +345,37 @@ export default function QuickAdd() {
       const source = [from, from === FRIEND ? person.trim() : "", cleanNote]
         .filter(Boolean)
         .join(" · ");
+      const goesTo = goes.choice;
+      const saved = recordMoneyInTo(repo, {
+        amountSen: amount,
+        note: source,
+        ...when,
+        cycleId: goes.cycleId,
+        goesTo,
+      });
+      if (saved.ok && goes.cycleId) {
+        setMoneyInRoute(repo, goes.cycleId, saved.value.id, {
+          to: goesTo.kind,
+          amountSen: amount,
+          localDate: date,
+        });
+      }
+      const cycleId = goes.cycleId;
       return finish(
-        recordMoneyIn(repo, { amountSen: amount, note: source, ...when }),
-        `Saved money in ${formatRM(amount)} · ${source}`,
-        ({ id }) => deleteTransaction(repo, id),
+        saved,
+        goes.cycleId ? goes.savedMessage : `Saved money in ${formatRM(amount)} · ${source}`,
+        (value) => {
+          undoMoneyInTo(repo, value);
+          if (cycleId) removeMoneyInRoute(repo, cycleId, value.id);
+        },
+        undefined,
+        // Paying a debt back with it: the debt's own sheet comes next, with the amount (D-130).
+        goesTo.kind === "debt"
+          ? {
+              pathname: "/debts/repay/[id]",
+              params: { id: goesTo.debtId, amount: asTyped(amount) },
+            }
+          : undefined,
       );
     }
     if (moreKind === "transfer") {
@@ -388,7 +429,7 @@ export default function QuickAdd() {
         : mode === "in" && from === BORROWED
           ? `Save borrowed · ${formatRM(amount)}`
           : mode === "in"
-            ? `Save money in · ${formatRM(amount)}`
+            ? goes.saveLabel
             : // More: the button says what will happen (D-85).
               moreKind === "transfer"
               ? `Save transfer · ${formatRM(amount)}`
@@ -592,6 +633,44 @@ export default function QuickAdd() {
                     Saved as a debt you'll pay back: not money in and not spending. It shows in
                     Debts.
                   </Text>
+                </View>
+              ) : null}
+              {from !== BORROWED && goes.options.length > 0 ? (
+                <View style={{ gap: space.xs, marginTop: space.sm }}>
+                  {/* Where the money goes, filled in from the source (D-130). */}
+                  <CategoryPicker
+                    title="Goes to"
+                    categories={goes.options}
+                    selectedId={goes.selectedId}
+                    onSelect={setGoesToId}
+                    iconOf={goes.iconOf}
+                  />
+                  <Text
+                    accessibilityLiveRegion="polite"
+                    style={[type.small, { color: colors.income }]}
+                  >
+                    {goes.detail}
+                  </Text>
+                  {goes.offerToday ? (
+                    // Under RM50, today is offered, never chosen for the student (D-134).
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: space.sm,
+                        padding: space.sm,
+                        borderRadius: radius.button,
+                        borderWidth: 2,
+                        borderColor: colors.outline,
+                        backgroundColor: colors.cardTint,
+                      }}
+                    >
+                      <Text style={[type.small, { flex: 1, color: colors.text }]}>
+                        Small one! Add {formatRM(amount ?? sen(0))} to today instead?
+                      </Text>
+                      <Chip label="Yes, to today" onPress={() => setGoesToId("today")} />
+                    </View>
+                  ) : null}
                 </View>
               ) : null}
             </View>

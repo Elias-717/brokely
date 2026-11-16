@@ -7,7 +7,8 @@ import {
   forecastCanShow,
   lengthInDays,
   localDate,
-  moneyInSuggestion,
+  moneyInLeftOut,
+  todayBoostSen,
   nextEssentialCard,
   percentHalfEven,
   sen,
@@ -22,6 +23,7 @@ import {
   getCardChoices,
   getDraftCycle,
   getHiddenMoneyIn,
+  getMoneyInRoutes,
   getPlan,
   lastEndedCycle,
   listCategories,
@@ -240,7 +242,14 @@ export function readHome(db: Db, today: LocalDate): HomeModel {
   const everydayTodaySen = sen(
     [...todaysEveryday].reduce((sum, [id, amount]) => sum + (setAsideIds.has(id) ? 0 : amount), 0),
   );
-  const todayShare = todayGuide({ freeSen: guide.freeSen, everydayTodaySen, daysLeft });
+  // Money in the student put on today goes on top of today's share (D-134).
+  const routes = getMoneyInRoutes(db, cycle.id);
+  const todayShare = todayGuide({
+    freeSen: guide.freeSen,
+    everydayTodaySen,
+    daysLeft,
+    boostTodaySen: todayBoostSen(routes, today),
+  });
   const used = budgetUsed(progress.spentSen, budgetSen);
   // The status agrees with the budget card (D-98): over the plan, nothing free, over today.
   const status =
@@ -281,7 +290,14 @@ export function readHome(db: Db, today: LocalDate): HomeModel {
       };
     });
 
-  const suggestion = moneyInSuggestion(transactions, budgetSen);
+  // Money in not in the plan yet (D-125 after D-130): what was only recorded, plus, for money in
+  // saved before Goes to, the part above the budget.
+  const suggestion = moneyInLeftOut(
+    transactions
+      .filter((t) => t.type === "income")
+      .map((t) => ({ amountSen: sen(t.amountSen), route: routes[t.id]?.to ?? null })),
+    budgetSen,
+  );
   const hiddenMoneyIn = getHiddenMoneyIn(db, cycle.id);
   const moneyIn =
     suggestion !== null && (hiddenMoneyIn === null || suggestion > hiddenMoneyIn)
