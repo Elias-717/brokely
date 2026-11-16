@@ -63,6 +63,11 @@ export interface TodayGuideInput {
   readonly everydayTodaySen: Sen;
   /** Days from today to the end, today included. */
   readonly daysLeft: number;
+  /**
+   * Money in the student put on today (D-134), already inside `freeSen`. It goes on top of
+   * today's share instead of being spread over the days left.
+   */
+  readonly boostTodaySen?: Sen;
 }
 
 export interface TodayGuide {
@@ -77,7 +82,9 @@ export interface TodayGuide {
 export function todayGuide(input: TodayGuideInput): TodayGuide | null {
   if (input.daysLeft <= 0) return null;
   const startFree = Math.max(0, input.freeSen + input.everydayTodaySen);
-  const todaySen = roundHalfEven(divideSen(sen(startFree), input.daysLeft));
+  // The boost can't be more than there is: over the plan, today gets nothing extra.
+  const boost = Math.min(Math.max(0, input.boostTodaySen ?? 0), startFree);
+  const todaySen = sen(roundHalfEven(divideSen(sen(startFree - boost), input.daysLeft)) + boost);
   const leftTodaySen = sen(todaySen - input.everydayTodaySen);
   const daysAfter = input.daysLeft - 1;
   return {

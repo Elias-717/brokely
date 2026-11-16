@@ -111,3 +111,41 @@ describe("left to spend today (D-95)", () => {
     expect(todayGuide({ freeSen: sen(0), everydayTodaySen: sen(0), daysLeft: 0 })).toBeNull();
   });
 });
+
+describe("money in put on today (D-134, BR-33, AC-79)", () => {
+  it("adds the whole amount to today, not a share of it", () => {
+    // RM220 free over 10 days is RM22 a day; RM5 on today makes today RM27, later days stay ~RM22.
+    const guide = todayGuide({
+      freeSen: sen(22_500),
+      everydayTodaySen: sen(0),
+      daysLeft: 10,
+      boostTodaySen: sen(500),
+    });
+    expect(guide).toEqual({
+      todaySen: sen(2_700),
+      leftTodaySen: sen(2_700),
+      thenPerDaySen: sen(2_200),
+    });
+  });
+
+  it("leaves whatever wasn't spent today for the days after", () => {
+    const guide = todayGuide({
+      freeSen: sen(21_500),
+      everydayTodaySen: sen(1_000),
+      daysLeft: 10,
+      boostTodaySen: sen(500),
+    });
+    expect(guide?.leftTodaySen).toBe(sen(1_700));
+    expect(guide?.thenPerDaySen).toBe(sen(2_200));
+  });
+
+  it("gives nothing extra when nothing is free", () => {
+    const guide = todayGuide({
+      freeSen: sen(0),
+      everydayTodaySen: sen(0),
+      daysLeft: 5,
+      boostTodaySen: sen(500),
+    });
+    expect(guide?.todaySen).toBe(sen(0));
+  });
+});

@@ -1,6 +1,9 @@
 import {
   DEFAULT_NOTIFICATION_SETTINGS,
   readTngQueue,
+  sen,
+  type MoneyInRoute,
+  type MoneyInRouteRecord,
   type NotificationSettings,
   type TngQueue,
 } from "@brokely/domain";
@@ -346,4 +349,44 @@ export function getTngQueue(db: Db): TngQueue {
 /** Callers write only when the queue changed: each write makes every open screen read again. */
 export function setTngQueue(ctx: RepoContext, queue: TngQueue): void {
   setPref(ctx, TNG_QUEUE_KEY, queue);
+}
+
+/**
+ * Where each money in went (D-130, D-134), per plan, by record id: Home uses it for today's
+ * boost and to leave money already in the plan out of "Add RMx to your plan?" (D-125).
+ * Phone-only, never synced: on another phone the plan revision arrives, the boost does not.
+ */
+const moneyInRoutesKey = (cycleId: string) => `money_in_routes:${cycleId}`;
+const ROUTES: readonly MoneyInRoute[] = ["plan", "set_aside", "today", "debt", "record"];
+
+export function getMoneyInRoutes(db: Db, cycleId: string): Record<string, MoneyInRouteRecord> {
+  const value = getPref(db, moneyInRoutesKey(cycleId));
+  if (typeof value !== "object" || value === null) return {};
+  const out: Record<string, MoneyInRouteRecord> = {};
+  for (const [id, raw] of Object.entries(value as Record<string, unknown>)) {
+    const r = raw as Partial<Record<keyof MoneyInRouteRecord, unknown>> | null;
+    if (!r || !ROUTES.includes(r.to as MoneyInRoute)) continue;
+    if (typeof r.amountSen !== "number" || typeof r.localDate !== "string") continue;
+    out[id] = { to: r.to as MoneyInRoute, amountSen: sen(r.amountSen), localDate: r.localDate };
+  }
+  return out;
+}
+
+export function setMoneyInRoute(
+  ctx: RepoContext,
+  cycleId: string,
+  transactionId: string,
+  route: MoneyInRouteRecord,
+): void {
+  setPref(ctx, moneyInRoutesKey(cycleId), {
+    ...getMoneyInRoutes(ctx.db, cycleId),
+    [transactionId]: route,
+  });
+}
+
+/** Undo of {@link setMoneyInRoute}. */
+export function removeMoneyInRoute(ctx: RepoContext, cycleId: string, transactionId: string): void {
+  const routes = getMoneyInRoutes(ctx.db, cycleId);
+  delete routes[transactionId];
+  setPref(ctx, moneyInRoutesKey(cycleId), routes);
 }

@@ -23,3 +23,4 @@ export * from "./names";
 export * from "./delete-data";
 export * from "./tng-parser";
 export * from "./tng-import";
+export * from "./money-in";
