@@ -215,8 +215,10 @@ Category remaining = Cᵢ − Nᵢ (may be negative). Left in plan = B − N.
 Known TNG formats (package `my.com.tngdigital.ewallet`; **no transaction ID in the visible text or in the hidden notification fields**, checked 26 Oct on transfers only; the key is not unique per payment (a transfer out ends `|1|null|<uid>`), so dedupe on Android notification key + post time + content):
 - Transfer out — title `Transfer Successful.` body `RM 0.50 has been successfully transferred to [NAME].`
 - Transfer in — title `Ka-ching! Incoming Money.` body `RM 0.50 received from [NAME] for Fund Transfer.`
+- Transfer in, second wording (17 Nov) — title `You’ve received money!` (curly apostrophe) body `[NAME] has transferred RM 1.52 to you. Tap here to check the transaction details.`
+- Reload (17 Nov) — title `Reload Successful` body `Your money is in! RM42.00 has been reloaded to your Touch 'n Go eWallet balance. Reference No. <37 digits>`: own money moving, recognised (`kind: "reload"`) and left out, never a card. **It has a reference number**, the first unique ID seen
 - Noise to ignore (seen 26 Oct): TNG's blank group summary (empty title and text) and promotions such as `Your eWallet balance is low. Reload now!`. The parser accepts only known title + sentence pairs; unknown wording is never guessed (FR-IMP-09).
-- Not sampled yet: QR merchant payment, top-up, refund, bill payment, amounts with a thousands comma (the parser already accepts `1,234.50` and `1234.50`).
+- Not sampled yet: QR merchant payment, refund, bill payment, amounts with a thousands comma (the parser already accepts `1,234.50` and `1234.50`).
 
 **Mascot and XP (0.2).** One welcome picture already in 0.1 (FR-MAS-08). Static pictures, no voice. ≥3 growth stages (XP level), ≥4 moods: happy (on track), worried (over pace), proud (3+ day streak), sleepy (3+ days unlogged). Initial XP: approve plan 50, log 5, check-in 5, Mark paid 5, confirm import 2, weekly review 20; daily cap 100; once per source event.
 
@@ -269,7 +271,7 @@ pnpm --filter @brokely/api dev   # run the API locally
 
 | When | Question |
 |---|---|
-| Before 0.2 import work | Full TNG notification formats: QR payment, top-up, refund, bill payment (author is collecting them with the listener, D-128). Transfers checked 26 Oct: no transaction ID in text or hidden fields; the other types still need checking |
+| Before 0.2 import work | Full TNG notification formats: QR payment, refund, bill payment (author is collecting them with the listener, D-128; transfers in both wordings and reloads done 17 Nov). Transfers checked 26 Oct: no transaction ID in text or hidden fields; the other types still need checking |
 | Sync review | Open points in `docs/design/sync-api.md` section 12 |
 | Before 0.2 mascot screen | XP thresholds if XP replaces days logged for growth (0.1 uses 7/30 logged days and sleepy > proud > worried > happy, D-105) |
 | Before release | Author reviews the 100 money tips in `apps/mobile/src/lib/money-tips.ts` (c01…c50 added 23 Oct, D-113) |

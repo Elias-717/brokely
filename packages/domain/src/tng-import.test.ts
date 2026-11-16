@@ -93,6 +93,19 @@ describe("ingestTngCaptures (FR-IMP-04, FR-IMP-05, FR-IMP-06, FR-IMP-08)", () =>
     expect(result.consumed).toEqual([]);
   });
 
+  it("takes a reload in without a card: own money moving, it counts for nothing (17 Nov)", () => {
+    const reload: TngCaptured = {
+      key: "0|my.com.tngdigital.ewallet|1|null|10340",
+      postTime: NOW - 40_000,
+      title: "Reload Successful",
+      text: "Your money is in! RM42.00 has been reloaded to your Touch 'n Go eWallet balance. Reference No. 2026010100000000000000000000000000001",
+      bigText: "",
+    };
+    const result = ingestTngCaptures([reload], EMPTY_TNG_QUEUE, NOW);
+    expect(result.queue).toBe(EMPTY_TNG_QUEUE);
+    expect(result.consumed).toEqual([tngImportId(reload.key, reload.postTime)]);
+  });
+
   it("does not bring back an import that was already confirmed or declined", () => {
     const first = ingestTngCaptures([incoming], EMPTY_TNG_QUEUE, NOW);
     const id = tngImportId(incoming.key, incoming.postTime);

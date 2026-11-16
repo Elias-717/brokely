@@ -6,12 +6,19 @@ import { parseAmount, type Sen } from "./money";
  * seen to use, and treats everything else as unreadable, because an amount must never be guessed
  * (FR-IMP-09, AC-36). Promotions and TNG's blank group summaries land in "unreadable" too.
  *
- * Known so far (caught on the author's phone, 26 Oct 2026; no transaction ID in the text or in
- * the hidden fields):
- * - Transfer out: title "Transfer Successful." text "RM 0.06 has been successfully transferred to NAME."
- * - Transfer in:  title "Ka-ching! Incoming Money." text "RM 0.12 received from NAME for Fund Transfer."
+ * Known so far (caught on the author's phone; transfers carry no transaction ID in the text or
+ * in the hidden fields):
+ * - Transfer out (26 Oct): title "Transfer Successful." text "RM 0.06 has been successfully
+ *   transferred to NAME."
+ * - Transfer in (26 Oct): title "Ka-ching! Incoming Money." text "RM 0.12 received from NAME for
+ *   Fund Transfer."
+ * - Transfer in, second wording (17 Nov): title "You’ve received money!" text "NAME has
+ *   transferred RM 1.52 to you. Tap here to check the transaction details."
+ * - Reload (17 Nov): title "Reload Successful" text "Your money is in! RM42.00 has been reloaded
+ *   to your Touch 'n Go eWallet balance. Reference No. <digits>". The student's own money moving
+ *   into TNG: never spending and never money in, so it is recognised and left out.
  *
- * Not sampled yet, so deliberately unreadable: QR merchant payment, top-up, refund, bill payment.
+ * Not sampled yet, so deliberately unreadable: QR merchant payment, refund, bill payment.
  * Add each one only from a real sample, with a test.
  */
 export type TngParse =
@@ -22,6 +29,8 @@ export type TngParse =
       readonly amount: Sen;
       readonly counterparty: string;
     }
+  /** A top-up from the student's own bank or card: own money moving, so it counts for nothing. */
+  | { readonly kind: "reload"; readonly amount: Sen; readonly reference: string | null }
   /** Not a payment Brokely understands: ignore it, or keep it pending with no amount. */
   | { readonly kind: "unreadable" };
 
@@ -42,10 +51,18 @@ const TRANSFER_OUT_TEXT = new RegExp(
   "i",
 );
 const TRANSFER_IN_TEXT = new RegExp(`^${AMOUNT} received from (.+) for Fund Transfer\\.$`, "i");
+const RECEIVED_TEXT = new RegExp(
+  `^(.+) has transferred ${AMOUNT} to you\\.(?: Tap here to check the transaction details\\.)?$`,
+  "i",
+);
+const RELOAD_TEXT = new RegExp(
+  `^Your money is in! ${AMOUNT} has been reloaded to your Touch 'n Go eWallet balance\\.(?: Reference No\\. (\\w+))?$`,
+  "i",
+);
 
-/** Trims, turns non-breaking and repeated spaces into single spaces. */
+/** Trims, turns non-breaking and repeated spaces into one space, and curly quotes into '. */
 function tidy(value: string | undefined): string {
-  return (value ?? "").replace(/\s+/g, " ").trim();
+  return (value ?? "").replace(/\s+/g, " ").replace(/[‘’]/g, "'").trim();
 }
 
 function amountOf(raw: string | undefined): Sen | null {
@@ -64,6 +81,16 @@ export function parseTngNotification(notification: TngNotificationText): TngPars
   if (title === "ka-ching! incoming money.") {
     const match = TRANSFER_IN_TEXT.exec(text);
     return transfer("in", match?.[1], match?.[2]);
+  }
+  if (title === "you've received money!") {
+    const match = RECEIVED_TEXT.exec(text);
+    return transfer("in", match?.[2], match?.[1]);
+  }
+  if (title === "reload successful") {
+    const match = RELOAD_TEXT.exec(text);
+    const amount = amountOf(match?.[1]);
+    if (amount === null) return UNREADABLE;
+    return { kind: "reload", amount, reference: match?.[2] ?? null };
   }
   return UNREADABLE;
 }

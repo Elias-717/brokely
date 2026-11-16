@@ -123,3 +123,38 @@ describe("parseTngNotification: everything else is unreadable (FR-IMP-09, AC-36)
     }
   });
 });
+
+describe("parseTngNotification: formats seen 17 Nov (D-128)", () => {
+  it("reads the second transfer-in wording, with its curly apostrophe", () => {
+    expect(
+      parseTngNotification({
+        title: "You’ve received money!",
+        text: "[FRIEND A] has transferred RM 1.52 to you. Tap here to check the transaction details.",
+      }),
+    ).toEqual({
+      kind: "person_transfer",
+      direction: "in",
+      amount: sen(152),
+      counterparty: "[FRIEND A]",
+    });
+  });
+
+  it("recognises a reload as the student's own money, with its reference (made up here)", () => {
+    expect(
+      parseTngNotification({
+        title: "Reload Successful",
+        text: "Your money is in! RM42.00 has been reloaded to your Touch 'n Go eWallet balance. Reference No. 2026010100000000000000000000000000001",
+      }),
+    ).toEqual({
+      kind: "reload",
+      amount: sen(4200),
+      reference: "2026010100000000000000000000000000001",
+    });
+  });
+
+  it("never guesses a reload with unknown wording (FR-IMP-09)", () => {
+    expect(
+      parseTngNotification({ title: "Reload Successful", text: "Something new happened." }),
+    ).toEqual({ kind: "unreadable" });
+  });
+});

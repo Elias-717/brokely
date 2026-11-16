@@ -70,7 +70,7 @@ const newestFirst = (a: PendingTngImport, b: PendingTngImport) =>
  * Takes the readable transfers out of the phone's captures and adds the new ones to the queue
  * (FR-IMP-03, FR-IMP-04). Also drops anything older than 30 days (FR-IMP-11).
  *
- * `consumed` lists every readable capture's id, new or repeated: the caller deletes those raw
+ * `consumed` lists every readable capture's id, new or repeated, reloads included: the caller deletes those raw
  * copies once the queue is saved. Unreadable ones (promotions, wordings not sampled yet) are left
  * alone: nothing is guessed from them (FR-IMP-09) and the author still sees them as samples.
  * When nothing changed the same `queue` object comes back, so the caller can skip the write.
@@ -90,9 +90,12 @@ export function ingestTngCaptures(
   for (const capture of captured) {
     if (capture.postTime < oldest) continue;
     const parsed = parseTngNotification(capture);
-    if (parsed.kind !== "person_transfer") continue;
+    if (parsed.kind === "unreadable") continue;
     const id = tngImportId(capture.key, capture.postTime);
     consumed.add(id);
+    // A reload is the student's own money moving into TNG: understood, so its raw copy goes,
+    // but it never waits on Home (17 Nov, D-128).
+    if (parsed.kind === "reload") continue;
     if (known.has(id)) continue;
     known.add(id);
     pending.push({
