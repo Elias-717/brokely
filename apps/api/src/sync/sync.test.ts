@@ -158,7 +158,7 @@ describe("push and pull: golden path (AC-04)", () => {
     const first = revision(s, 1);
     const withReason = {
       ...first,
-      data: { ...first.data, reason: "Left in plan set to RM100.00" },
+      data: { ...(first.data as Record<string, unknown>), reason: "Left in plan set to RM100.00" },
     };
     await s.push(category(s, "Laundry"), cycle(s), withReason);
     const pulled = await s.pull();
