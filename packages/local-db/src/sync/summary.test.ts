@@ -31,7 +31,7 @@ describe("what each side holds (D-73 b)", () => {
     });
   });
 
-  it("counts what Delete all my data would remove (D-129)", async () => {
+  it("counts what Delete all my data would remove (D-133)", async () => {
     const { ctx } = await createTestContext();
     seedDefaultCategories(ctx);
     expect(phoneDataCounts(ctx.db)).toEqual({ records: 0, plans: 0, debts: 0, bills: 0 });

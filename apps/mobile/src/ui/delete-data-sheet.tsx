@@ -28,7 +28,7 @@ const TITLES: Record<DeleteDataCase, string> = {
 };
 
 /**
- * "Delete all my data" (D-129, FR-ACC-07): over the screen, never below the fold. Says what
+ * "Delete all my data" (D-133, FR-ACC-07): over the screen, never below the fold. Says what
  * would go in real numbers, offers a copy first, and asks for a typed word only when something
  * would be lost for good.
  */

@@ -31,7 +31,7 @@ export function phoneSummary(db: Db): RecordSummary {
   return { plans, records: live(transactions), debts: live(debts) };
 }
 
-/** What "Delete all my data" would remove, in numbers (D-129). */
+/** What "Delete all my data" would remove, in numbers (D-133). */
 export function phoneDataCounts(db: Db): DataCounts {
   const { plans, records, debts: debtCount } = phoneSummary(db);
   const billRows = db.select({ id: bills.id }).from(bills).where(isNull(bills.deletedAt)).all();

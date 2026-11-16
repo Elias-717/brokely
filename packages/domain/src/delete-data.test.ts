@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { dataCountsInWords, deleteDataCase, deleteWordTyped, needsDeleteWord } from "./delete-data";
 
-describe("how careful Delete all my data is (D-129, FR-ACC-07)", () => {
+describe("how careful Delete all my data is (D-133, FR-ACC-07)", () => {
   it("not signed in: nothing exists anywhere else, even with no changes waiting", () => {
     expect(deleteDataCase({ signedIn: false, waiting: 0 })).toBe("only-here");
     expect(deleteDataCase({ signedIn: false, waiting: 12 })).toBe("only-here");
@@ -22,7 +22,7 @@ describe("how careful Delete all my data is (D-129, FR-ACC-07)", () => {
   });
 });
 
-describe("the typed word (D-129)", () => {
+describe("the typed word (D-133)", () => {
   it("ignores capitals and spaces around it", () => {
     for (const typed of ["DELETE", "delete", "Delete", " delete "]) {
       expect(deleteWordTyped(typed)).toBe(true);
@@ -36,7 +36,7 @@ describe("the typed word (D-129)", () => {
   });
 });
 
-describe("what would go, in words (D-129)", () => {
+describe("what would go, in words (D-133)", () => {
   const none = { records: 0, plans: 0, debts: 0, bills: 0 };
 
   it("lists every kind with exact counts", () => {

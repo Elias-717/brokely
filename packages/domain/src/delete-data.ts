@@ -1,5 +1,5 @@
 /**
- * How careful "Delete all my data" has to be (D-129, FR-ACC-07): the friction follows what would
+ * How careful "Delete all my data" has to be (D-133, FR-ACC-07): the friction follows what would
  * really be lost. Without an account nothing exists anywhere else; with an account, only changes
  * still waiting to sync are lost, and everything else comes back on sign-in.
  */
