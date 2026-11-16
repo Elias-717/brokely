@@ -1,4 +1,10 @@
-import { formatRM, reopenTngImport, settleTngImport, type PendingTngImport } from "@brokely/domain";
+import {
+  formatRM,
+  offersToday,
+  reopenTngImport,
+  settleTngImport,
+  type PendingTngImport,
+} from "@brokely/domain";
 import {
   findCycleOn,
   getTngQueue,
@@ -70,7 +76,7 @@ export function TngPendingCards() {
    * this month's plan, like the Money in sheet's default (D-130). Undo takes both back and the
    * card waits again.
    */
-  const addToPlan = (item: PendingTngImport) => {
+  const addMoneyIn = (item: PendingTngImport, to: "plan" | "today") => {
     const when = new Date(item.postTime);
     const localDate = toLocalDate(when);
     const cycleId = findCycleOn(db, localDate)?.id ?? null;
@@ -80,12 +86,12 @@ export function TngPendingCards() {
       localDate,
       note: `From a friend · ${item.counterparty}`,
       cycleId,
-      goesTo: { kind: "plan" },
+      goesTo: { kind: to },
     });
     if (!saved.ok) return;
     if (cycleId) {
       setMoneyInRoute(repo, cycleId, saved.value.id, {
-        to: "plan",
+        to,
         amountSen: item.amountSen,
         localDate,
       });
@@ -94,7 +100,7 @@ export function TngPendingCards() {
     savedBuzz();
     showUndo(
       cycleId
-        ? `${formatRM(item.amountSen)} from ${item.counterparty} added to your plan`
+        ? `${formatRM(item.amountSen)} from ${item.counterparty} added to ${to === "today" ? "today" : "your plan"}`
         : `Saved money in ${formatRM(item.amountSen)} from ${item.counterparty}`,
       () => {
         undoMoneyInTo(repo, saved.value);
@@ -103,6 +109,12 @@ export function TngPendingCards() {
       },
     );
   };
+
+  /** A small amount received today: Add to today is offered (D-134). */
+  const small = (item: PendingTngImport) =>
+    item.direction === "in" &&
+    offersToday(item.amountSen) &&
+    toLocalDate(new Date(item.postTime)) === toLocalDate(new Date());
 
   const notNow = (item: PendingTngImport) => {
     snoozed.add(item.id);
@@ -123,7 +135,15 @@ export function TngPendingCards() {
           actions={
             item.direction === "in" ? (
               <>
-                <Button label="Add to my plan" onPress={() => addToPlan(item)} />
+                <Button label="Add to my plan" onPress={() => addMoneyIn(item, "plan")} />
+                {/* Under RM50 and from today, today is offered next to the plan (D-134). */}
+                {small(item) ? (
+                  <Button
+                    label="Add to today"
+                    variant="secondary"
+                    onPress={() => addMoneyIn(item, "today")}
+                  />
+                ) : null}
                 <Button
                   label="Something else"
                   variant="secondary"
@@ -144,7 +164,9 @@ export function TngPendingCards() {
         >
           {item.direction === "out"
             ? tngLines.out(item.amountSen, item.counterparty)
-            : tngLines.in(item.amountSen, item.counterparty)}
+            : small(item)
+              ? tngLines.inSmall(item.amountSen, item.counterparty)
+              : tngLines.in(item.amountSen, item.counterparty)}
         </BrokelyCard>
       ))}
       {more > 0 ? (
