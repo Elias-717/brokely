@@ -153,6 +153,19 @@ describe("push and pull: golden path (AC-04)", () => {
     expect((await s.pull(pulled.nextSince)).changes).toEqual([]);
   });
 
+  it("keeps why a plan changed and gives it back on pull (D-139)", async () => {
+    const s = await student();
+    const first = revision(s, 1);
+    const withReason = {
+      ...first,
+      data: { ...first.data, reason: "Left in plan set to RM100.00" },
+    };
+    await s.push(category(s, "Laundry"), cycle(s), withReason);
+    const pulled = await s.pull();
+    const plan = pulled.changes.find((c) => c.entity === "plan_revision");
+    expect((plan?.data as { reason?: string }).reason).toBe("Left in plan set to RM100.00");
+  });
+
   it("pages with limit and hasMore (S-08)", async () => {
     const s = await student();
     await s.push(category(s, "Laundry"), category(s, "Meals"), category(s, "Transport"));

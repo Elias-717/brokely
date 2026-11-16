@@ -123,6 +123,51 @@ export function cycleData(row: CycleRow): EntityData<"planning_cycle"> {
 }
 
 /** Every approved revision of a cycle, oldest first: original → … → current (D-03, FR-PLN-11). */
+/**
+ * Every approved revision of a plan with its amounts and reason, for Plan changes (D-139).
+ * Oldest first; drafts and deleted revisions are left out.
+ */
+export function listPlanHistory(db: Db, cycleId: string) {
+  const revisions = db
+    .select()
+    .from(planRevisions)
+    .where(and(eq(planRevisions.cycleId, cycleId), isNull(planRevisions.deletedAt)))
+    .all()
+    .filter((r) => r.approvedAt !== null)
+    .sort((a, b) => a.revisionNo - b.revisionNo);
+  const parts =
+    revisions.length === 0
+      ? []
+      : db
+          .select({
+            revisionId: allocations.revisionId,
+            categoryId: allocations.categoryId,
+            amountSen: allocations.amountSen,
+          })
+          .from(allocations)
+          .where(
+            and(
+              inArray(
+                allocations.revisionId,
+                revisions.map((r) => r.id),
+              ),
+              isNull(allocations.deletedAt),
+            ),
+          )
+          .orderBy(sql`rowid`)
+          .all();
+  return revisions.map((r) => ({
+    id: r.id,
+    revisionNo: r.revisionNo,
+    approvedAt: r.approvedAt!,
+    budgetSen: sen(r.budgetSen),
+    reason: r.reason ?? null,
+    allocations: parts
+      .filter((p) => p.revisionId === r.id)
+      .map((p) => ({ categoryId: p.categoryId, amountSen: sen(p.amountSen) })),
+  }));
+}
+
 export function listRevisions(db: Db, cycleId: string) {
   return db
     .select()
@@ -238,6 +283,8 @@ export function insertApprovedRevision(
   parts: readonly { categoryId: string; amountSen: Sen }[],
   shortfallAcknowledged: boolean,
   approved = true,
+  /** Why, for Plan changes (D-139). */
+  reason: string | null = null,
 ): string {
   const revision: RevisionRow = {
     ...freshRow(scope),
@@ -246,6 +293,7 @@ export function insertApprovedRevision(
     budgetSen,
     approvedAt: approved ? scope.at : null,
     shortfallAcknowledged,
+    reason,
   };
   const rows = parts.map((p) => ({
     ...freshRow(scope),
@@ -261,6 +309,7 @@ export function insertApprovedRevision(
     approvedAt: revision.approvedAt,
     shortfallAcknowledged,
     allocations: rows.map((a) => ({ id: a.id, categoryId: a.categoryId, amountSen: a.amountSen })),
+    reason,
   });
   scope.tx.insert(planRevisions).values(revision).run();
   if (rows.length > 0) scope.tx.insert(allocations).values(rows).run();
@@ -274,6 +323,8 @@ export interface RevisePlanInput {
   readonly allocations: readonly { categoryId: string; amountSen: Sen }[];
   /** The student's "Approve anyway?" tap when the plan is over budget (FR-PLN-10, D-28). */
   readonly shortfallAcknowledged: boolean;
+  /** Why the plan changed, shown in Plan changes (D-139). */
+  readonly reason?: string | null;
 }
 
 /**
@@ -307,6 +358,8 @@ export function revisePlanIn(scope: WriteScope, input: RevisePlanInput) {
     input.budgetSen,
     input.allocations,
     input.shortfallAcknowledged,
+    true,
+    input.reason ?? null,
   );
   return { revisionId, revisionNo };
 }
@@ -322,7 +375,7 @@ export function revisePlan(ctx: RepoContext, input: RevisePlanInput) {
  */
 export function setPlanBudget(
   ctx: RepoContext,
-  input: { cycleId: string; budgetSen: Sen; shortfallAcknowledged: boolean },
+  input: { cycleId: string; budgetSen: Sen; shortfallAcknowledged: boolean; reason?: string },
 ) {
   return write(ctx, (scope) => {
     const plan = getPlan(scope.tx, input.cycleId);
@@ -335,6 +388,7 @@ export function setPlanBudget(
         amountSen: sen(a.amountSen),
       })),
       shortfallAcknowledged: input.shortfallAcknowledged,
+      reason: input.reason ?? null,
     });
   });
 }
@@ -344,6 +398,8 @@ export interface SetAllocationInput {
   readonly categoryId: string;
   readonly amountSen: Sen;
   readonly shortfallAcknowledged?: boolean;
+  /** Why, for Plan changes (D-139). */
+  readonly reason?: string;
 }
 
 /** Copies the current plan with one category's amount set: e.g. accepting an essential card (FR-PLN-20). */
@@ -361,6 +417,7 @@ export function setAllocationIn(scope: WriteScope, input: SetAllocationInput) {
     budgetSen: sen(plan.revision.budgetSen),
     allocations: next,
     shortfallAcknowledged: input.shortfallAcknowledged ?? false,
+    reason: input.reason ?? null,
   });
 }
 

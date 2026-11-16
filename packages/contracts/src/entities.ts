@@ -62,6 +62,8 @@ export const PlanRevisionSchema = z
     approvedAt: InstantSchema.nullable(), // null while draft (D-20)
     shortfallAcknowledged: z.boolean(),
     allocations: z.array(AllocationSchema).max(100),
+    /** Why the plan changed, e.g. "Left in plan set to RM100.00" (D-139); null when unknown. */
+    reason: z.string().max(120).nullable().optional(),
   })
   .refine((r) => new Set(r.allocations.map((a) => a.categoryId)).size === r.allocations.length, {
     message: "Each category can be allocated only once per revision",

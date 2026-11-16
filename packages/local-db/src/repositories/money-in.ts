@@ -19,6 +19,8 @@ export interface MoneyInToInput {
   /** The plan the money in falls in; null when there is none (then it is only recorded). */
   readonly cycleId: string | null;
   readonly goesTo: MoneyInGoesTo;
+  /** Why, for Plan changes (D-139), e.g. "Money in · From a friend · Ali". */
+  readonly reason?: string;
 }
 
 /**
@@ -37,7 +39,8 @@ export function recordMoneyInTo(ctx: RepoContext, input: MoneyInToInput) {
       lines: [],
     });
     const plan = input.cycleId ? getPlan(scope.tx, input.cycleId) : undefined;
-    if (!plan || !input.cycleId) return { id, before: null };
+    const reason = (input.reason ?? "Money in").slice(0, 120);
+    if (!plan || !input.cycleId) return { id, before: null, reason };
     const before: PlanBefore = {
       cycleId: input.cycleId,
       budgetSen: sen(plan.revision.budgetSen),
@@ -48,14 +51,15 @@ export function recordMoneyInTo(ctx: RepoContext, input: MoneyInToInput) {
       shortfallAcknowledged: plan.revision.shortfallAcknowledged,
     };
     const next = planAfterMoneyIn(before, input.amountSen, input.goesTo);
-    if (!next) return { id, before: null };
+    if (!next) return { id, before: null, reason };
     revisePlanIn(scope, {
       cycleId: input.cycleId,
       budgetSen: next.budgetSen,
       allocations: next.allocations,
       shortfallAcknowledged: before.shortfallAcknowledged,
+      reason,
     });
-    return { id, before };
+    return { id, before, reason };
   });
 }
 
@@ -63,9 +67,17 @@ export function recordMoneyInTo(ctx: RepoContext, input: MoneyInToInput) {
  * Undo of {@link recordMoneyInTo}: the record goes, and when the plan changed, one more
  * revision puts the old amounts back; history is never rewritten (D-03).
  */
-export function undoMoneyInTo(ctx: RepoContext, saved: { id: string; before: PlanBefore | null }) {
+export function undoMoneyInTo(
+  ctx: RepoContext,
+  saved: { id: string; before: PlanBefore | null; reason?: string },
+) {
   return write(ctx, (scope) => {
     deleteTransactionIn(scope, saved.id);
-    if (saved.before) revisePlanIn(scope, saved.before);
+    if (saved.before) {
+      revisePlanIn(scope, {
+        ...saved.before,
+        reason: `Undid: ${saved.reason ?? "Money in"}`.slice(0, 120),
+      });
+    }
   });
 }

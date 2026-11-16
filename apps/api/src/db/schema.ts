@@ -127,6 +127,7 @@ export const planRevisions = brokely
       budgetSen: bigint("budget_sen", { mode: "number" }).notNull(),
       approvedAt: instant("approved_at"), // NULL while draft (D-20)
       shortfallAcknowledged: boolean("shortfall_acknowledged").notNull(),
+      reason: text("reason"), // why the plan changed (D-139); null when unknown
     },
     (t) => [
       check("plan_revisions_budget_check", sql`${t.budgetSen} > 0`),

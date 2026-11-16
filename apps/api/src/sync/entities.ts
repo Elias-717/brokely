@@ -247,6 +247,7 @@ const planRevision: EntityHandler<"plan_revision"> = {
     budgetSen: d.budgetSen,
     approvedAt: at(d.approvedAt),
     shortfallAcknowledged: d.shortfallAcknowledged,
+    reason: d.reason ?? null,
   }), // allocations are parts (writeParts)
   async toData(tx, rows) {
     const ids = rows.map((r) => r.id);
@@ -267,6 +268,8 @@ const planRevision: EntityHandler<"plan_revision"> = {
           budgetSen: r.budgetSen as number,
           approvedAt: iso(r.approvedAt as Date | null),
           shortfallAcknowledged: r.shortfallAcknowledged as boolean,
+          // Left out when unknown, so a revision comes back exactly as it was sent (D-139).
+          ...(r.reason ? { reason: r.reason as string } : {}),
           allocations: parts
             .filter((a) => a.revisionId === r.id)
             .map((a) => ({ id: a.id, categoryId: a.categoryId, amountSen: a.amountSen })),

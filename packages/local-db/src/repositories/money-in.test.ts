@@ -5,7 +5,8 @@ import { listCategories, seedDefaultCategories } from "./categories";
 import type { RepoContext } from "./context";
 import { getMoneyInRoutes, removeMoneyInRoute, setMoneyInRoute } from "./local-prefs";
 import { recordMoneyInTo, undoMoneyInTo } from "./money-in";
-import { getPlan, listRevisions, quickStart } from "./plan";
+import { outboxOperations } from "../schema";
+import { getPlan, listPlanHistory, listRevisions, quickStart } from "./plan";
 import { listTransactions } from "./transactions";
 
 describe("money in with Goes to (D-130, D-134)", () => {
@@ -90,5 +91,30 @@ describe("money in with Goes to (D-130, D-134)", () => {
     expect(getMoneyInRoutes(ctx.db, cycleId)).toEqual({
       t2: { to: "plan", amountSen: 900, localDate: "2026-11-17" },
     });
+  });
+
+  it("saves why the plan changed, sends it with the revision and lists it (D-139)", () => {
+    const saved = recordMoneyInTo(ctx, {
+      amountSen: sen(200),
+      ...when,
+      cycleId,
+      goesTo: { kind: "plan" },
+      reason: "Money in · From a friend · Ali",
+    });
+    if (!saved.ok) throw new Error(saved.message);
+    undoMoneyInTo(ctx, saved.value);
+    const history = listPlanHistory(ctx.db, cycleId);
+    expect(history.map((r) => r.reason)).toEqual([
+      null,
+      "Money in · From a friend · Ali",
+      "Undid: Money in · From a friend · Ali",
+    ]);
+    const sent = ctx.db
+      .select()
+      .from(outboxOperations)
+      .all()
+      .filter((o) => o.entity === "plan_revision")
+      .map((o) => (o.payload as { reason?: string | null }).reason);
+    expect(sent).toContain("Money in · From a friend · Ali");
   });
 });

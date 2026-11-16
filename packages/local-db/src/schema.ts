@@ -97,6 +97,8 @@ export const planRevisions = sqliteTable(
     shortfallAcknowledged: integer("shortfall_acknowledged", { mode: "boolean" })
       .notNull()
       .default(false),
+    /** Why the plan changed, shown in Plan changes (D-139); null when unknown. */
+    reason: text("reason"),
   },
   (t) => [
     check("plan_revisions_budget_check", sql`${t.budgetSen} > 0`),

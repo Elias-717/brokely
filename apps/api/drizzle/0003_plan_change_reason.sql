@@ -1,0 +1,1 @@
+ALTER TABLE "brokely"."plan_revisions" ADD COLUMN "reason" text;

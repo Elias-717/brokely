@@ -88,6 +88,7 @@ function rewriteDraft(
     approvedAt: after.approvedAt,
     shortfallAcknowledged: after.shortfallAcknowledged,
     allocations: rows.map((a) => ({ id: a.id, categoryId: a.categoryId, amountSen: a.amountSen })),
+    reason: after.reason ?? null,
   });
   scope.tx.update(planRevisions).set(after).where(eq(planRevisions.id, before.id)).run();
   if (rows.length > 0) scope.tx.insert(allocations).values(rows).run();

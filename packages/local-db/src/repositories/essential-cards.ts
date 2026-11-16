@@ -1,5 +1,6 @@
 import type { Sen } from "@brokely/domain";
 import { createBillIn, type BillInput } from "./bills";
+import { liveCategory } from "./categories";
 import { write, type RepoContext } from "./context";
 import { setAllocationIn } from "./plan";
 
@@ -24,6 +25,7 @@ export function acceptEssentialCard(ctx: RepoContext, input: EssentialCardInput)
       categoryId: input.categoryId,
       amountSen: input.allocationSen,
       shortfallAcknowledged: input.shortfallAcknowledged,
+      reason: `Essentials: ${liveCategory(scope.tx, input.categoryId, "REFERENCE_MISSING").name}`,
     });
     const bill = input.bill
       ? createBillIn(scope, { ...input.bill, categoryId: input.categoryId })
