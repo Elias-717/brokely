@@ -7,7 +7,7 @@ import {
 } from "@brokely/domain";
 import { deleteAllData, exportJson, phoneDataCounts } from "@brokely/local-db";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Text } from "react-native";
 import { db } from "../src/db/client";
 import { useRead } from "../src/db/use-read";
@@ -20,6 +20,12 @@ import { SheetShell } from "../src/ui/sheet";
 import { TextField } from "../src/ui/text-field";
 import { space, type } from "../src/ui/theme";
 import { useTheme } from "../src/ui/theme-context";
+
+/**
+ * The delete button can't be pressed until the sheet has finished sliding in. On the phone a
+ * second tap on the More row landed on it as the sheet arrived and deleted everything (17 Nov).
+ */
+const ARM_MS = 1000;
 
 const TITLES: Record<DeleteDataCase, string> = {
   "only-here": "Delete all your data?",
@@ -40,6 +46,12 @@ export default function DeleteDataSheet() {
   const { session, waiting } = useSync();
   const counts = useRead(phoneDataCounts);
   const [typed, setTyped] = useState("");
+  const openedAt = useRef(Date.now());
+  const [armed, setArmed] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setArmed(true), ARM_MS);
+    return () => clearTimeout(timer);
+  }, []);
 
   // The kind of warning is chosen when the sheet opens and only ever gets stricter. A backup
   // finishing while the sheet was open used to swap the whole sheet, taking the word field away
@@ -61,6 +73,8 @@ export default function DeleteDataSheet() {
   }[deleteCase];
 
   const remove = async () => {
+    // Belt and braces: a press that began while the sheet was still arriving does nothing.
+    if (!armed || Date.now() - openedAt.current < ARM_MS) return;
     deleteAllData(db);
     // Signed in, the next sync would bring everything back (D-73 c).
     if (session !== null) await signOutHere();
@@ -98,7 +112,7 @@ export default function DeleteDataSheet() {
       <Button
         label={deleteCase === "backed-up" ? "Remove from this phone" : "Delete everything"}
         variant="destructive"
-        disabled={askWord && !deleteWordTyped(typed)}
+        disabled={!armed || (askWord && !deleteWordTyped(typed))}
         onPress={() => void remove()}
       />
       <Button label="Keep my data" variant="secondary" onPress={() => router.back()} />
