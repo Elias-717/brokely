@@ -7,19 +7,19 @@ import {
 } from "@brokely/domain";
 import { deleteAllData, exportJson, phoneDataCounts } from "@brokely/local-db";
 import { router } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Text } from "react-native";
-import { db } from "../db/client";
-import { useRead } from "../db/use-read";
-import { shareExportFile } from "../lib/export-file";
-import { today } from "../lib/today";
-import { signOutHere } from "../sync/auth";
-import { useSync } from "../sync/sync-provider";
-import { Button, Sticker } from "./components";
-import { ModalSheet } from "./sheet";
-import { TextField } from "./text-field";
-import { space, type } from "./theme";
-import { useTheme } from "./theme-context";
+import { db } from "../src/db/client";
+import { useRead } from "../src/db/use-read";
+import { shareExportFile } from "../src/lib/export-file";
+import { today } from "../src/lib/today";
+import { signOutHere } from "../src/sync/auth";
+import { useSync } from "../src/sync/sync-provider";
+import { Button, Sticker } from "../src/ui/components";
+import { SheetShell } from "../src/ui/sheet";
+import { TextField } from "../src/ui/text-field";
+import { space, type } from "../src/ui/theme";
+import { useTheme } from "../src/ui/theme-context";
 
 const TITLES: Record<DeleteDataCase, string> = {
   "only-here": "Delete all your data?",
@@ -31,30 +31,25 @@ const TITLES: Record<DeleteDataCase, string> = {
  * "Delete all my data" (D-133, FR-ACC-07): over the screen, never below the fold. Says what
  * would go in real numbers, offers a copy first, and asks for a typed word only when something
  * would be lost for good.
+ *
+ * A sheet with its own route, like Mark paid. It was a Modal drawn by the More tab, and it
+ * closed by itself on the phone: sometimes at once, sometimes while the word was being typed.
  */
-export function DeleteDataSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
-  const { session, waiting } = useSync();
-  const deleteCase = deleteDataCase({ signedIn: session !== null, waiting });
-  return (
-    <ModalSheet visible={visible} onClose={onClose} title={TITLES[deleteCase]}>
-      {/* Only while open, so the typed word starts empty and More doesn't count on every save. */}
-      {visible ? <SheetBody deleteCase={deleteCase} waiting={waiting} onClose={onClose} /> : null}
-    </ModalSheet>
-  );
-}
-
-function SheetBody({
-  deleteCase,
-  waiting,
-  onClose,
-}: {
-  deleteCase: DeleteDataCase;
-  waiting: number;
-  onClose: () => void;
-}) {
+export default function DeleteDataSheet() {
   const { colors } = useTheme();
+  const { session, waiting } = useSync();
   const counts = useRead(phoneDataCounts);
   const [typed, setTyped] = useState("");
+
+  // The kind of warning is chosen when the sheet opens and only ever gets stricter. A backup
+  // finishing while the sheet was open used to swap the whole sheet, taking the word field away
+  // mid-typing; a change made meanwhile still makes it ask for the word.
+  const live = deleteDataCase({ signedIn: session !== null, waiting });
+  const [deleteCase, setDeleteCase] = useState(live);
+  useEffect(() => {
+    if (needsDeleteWord(live) && !needsDeleteWord(deleteCase)) setDeleteCase(live);
+  }, [live, deleteCase]);
+
   const what = dataCountsInWords(counts) || "Your settings";
   const signedIn = deleteCase !== "only-here";
   const askWord = needsDeleteWord(deleteCase);
@@ -68,13 +63,13 @@ function SheetBody({
   const remove = async () => {
     deleteAllData(db);
     // Signed in, the next sync would bring everything back (D-73 c).
-    if (signedIn) await signOutHere();
-    onClose();
+    if (session !== null) await signOutHere();
+    router.dismissAll();
     router.replace("/welcome");
   };
 
   return (
-    <>
+    <SheetShell title={TITLES[deleteCase]}>
       <Sticker background={colors.warningCard} style={{ padding: space.md }}>
         <Text style={[type.body, { color: colors.text }]}>{warning}</Text>
       </Sticker>
@@ -106,18 +101,15 @@ function SheetBody({
         disabled={askWord && !deleteWordTyped(typed)}
         onPress={() => void remove()}
       />
-      <Button label="Keep my data" variant="secondary" onPress={onClose} />
+      <Button label="Keep my data" variant="secondary" onPress={() => router.back()} />
       {/* This row only clears the phone; the account has its own delete on Profile. */}
       {signedIn ? (
         <Button
           label="Delete my account and backup instead"
           variant="link"
-          onPress={() => {
-            onClose();
-            router.push("/profile");
-          }}
+          onPress={() => router.replace("/profile")}
         />
       ) : null}
-    </>
+    </SheetShell>
   );
 }

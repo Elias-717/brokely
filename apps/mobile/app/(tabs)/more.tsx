@@ -12,7 +12,7 @@ import {
 } from "@brokely/local-db";
 import Constants from "expo-constants";
 import { router, type Href } from "expo-router";
-import { useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { Pressable, Switch, Text, View } from "react-native";
 import { db, repo } from "../../src/db/client";
 import { ProfileCard } from "../../src/sync/profile-card";
@@ -21,7 +21,6 @@ import { useRead } from "../../src/db/use-read";
 import { shareExportFile } from "../../src/lib/export-file";
 import { clockTime, today } from "../../src/lib/today";
 import { Card, Heading, Screen, Sticker, Title } from "../../src/ui/components";
-import { DeleteDataSheet } from "../../src/ui/delete-data-sheet";
 import { Segmented } from "../../src/ui/segmented";
 import { space, type } from "../../src/ui/theme";
 import { useTheme } from "../../src/ui/theme-context";
@@ -55,7 +54,6 @@ export default function MoreScreen() {
   const tips = useRead(getMoneyTips);
   const haptics = useRead(getHapticsEnabled);
   const notify = useRead((db) => getNotificationPrefs(db).settings, []);
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const { session } = useSync();
 
   // A file through Android's share sheet: save to Drive or Files, email it to yourself…
@@ -205,10 +203,9 @@ export default function MoreScreen() {
               : "From this phone; can't be undone"
           }
           warning
-          onPress={() => setConfirmDelete(true)}
+          onPress={() => router.push("/delete-data")}
         />
       </Sticker>
-      <DeleteDataSheet visible={confirmDelete} onClose={() => setConfirmDelete(false)} />
       {/* The version, quietly at the very bottom (author). */}
       <Text
         style={[type.small, { color: colors.muted, textAlign: "center", marginBottom: space.lg }]}
