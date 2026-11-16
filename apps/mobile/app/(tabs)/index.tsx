@@ -355,7 +355,11 @@ export default function HomeScreen() {
                   };
                   const next = sen(home.budgetSen + home.moneyIn!.suggestionSen);
                   const leftOut = home.moneyIn!.leftOut;
-                  const saved = setPlanBudget(repo, { ...before, budgetSen: next });
+                  const saved = setPlanBudget(repo, {
+                    ...before,
+                    budgetSen: next,
+                    reason: "Money in added to the plan",
+                  });
                   if (!saved.ok) return;
                   // That money is in the plan now, so the card doesn't come back for it (D-130).
                   for (const m of leftOut) {
@@ -368,7 +372,7 @@ export default function HomeScreen() {
                   savedBuzz();
                   // Undo is one more revision with the old budget; history is never rewritten (D-03).
                   showUndo(`Plan is now ${formatRM(next)}`, () => {
-                    setPlanBudget(repo, before);
+                    setPlanBudget(repo, { ...before, reason: "Undid: Money in added to the plan" });
                     for (const m of leftOut) {
                       if (m.route === null) removeMoneyInRoute(repo, home.cycleId, m.id);
                       else {

@@ -69,11 +69,14 @@ export default function FixLeftInPlan() {
       cycleId: home.cycleId,
       budgetSen: newBudget,
       shortfallAcknowledged: short || plan.revision.shortfallAcknowledged,
+      reason: `Left in plan set to ${formatRM(wanted)}`,
     });
     if (!saved.ok) return setProblem(refusalText(saved.code, saved.message));
     savedBuzz();
     router.back();
-    showUndo(`Left in plan is now ${formatRM(wanted)}`, () => setPlanBudget(repo, before));
+    showUndo(`Left in plan is now ${formatRM(wanted)}`, () =>
+      setPlanBudget(repo, { ...before, reason: `Undid: Left in plan set to ${formatRM(wanted)}` }),
+    );
   };
 
   return (

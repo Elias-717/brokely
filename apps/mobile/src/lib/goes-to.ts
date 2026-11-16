@@ -46,6 +46,8 @@ export interface GoesTo {
   readonly saveLabel: string;
   /** The Undo bar's words after saving. */
   readonly savedMessage: string;
+  /** Added to the plan change's reason, e.g. " · to Savings" (D-139). */
+  readonly reasonSuffix: string;
   readonly iconOf: (name: string) => IconName;
 }
 
@@ -93,6 +95,7 @@ export function useGoesTo({
       offerToday: false,
       saveLabel: typed > 0 ? `Save money in · ${rm}` : "Save",
       savedMessage: "",
+      reasonSuffix: "",
       iconOf: () => "coins",
     };
   }
@@ -167,6 +170,12 @@ export function useGoesTo({
     offerToday: isToday && choice.kind === "plan" && offersToday(typed),
     saveLabel,
     savedMessage,
+    reasonSuffix:
+      choice.kind === "today"
+        ? " · to today"
+        : choice.kind === "set_aside"
+          ? ` · to ${nameOf(choice.categoryId)}`
+          : "",
     iconOf: (name) =>
       name === "This month's plan"
         ? "calendar-check"

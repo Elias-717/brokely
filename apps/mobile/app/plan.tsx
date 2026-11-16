@@ -227,6 +227,12 @@ function PlanView({
       ) : null}
 
       <Button label="Change amounts" onPress={onChange} />
+      {/* Every change with why, and undo for each (D-139). */}
+      <Button
+        label={`Changes to this plan · ${revisions.length}`}
+        variant="secondary"
+        onPress={() => router.push("/plan-changes")}
+      />
       <View style={{ marginBottom: space.lg }}>
         <Button
           label="Plan step by step"
@@ -294,12 +300,17 @@ function ChangeAmounts({
       budgetSen: budget,
       allocations: allocations.map((a) => ({ categoryId: a.categoryId, amountSen: a.amountSen })),
       shortfallAcknowledged: acknowledged,
+      reason: "Changed in Your plan",
     });
     if (!saved.ok) return setProblem(refusalText(saved.code, saved.message));
     onDone();
     // Undo is one more revision with the old numbers; history is never rewritten (D-03).
     showUndo(`Plan saved · ${formatRM(budget)}`, () =>
-      revisePlan(repo, { cycleId: plan.cycle.id, ...before }),
+      revisePlan(repo, {
+        cycleId: plan.cycle.id,
+        ...before,
+        reason: "Undid: Changed in Your plan",
+      }),
     );
   };
 

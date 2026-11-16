@@ -87,6 +87,7 @@ export function TngPendingCards() {
       note: `From a friend · ${item.counterparty}`,
       cycleId,
       goesTo: { kind: to },
+      reason: `Money in · From a friend · ${item.counterparty}${to === "today" ? " · to today" : ""}`,
     });
     if (!saved.ok) return;
     if (cycleId) {

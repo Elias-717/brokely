@@ -365,6 +365,7 @@ export default function QuickAdd() {
         ...when,
         cycleId: goes.cycleId,
         goesTo,
+        reason: `Money in · ${source}${goes.reasonSuffix}`,
       });
       if (saved.ok && goes.cycleId) {
         setMoneyInRoute(repo, goes.cycleId, saved.value.id, {
