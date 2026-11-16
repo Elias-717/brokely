@@ -1,5 +1,5 @@
 /**
- * How careful "Delete all my data" has to be (D-133, FR-ACC-07): the friction follows what would
+ * How careful "Delete all my data" has to be (D-133, D-135, FR-ACC-07): the warning follows what would
  * really be lost. Without an account nothing exists anywhere else; with an account, only changes
  * still waiting to sync are lost, and everything else comes back on sign-in.
  */
@@ -13,9 +13,12 @@ export function deleteDataCase(state: {
   return state.waiting > 0 ? "not-backed-up" : "backed-up";
 }
 
-/** The word is typed only when something would be lost for good. */
-export function needsDeleteWord(deleteCase: DeleteDataCase): boolean {
-  return deleteCase !== "backed-up";
+/**
+ * The word is always typed (D-135): one tap removed a signed-in student's data from the phone,
+ * and the author expected a confirmation. The warning still says whether it comes back.
+ */
+export function needsDeleteWord(): boolean {
+  return true;
 }
 
 /** Capitals and spaces around the word don't matter: the point is the pause, not the spelling. */

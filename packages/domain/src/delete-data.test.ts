@@ -15,10 +15,8 @@ describe("how careful Delete all my data is (D-133, FR-ACC-07)", () => {
     expect(deleteDataCase({ signedIn: true, waiting: 0 })).toBe("backed-up");
   });
 
-  it("asks for the typed word only when something would be lost for good", () => {
-    expect(needsDeleteWord("only-here")).toBe(true);
-    expect(needsDeleteWord("not-backed-up")).toBe(true);
-    expect(needsDeleteWord("backed-up")).toBe(false);
+  it("always asks for the typed word, even when everything is backed up (D-135)", () => {
+    expect(needsDeleteWord()).toBe(true);
   });
 });
 

@@ -58,13 +58,14 @@ export default function DeleteDataSheet() {
   // mid-typing; a change made meanwhile still makes it ask for the word.
   const live = deleteDataCase({ signedIn: session !== null, waiting });
   const [deleteCase, setDeleteCase] = useState(live);
+  // Only the warning can change: a change made while the sheet is open makes it say so.
   useEffect(() => {
-    if (needsDeleteWord(live) && !needsDeleteWord(deleteCase)) setDeleteCase(live);
+    if (live === "not-backed-up" && deleteCase === "backed-up") setDeleteCase(live);
   }, [live, deleteCase]);
 
   const what = dataCountsInWords(counts) || "Your settings";
   const signedIn = deleteCase !== "only-here";
-  const askWord = needsDeleteWord(deleteCase);
+  const askWord = needsDeleteWord();
 
   const warning = {
     "only-here": `${what} will be gone for good. Nothing is saved anywhere else, and this can't be undone.`,
