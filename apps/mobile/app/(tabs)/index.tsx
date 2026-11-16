@@ -203,9 +203,15 @@ export default function HomeScreen() {
         }}
       >
         <View style={{ flexDirection: "row", alignItems: "center", gap: space.md }}>
-          <View style={{ flex: 1, gap: space.xs }}>
+          {/* Tap to fix it when it doesn't match what the student really has (D-138). */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityHint="Change it to what you really have left"
+            onPress={() => router.push("/fix-left")}
+            style={({ pressed }) => ({ flex: 1, gap: space.xs, opacity: pressed ? 0.8 : 1 })}
+          >
             <Text style={[type.strong, { color: colors.onHero, fontSize: 15, opacity: 0.9 }]}>
-              Left in plan
+              Left in plan ›
             </Text>
             <AnimatedAmount
               value={home.leftInPlanSen}
@@ -221,7 +227,7 @@ export default function HomeScreen() {
             <Text style={[type.body, { color: colors.onHero, fontSize: 14, opacity: 0.85 }]}>
               of {formatRM(home.budgetSen)} planned
             </Text>
-          </View>
+          </Pressable>
           {/* Past the budget the ring turns red and shows how far over, e.g. "−20%" (D-98) */}
           <ProgressRing
             size={ringSize}

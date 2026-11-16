@@ -72,7 +72,13 @@ export default function RootLayout() {
 }
 
 /** Bottom sheets that slide up over the current screen (U-10). */
-const SHEETS = ["bills/pay/[id]", "debts/repay/[id]", "debts/write-off/[id]", "delete-data"];
+const SHEETS = [
+  "bills/pay/[id]",
+  "debts/repay/[id]",
+  "debts/write-off/[id]",
+  "delete-data",
+  "fix-left",
+];
 
 /**
  * A sheet's screen is see-through, so the page it opened from stays visible above it. The

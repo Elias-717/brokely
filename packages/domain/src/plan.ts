@@ -170,3 +170,11 @@ export function checkGuidedBudget(budgetSen: Sen, planBudgetSen: Sen): RuleResul
     ? OK
     : fail("VALIDATION_FAILED", "That's more than the budget in your plan");
 }
+
+/**
+ * "How much do you really have left?" (D-138): the budget that makes left in plan (B − N, BR-12)
+ * equal what the student typed. Spending is never changed; only the budget moves.
+ */
+export function budgetForLeftInPlan(spentSen: Sen, wantedLeftSen: Sen): Sen {
+  return sen(spentSen + wantedLeftSen);
+}
