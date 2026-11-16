@@ -162,13 +162,15 @@ export function TngPendingCards() {
             )
           }
         >
-          {item.payment
-            ? tngLines.paid(item.amountSen, item.counterparty)
-            : item.direction === "out"
-              ? tngLines.out(item.amountSen, item.counterparty)
-              : small(item)
-                ? tngLines.inSmall(item.amountSen, item.counterparty)
-                : tngLines.in(item.amountSen, item.counterparty)}
+          {item.payment?.fromPoints
+            ? tngLines.points(item.amountSen)
+            : item.payment
+              ? tngLines.paid(item.amountSen, item.counterparty)
+              : item.direction === "out"
+                ? tngLines.out(item.amountSen, item.counterparty)
+                : small(item)
+                  ? tngLines.inSmall(item.amountSen, item.counterparty)
+                  : tngLines.in(item.amountSen, item.counterparty)}
         </BrokelyCard>
       ))}
       {more > 0 ? (

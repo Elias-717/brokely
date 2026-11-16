@@ -35,7 +35,7 @@ and reviewable, and prefer clarity over cleverness. Ask the user before making p
 | Features, what's different, what to advertise (Play listing, ads, AI agents) | `docs/marketing/features-and-ads.md` (update when a feature ships) |
 
 To read a .docx: `pandoc -t markdown <file>`.
-SRS v1.9 (17 Nov; PRD still v1.7) includes every decision up to D-136 and R-14 (v1.9 reworded FR-TXN-11, BR-33, FR-IMP-08, FR-DEBT-09, AC-61, AC-78 and added AC-79/80 for money in, D-130…D-134; v1.8 added FR-TXN-13/14, FR-DEBT-09, AC-76…78) (layout-only decisions are listed as "no requirement change" in section 15). To edit a .docx without pandoc/Word: `pip install python-docx`; the v1.7 update scripts copied a table row's XML and replaced its text, which keeps the formatting. SRS section 15 is the change record: **whenever a requirement changes, add a row there** (ID, type, what changed, decision) so traceability is never lost. Requirement IDs are never reused.
+SRS v1.9 (17 Nov; PRD still v1.7) includes every decision up to D-137 and R-14 (v1.9 reworded FR-TXN-11, BR-33, FR-IMP-08, FR-DEBT-09, AC-61, AC-78 and added AC-79/80 for money in, D-130…D-134; v1.8 added FR-TXN-13/14, FR-DEBT-09, AC-76…78) (layout-only decisions are listed as "no requirement change" in section 15). To edit a .docx without pandoc/Word: `pip install python-docx`; the v1.7 update scripts copied a table row's XML and replaced its text, which keeps the formatting. SRS section 15 is the change record: **whenever a requirement changes, add a row there** (ID, type, what changed, decision) so traceability is never lost. Requirement IDs are never reused.
 
 ---
 
@@ -218,7 +218,7 @@ Known TNG formats (package `my.com.tngdigital.ewallet`; **no transaction ID in t
 - Transfer in, second wording (17 Nov) — title `You’ve received money!` (curly apostrophe) body `[NAME] has transferred RM 1.52 to you. Tap here to check the transaction details.`
 - Reload (17 Nov) — title `Reload Successful` body `Your money is in! RM42.00 has been reloaded to your Touch 'n Go eWallet balance. Reference No. <37 digits>`: own money moving, recognised (`kind: "reload"`) and left out, never a card. **It has a reference number**, the first unique ID seen
 - Mobile prepaid top up (17 Nov) — title `Mobile prepaid top up` body `RM5.00 deducted from your TNG eWallet. If you did not receive your top up within 30 minutes, please call Careline at …`: a payment (`kind: "payment"`, pending with `payment.categoryHint` "Phone & internet"); the card opens Add on Spent with the note and category filled in
-- Points (17 Nov) — title `You've just earned 5 points!` body `You've received 5 points from your transaction! …`, posted ~0.5 s after a payment; points ≈ ringgit spent (author). Recognised (`kind: "points"`) and dropped for now
+- Points (17 Nov) — title `You've just earned 5 points!` body `You've received 5 points from your transaction! …`, posted ~0.5 s after a payment; points ≈ ringgit spent (author). Recognised (`kind: "points"`); dropped when a payment, transfer or reload is within 30 s, otherwise an "about RMN" card (D-137)
 - Noise to ignore (seen 26 Oct): TNG's blank group summary (empty title and text) and promotions such as `Your eWallet balance is low. Reload now!`. The parser accepts only known title + sentence pairs; unknown wording is never guessed (FR-IMP-09).
 - Not sampled yet: QR merchant payment, refund, bill payment, amounts with a thousands comma (the parser already accepts `1,234.50` and `1234.50`).
 

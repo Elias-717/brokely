@@ -478,11 +478,13 @@ export default function QuickAdd() {
                 accessibilityLiveRegion="polite"
                 style={[type.small, { color: colors.muted, textAlign: "center" }]}
               >
-                {tngItem.payment
-                  ? `Paid on TNG: ${tngItem.counterparty}. Check the category and save.`
-                  : tngItem.direction === "out"
-                    ? `Sent to ${tngItem.counterparty} on TNG. Choose what it was.`
-                    : `Received from ${tngItem.counterparty} on TNG. Choose what it was.`}
+                {tngItem.payment?.fromPoints
+                  ? `About ${formatRM(tngItem.amountSen)} from TNG points. Check the amount and pick what it was.`
+                  : tngItem.payment
+                    ? `Paid on TNG: ${tngItem.counterparty}. Check the category and save.`
+                    : tngItem.direction === "out"
+                      ? `Sent to ${tngItem.counterparty} on TNG. Choose what it was.`
+                      : `Received from ${tngItem.counterparty} on TNG. Choose what it was.`}
               </Text>
             ) : null}
             {restored ? (
@@ -1054,7 +1056,8 @@ function tngDraft(
       mode: "spent",
       amountText: plainAmount(item.amountSen),
       date: toLocalDate(new Date(item.postTime)),
-      note: item.counterparty,
+      // From points only (D-137): nothing is known about what it was.
+      note: item.payment.fromPoints ? "" : item.counterparty,
       categoryId: hinted?.id ?? null,
       // TNG said what it was, so a guess from the note doesn't replace it; a tap still can.
       pickedByHand: hinted !== undefined,

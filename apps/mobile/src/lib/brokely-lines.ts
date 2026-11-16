@@ -302,6 +302,9 @@ export function plain(line: Line): string {
  */
 export const tngLines = {
   label: (when: LocalDate): string => `From TNG · ${dayMonth(when)}`,
+  /** Only TNG points showed this payment (D-137): RM1 a point, an estimate. */
+  points: (amount: Sen): string =>
+    `TNG gave you ${Math.round(amount / 100)} points, so you probably paid about ${formatRM(amount)} somewhere. Add it?`,
   paid: (amount: Sen, what: string): string =>
     `You paid ${formatRM(amount)} for ${what}. Add it to your spending?`,
   out: (amount: Sen, name: string): string =>

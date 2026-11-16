@@ -106,7 +106,7 @@ describe("ingestTngCaptures (FR-IMP-04, FR-IMP-05, FR-IMP-06, FR-IMP-08)", () =>
     expect(result.consumed).toEqual([tngImportId(reload.key, reload.postTime)]);
   });
 
-  it("turns a prepaid top up into a pending payment, and drops the points next to it", () => {
+  it("turns a prepaid top up into a pending payment, and drops the points that came with it", () => {
     const topUp: TngCaptured = {
       key: "0|my.com.tngdigital.ewallet|3|null|10340",
       postTime: NOW - 10_000,
@@ -132,8 +132,49 @@ describe("ingestTngCaptures (FR-IMP-04, FR-IMP-05, FR-IMP-06, FR-IMP-08)", () =>
         payment: { categoryHint: "Phone & internet" },
       },
     ]);
-    expect(result.consumed).toHaveLength(2);
+    // The points are only 9.5 s old, so they wait (D-137); 30 s later they go with no card.
+    expect(result.consumed).toHaveLength(1);
     expect(readTngQueue(JSON.parse(JSON.stringify(result.queue)))).toEqual(result.queue);
+    const later = ingestTngCaptures([points], result.queue, NOW + 30_000);
+    expect(later.queue.pending).toHaveLength(1);
+    expect(later.consumed).toEqual([tngImportId(points.key, points.postTime)]);
+  });
+
+  const pointsAt = (postTime: number, points = 7): TngCaptured => ({
+    key: "0|my.com.tngdigital.ewallet|4|null|10340",
+    postTime,
+    title: `You've just earned ${points} points!`,
+    text: `You've received ${points} points from your transaction! Use them now to redeem great rewards.`,
+    bigText: "",
+  });
+
+  it("waits 30 s before deciding about points, keeping the raw copy (D-137)", () => {
+    const result = ingestTngCaptures([pointsAt(NOW - 5_000)], EMPTY_TNG_QUEUE, NOW);
+    expect(result.queue).toBe(EMPTY_TNG_QUEUE);
+    expect(result.consumed).toEqual([]);
+  });
+
+  it("turns points with no payment next to them into an estimate, RM1 a point (D-137)", () => {
+    const points = pointsAt(NOW - 60_000);
+    const result = ingestTngCaptures([points], EMPTY_TNG_QUEUE, NOW);
+    expect(result.queue.pending).toEqual([
+      {
+        id: tngImportId(points.key, points.postTime),
+        postTime: points.postTime,
+        direction: "out",
+        amountSen: sen(700),
+        counterparty: "TNG points",
+        payment: { categoryHint: null, fromPoints: true },
+      },
+    ]);
+    expect(readTngQueue(JSON.parse(JSON.stringify(result.queue)))).toEqual(result.queue);
+  });
+
+  it("drops points that belong to a payment already waiting or dealt with", () => {
+    const first = ingestTngCaptures([out(NOW - 61_000)], EMPTY_TNG_QUEUE, NOW);
+    const result = ingestTngCaptures([pointsAt(NOW - 60_000)], first.queue, NOW);
+    expect(result.queue.pending).toHaveLength(1);
+    expect(result.consumed).toHaveLength(1);
   });
 
   it("does not bring back an import that was already confirmed or declined", () => {

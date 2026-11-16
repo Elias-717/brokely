@@ -15,6 +15,14 @@ import { parseTngNotification } from "./tng-parser";
 /** Raw captures older than this are dropped, parsed or not (FR-IMP-11, AC-38). */
 export const TNG_KEEP_MS = 30 * 24 * 60 * 60 * 1000;
 
+/**
+ * Points arrive about half a second after their payment, and Home looks every few seconds, so a
+ * points notification waits this long before it is decided (D-137).
+ */
+export const POINTS_WAIT_MS = 30_000;
+/** A payment, transfer or reload this close to the points is the one they belong to. */
+const POINTS_PAIR_MS = 30_000;
+
 /** The most settled imports remembered, so a re-delivered notification is still recognised. */
 const HANDLED_LIMIT = 500;
 
@@ -38,8 +46,11 @@ export interface PendingTngImport {
   readonly amountSen: Sen;
   /** The person for a transfer; for a payment, what it was (e.g. "Mobile prepaid top up"). */
   readonly counterparty: string;
-  /** Set for a payment to a business (17 Nov): spending once confirmed, with a suggested category. */
-  readonly payment?: { readonly categoryHint: string | null };
+  /**
+   * Set for a payment to a business (17 Nov): spending once confirmed, with a suggested category.
+   * `fromPoints`: only TNG points showed it (D-137); the amount is points × RM1, an estimate.
+   */
+  readonly payment?: { readonly categoryHint: string | null; readonly fromPoints?: boolean };
 }
 
 /** An import already confirmed or declined: only enough is kept to recognise it again. */
@@ -90,16 +101,44 @@ export function ingestTngCaptures(
 
   const known = new Set([...pending.map((p) => p.id), ...handled.map((h) => h.id)]);
   const consumed = new Set<string>();
-  for (const capture of captured) {
-    if (capture.postTime < oldest) continue;
-    const parsed = parseTngNotification(capture);
+  const parsedAll = captured
+    .filter((c) => c.postTime >= oldest)
+    .map((capture) => ({ capture, parsed: parseTngNotification(capture) }));
+  // When money moved, for pairing points with their payment (D-137).
+  const moneyTimes = [
+    ...parsedAll
+      .filter(({ parsed }) => parsed.kind !== "unreadable" && parsed.kind !== "points")
+      .map(({ capture }) => capture.postTime),
+    ...pending.filter((p) => !p.payment?.fromPoints).map((p) => p.postTime),
+    ...handled.map((h) => h.postTime),
+  ];
+  for (const { capture, parsed } of parsedAll) {
     if (parsed.kind === "unreadable") continue;
     const id = tngImportId(capture.key, capture.postTime);
+    if (parsed.kind === "points") {
+      // Too new to tell whether its payment's own notification is coming: decide later.
+      if (nowMs - capture.postTime < POINTS_WAIT_MS) continue;
+      consumed.add(id);
+      if (known.has(id)) continue;
+      // Points next to a payment, transfer or reload belong to it: no second card.
+      if (moneyTimes.some((t) => Math.abs(t - capture.postTime) <= POINTS_PAIR_MS)) continue;
+      known.add(id);
+      // Only points showed this payment: about RM1 a point, for the student to check (D-137).
+      pending.push({
+        id,
+        postTime: capture.postTime,
+        direction: "out",
+        amountSen: sen(parsed.points * 100),
+        counterparty: "TNG points",
+        payment: { categoryHint: null, fromPoints: true },
+      });
+      changed = true;
+      continue;
+    }
     consumed.add(id);
     // A reload is the student's own money moving into TNG: understood, so its raw copy goes,
     // but it never waits on Home (17 Nov, D-128).
-    // Points come with a payment whose own notification has the amount (17 Nov).
-    if (parsed.kind === "reload" || parsed.kind === "points") continue;
+    if (parsed.kind === "reload") continue;
     if (known.has(id)) continue;
     known.add(id);
     pending.push(
@@ -171,7 +210,15 @@ function readPending(value: unknown): PendingTngImport[] {
   } as const;
   if (!isRecord(payment)) return [base];
   const hint = typeof payment.categoryHint === "string" ? payment.categoryHint : null;
-  return [{ ...base, payment: { categoryHint: hint } }];
+  return [
+    {
+      ...base,
+      payment:
+        payment.fromPoints === true
+          ? { categoryHint: hint, fromPoints: true }
+          : { categoryHint: hint },
+    },
+  ];
 }
 
 function readHandled(value: unknown): HandledTngImport[] {
