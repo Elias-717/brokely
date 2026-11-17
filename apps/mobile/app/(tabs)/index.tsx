@@ -36,6 +36,7 @@ import { fonts, radius, space, type } from "../../src/ui/theme";
 import { useTheme } from "../../src/ui/theme-context";
 import { FirstVisit, MonthSoFar } from "../../src/ui/home-no-plan";
 import { TngPendingCards } from "../../src/ui/tng-pending";
+import { TngPrompt } from "../../src/tng/tng-prompt";
 import { useUndo } from "../../src/ui/undo";
 import { savedBuzz } from "../../src/ui/haptics";
 
@@ -189,6 +190,8 @@ export default function HomeScreen() {
   return (
     <Screen gutter={20} bottom={96}>
       {header}
+      {/* Once a plan exists, suggest TNG auto-collect once (D-140), never over another popup. */}
+      <TngPrompt blocked={showIntro || grew} />
 
       {/* 1. Left in plan, the ring of the budget used and the daily guide (FR-INS-01, D-58, D-59) */}
       <View

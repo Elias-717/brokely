@@ -171,6 +171,15 @@ export function setMascotIntroSeen(ctx: RepoContext): void {
   setPref(ctx, "mascot_intro_seen", true);
 }
 
+/** The one-time "Catch your TNG payments" sheet on Home (D-140): gone once closed. */
+export function getTngPromptSeen(db: Db): boolean {
+  return getPref(db, "tng_prompt_seen") === true;
+}
+
+export function setTngPromptSeen(ctx: RepoContext): void {
+  setPref(ctx, "tng_prompt_seen", true);
+}
+
 /** Vibration when saving (D-111): on by default; More → Settings turns it off. */
 export function getHapticsEnabled(db: Db): boolean {
   return getPref(db, "haptics") !== false;

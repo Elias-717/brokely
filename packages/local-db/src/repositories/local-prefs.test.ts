@@ -16,6 +16,8 @@ import {
   setHapticsEnabled,
   getMascotIntroSeen,
   setMascotIntroSeen,
+  getTngPromptSeen,
+  setTngPromptSeen,
   getSeenMascotStage,
   setSeenMascotStage,
   hideHeadsUp,
@@ -158,6 +160,12 @@ describe("phone-only preferences (D-30, D-32)", () => {
     expect(getMascotIntroSeen(ctx.db)).toBe(false);
     setMascotIntroSeen(ctx);
     expect(getMascotIntroSeen(ctx.db)).toBe(true);
+  });
+
+  it("the TNG auto-collect sheet shows until closed, once (D-140)", () => {
+    expect(getTngPromptSeen(ctx.db)).toBe(false);
+    setTngPromptSeen(ctx);
+    expect(getTngPromptSeen(ctx.db)).toBe(true);
   });
 
   it("remembers the Brokely stage already celebrated, on this phone only (D-109)", () => {
