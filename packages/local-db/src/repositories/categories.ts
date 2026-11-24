@@ -1,7 +1,7 @@
 import type { EntityData } from "@brokely/contracts";
 import { checkCanDeleteCategory, DEFAULT_CATEGORIES, type CategoryKind } from "@brokely/domain";
 import { and, asc, count, eq, isNull, max } from "drizzle-orm";
-import { allocations, categories, transactionLines } from "../schema";
+import { allocations, bills, categories, debts, transactionLines, transactions } from "../schema";
 import { ensure, RepoError, write, type Db, type RepoContext, type WriteScope } from "./context";
 import { enqueueDelete, enqueueUpsert, touched } from "./outbox";
 
@@ -159,5 +159,55 @@ export function deleteCategory(ctx: RepoContext, id: string) {
       .set({ deletedAt: scope.at, ...touched(scope.at) })
       .where(eq(categories.id, id))
       .run();
+  });
+}
+
+/**
+ * A person's name is never a category (24 Nov): it came from a friend's name typed into the old
+ * "Name it" box under Other. Archives categories the student made whose name is someone in Debts
+ * and that nothing uses: no record, no plan amount, no bill, no write-off. Default categories
+ * and anything in use are never touched, so no history is lost (FR-CAT-02). Runs on app start.
+ */
+export function archiveDebtNameCategories(ctx: RepoContext) {
+  return write(ctx, (scope) => {
+    const names = new Set(
+      scope.tx
+        .select({ name: debts.counterparty })
+        .from(debts)
+        .where(isNull(debts.deletedAt))
+        .all()
+        .map((d) => d.name.trim().toLowerCase()),
+    );
+    if (names.size === 0) return { archived: 0 };
+    const defaults = new Set(DEFAULT_CATEGORIES.map((c) => c.name.toLowerCase()));
+    const used = (id: string) =>
+      scope.tx
+        .select({ n: count() })
+        .from(transactionLines)
+        .where(and(eq(transactionLines.categoryId, id), isNull(transactionLines.deletedAt)))
+        .get()!.n > 0 ||
+      scope.tx
+        .select({ n: count() })
+        .from(allocations)
+        .where(and(eq(allocations.categoryId, id), isNull(allocations.deletedAt)))
+        .get()!.n > 0 ||
+      scope.tx
+        .select({ n: count() })
+        .from(bills)
+        .where(and(eq(bills.categoryId, id), isNull(bills.deletedAt)))
+        .get()!.n > 0 ||
+      scope.tx
+        .select({ n: count() })
+        .from(transactions)
+        .where(and(eq(transactions.writeOffCategoryId, id), isNull(transactions.deletedAt)))
+        .get()!.n > 0;
+    let archived = 0;
+    for (const c of listCategories(scope.tx)) {
+      const name = c.name.trim().toLowerCase();
+      if (defaults.has(name) || !names.has(name) || used(c.id)) continue;
+      updateCategory(scope, c.id, { archivedAt: scope.at });
+      archived += 1;
+    }
+    return { archived };
   });
 }

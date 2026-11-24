@@ -2,7 +2,7 @@ import { LilitaOne_400Regular } from "@expo-google-fonts/lilita-one/400Regular";
 import { Nunito_500Medium } from "@expo-google-fonts/nunito/500Medium";
 import { Nunito_700Bold } from "@expo-google-fonts/nunito/700Bold";
 import { Nunito_800ExtraBold } from "@expo-google-fonts/nunito/800ExtraBold";
-import { renameRetiredDefaults } from "@brokely/local-db";
+import { archiveDebtNameCategories, renameRetiredDefaults } from "@brokely/local-db";
 import migrations from "@brokely/local-db/migrations";
 import { useMigrations } from "drizzle-orm/expo-sqlite/migrator";
 import { useFonts } from "expo-font";
@@ -96,6 +96,8 @@ function AppStack() {
   // Category names changed after some phones were set up (D-43).
   useEffect(() => {
     renameRetiredDefaults(repo);
+    // A friend's name typed as a category is tidied away once nothing uses it (24 Nov).
+    archiveDebtNameCategories(repo);
   }, []);
   return (
     <>
