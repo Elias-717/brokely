@@ -2,6 +2,9 @@ import { planChanges, sen, undoPlanChange } from "@brokely/domain";
 import {
   findCycleOn,
   getMoneyInRoutes,
+  getPlanLinks,
+  removePlanLink,
+  setPlanLink,
   getPlan,
   listPlanHistory,
   removeMoneyInRoute,
@@ -24,11 +27,38 @@ export function takeBackMoneyIn(transactionId: string, localDate: string): (() =
   if (!route) return null;
   removeMoneyInRoute(repo, cycle.id, transactionId);
 
+  const restorePlan = route.revisionId ? undoRevision(cycle.id, route.revisionId) : null;
+  return () => {
+    restorePlan?.();
+    setMoneyInRoute(repo, cycle.id, transactionId, route);
+  };
+}
+
+/**
+ * Deleting a loan that was counted in the plan (D-141): its plan revision is undone too.
+ * Returns how to put it back, for the delete's Undo; null when the loan never touched the plan.
+ */
+export function takeBackLend(transactionId: string, localDate: string): (() => void) | null {
+  const cycle = findCycleOn(repo.db, localDate);
+  if (!cycle) return null;
+  const revisionId = getPlanLinks(repo.db, cycle.id)[transactionId];
+  if (!revisionId) return null;
+  removePlanLink(repo, cycle.id, transactionId);
+  const restorePlan = undoRevision(cycle.id, revisionId);
+  return () => {
+    restorePlan?.();
+    setPlanLink(repo, cycle.id, transactionId, revisionId);
+  };
+}
+
+/** Undoes one plan revision on today's plan as a new one (D-139); returns how to redo it. */
+function undoRevision(cycleId: string, revisionId: string): (() => void) | null {
+  const cycle = { id: cycleId };
   let restorePlan: (() => void) | null = null;
   const plan = getPlan(repo.db, cycle.id);
-  const change = route.revisionId
-    ? planChanges(listPlanHistory(repo.db, cycle.id)).find((c) => c.revisionId === route.revisionId)
-    : undefined;
+  const change = planChanges(listPlanHistory(repo.db, cycle.id)).find(
+    (c) => c.revisionId === revisionId,
+  );
   if (plan && change) {
     const current = {
       budgetSen: sen(plan.revision.budgetSen),
@@ -57,8 +87,5 @@ export function takeBackMoneyIn(transactionId: string, localDate: string): (() =
       }
     }
   }
-  return () => {
-    restorePlan?.();
-    setMoneyInRoute(repo, cycle.id, transactionId, route);
-  };
+  return restorePlan;
 }

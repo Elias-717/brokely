@@ -178,3 +178,13 @@ export function checkGuidedBudget(budgetSen: Sen, planBudgetSen: Sen): RuleResul
 export function budgetForLeftInPlan(spentSen: Sen, wantedLeftSen: Sen): Sen {
   return sen(spentSen + wantedLeftSen);
 }
+
+/**
+ * Lending counted in this month's plan (D-141): the budget goes down by what was lent, so left
+ * in plan and today's amount show the money is gone. Lending is still never spending
+ * (FR-DEBT-06). Null when it would leave no budget (BR-01).
+ */
+export function budgetAfterLending(budgetSen: Sen, lentSen: Sen): Sen | null {
+  const next = budgetSen - lentSen;
+  return next > 0 ? sen(next) : null;
+}

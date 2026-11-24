@@ -18,6 +18,7 @@ import {
   deleteTransaction,
   getAddDraft,
   getTngQueue,
+  lendFromPlan,
   recordMoneyInTo,
   recordPurchase,
   recordSplitPurchase,
@@ -25,7 +26,9 @@ import {
   removeMoneyInRoute,
   setAddDraft,
   setMoneyInRoute,
+  setPlanLink,
   setTngQueue,
+  undoLendFromPlan,
   undoMoneyInTo,
   type AddDraft,
   type RepoResult,
@@ -166,6 +169,8 @@ export default function QuickAdd() {
   const [moreKind, setMoreKind] = useState<MoreKind>(start.moreKind);
   const [person, setPerson] = useState(start.person);
   const [payBackBy, setPayBackBy] = useState<LocalDate | null>(start.payBackBy);
+  /** I lent: "Count it in this month's plan?", asked every time, no default (D-141). */
+  const [lendFromPlanChoice, setLendFromPlanChoice] = useState<"yes" | "no" | null>(null);
   /** In More the note is behind "+ Add a note" (D-119); a restored note shows straight away. */
   const [noteOpen, setNoteOpen] = useState(start.note !== "");
 
@@ -414,6 +419,32 @@ export default function QuickAdd() {
     if (amount === null || amount <= 0) return;
     if (!person.trim()) {
       return setProblem(lent ? "Add who you lent to." : "Add who you borrowed from.");
+    }
+    const askPlan = lent && goes.cycleId !== null;
+    if (askPlan && lendFromPlanChoice === null) {
+      return setProblem("Pick whether it counts in this month's plan.");
+    }
+    if (askPlan && lendFromPlanChoice === "yes" && goes.cycleId) {
+      // The loan and the smaller budget together; Undo takes both back (D-141).
+      const cycleId = goes.cycleId;
+      const saved = lendFromPlan(repo, {
+        direction: "owed_to_me",
+        counterparty: person.trim(),
+        amountSen: amount,
+        dueDate: payBackBy,
+        notes: cleanNote,
+        ...when,
+        cycleId,
+        reason: `Lent ${formatRM(amount)} to ${person.trim()}`,
+      });
+      if (saved.ok) setPlanLink(repo, cycleId, saved.value.transactionId, saved.value.revisionId);
+      return finish(
+        saved,
+        `${person.trim()} owes you ${formatRM(amount)} · plan ${formatRM(
+          sen((saved.ok ? saved.value.before.budgetSen : 0) - amount),
+        )}`,
+        (value) => undoLendFromPlan(repo, value),
+      );
     }
     return finish(
       createDebt(repo, {
@@ -731,6 +762,56 @@ export default function QuickAdd() {
                     moreKind === "lent" ? "Who did you lend to?" : "Who did you borrow from?"
                   }
                 />
+              ) : null}
+              {moreKind === "lent" && goes.cycleId !== null ? (
+                // Asked every time, nothing picked for the student (D-141).
+                <View
+                  style={{
+                    gap: space.xs,
+                    padding: space.sm,
+                    borderRadius: radius.button,
+                    borderWidth: 2,
+                    borderColor: colors.outline,
+                    backgroundColor: colors.cardTint,
+                  }}
+                >
+                  <Text style={[type.strong, { color: colors.text }]}>
+                    Count it in this month's plan?
+                  </Text>
+                  <View style={{ flexDirection: "row", gap: space.sm }}>
+                    <Chip
+                      label="Yes, from my plan"
+                      selected={lendFromPlanChoice === "yes"}
+                      onPress={() => {
+                        setLendFromPlanChoice("yes");
+                        setProblem(null);
+                      }}
+                    />
+                    <Chip
+                      label="No"
+                      selected={lendFromPlanChoice === "no"}
+                      onPress={() => {
+                        setLendFromPlanChoice("no");
+                        setProblem(null);
+                      }}
+                    />
+                  </View>
+                  <Text
+                    accessibilityLiveRegion="polite"
+                    style={[
+                      type.small,
+                      { color: lendFromPlanChoice === "yes" ? colors.income : colors.muted },
+                    ]}
+                  >
+                    {lendFromPlanChoice === "yes"
+                      ? `Budget ${formatRM(goes.budgetSen)} → ${formatRM(
+                          sen(goes.budgetSen - (amount ?? 0)),
+                        )}. Still not spending; when they pay you back, Money in can put it back.`
+                      : lendFromPlanChoice === "no"
+                        ? `Your plan stays at ${formatRM(goes.budgetSen)}.`
+                        : "Pick one to save. Lending is never spending either way."}
+                  </Text>
+                </View>
               ) : null}
               {/* When it should be paid back; optional, used by the reminder (D-103) */}
               {moreKind !== "transfer" ? (

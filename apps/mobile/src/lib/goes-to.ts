@@ -35,6 +35,8 @@ function fromId(id: string): MoneyInGoesTo {
 export interface GoesTo {
   /** The plan the money in falls in, by its date; null when there is none. */
   readonly cycleId: string | null;
+  /** That plan's budget now (0 without a plan); I lent shows it too (D-141). */
+  readonly budgetSen: Sen;
   /** The picker's choices; empty when there is no plan (then it is only recorded). */
   readonly options: { id: string; name: string }[];
   readonly selectedId: string;
@@ -88,6 +90,7 @@ export function useGoesTo({
   if (!plan) {
     return {
       cycleId: null,
+      budgetSen: sen(0),
       options: [],
       selectedId: RECORD,
       choice: { kind: "record" },
@@ -163,6 +166,7 @@ export function useGoesTo({
 
   return {
     cycleId: plan.cycle.id,
+    budgetSen: budget,
     options,
     selectedId,
     choice,

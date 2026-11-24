@@ -258,22 +258,24 @@ export function setDebtDueDate(ctx: RepoContext, id: string, dueDate: string | n
  * Removes a debt that has no transactions left, e.g. after Undo of the lend, borrow or split
  * that created it (D-38). A debt with history is never deleted; it settles or is written off.
  */
+export function deleteDebtIn(scope: WriteScope, id: string) {
+  const debt = liveDebt(scope.tx, id);
+  if (transactionsForDebts(scope.tx, [id]).length > 0) {
+    throw new RepoError(
+      "VALIDATION_FAILED",
+      "This debt has payments on it, so it can't be removed",
+    );
+  }
+  enqueueDelete(scope, "debt", id, debt.version);
+  scope.tx
+    .update(debts)
+    .set({ deletedAt: scope.at, ...touched(scope.at) })
+    .where(eq(debts.id, id))
+    .run();
+}
+
 export function deleteDebt(ctx: RepoContext, id: string) {
-  return write(ctx, (scope) => {
-    const debt = liveDebt(scope.tx, id);
-    if (transactionsForDebts(scope.tx, [id]).length > 0) {
-      throw new RepoError(
-        "VALIDATION_FAILED",
-        "This debt has payments on it, so it can't be removed",
-      );
-    }
-    enqueueDelete(scope, "debt", id, debt.version);
-    scope.tx
-      .update(debts)
-      .set({ deletedAt: scope.at, ...touched(scope.at) })
-      .where(eq(debts.id, id))
-      .run();
-  });
+  return write(ctx, (scope) => deleteDebtIn(scope, id));
 }
 
 /** Undo of deleteDebt: the same debt comes back (restore it before its transactions). */

@@ -404,3 +404,37 @@ export function removeMoneyInRoute(ctx: RepoContext, cycleId: string, transactio
   delete routes[transactionId];
   setPref(ctx, moneyInRoutesKey(cycleId), routes);
 }
+
+/**
+ * Which plan revision a loan made when it was counted in the plan (D-141), per cycle, by the
+ * lend record's id: deleting the loan from Records undoes that revision. Phone-only.
+ */
+const planLinksKey = (cycleId: string) => `plan_links:${cycleId}`;
+
+export function getPlanLinks(db: Db, cycleId: string): Record<string, string> {
+  const value = getPref(db, planLinksKey(cycleId));
+  if (typeof value !== "object" || value === null) return {};
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>).filter(
+      (e): e is [string, string] => typeof e[1] === "string",
+    ),
+  );
+}
+
+export function setPlanLink(
+  ctx: RepoContext,
+  cycleId: string,
+  transactionId: string,
+  revisionId: string,
+): void {
+  setPref(ctx, planLinksKey(cycleId), {
+    ...getPlanLinks(ctx.db, cycleId),
+    [transactionId]: revisionId,
+  });
+}
+
+export function removePlanLink(ctx: RepoContext, cycleId: string, transactionId: string): void {
+  const links = getPlanLinks(ctx.db, cycleId);
+  delete links[transactionId];
+  setPref(ctx, planLinksKey(cycleId), links);
+}
