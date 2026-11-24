@@ -445,9 +445,36 @@ async function pullAll(ctx: RepoContext, transport: SyncTransport, userId: strin
     for (const change of changes) {
       if (applyChange(tx, change, userId, ctx.now())) written++;
     }
+    dropOrphansOfDeleted(tx, changes);
     writeState(tx, SYNC_KEYS.cursor, String(since));
     return written;
   });
+}
+
+/**
+ * A phone that never had a record skips its delete marker (it has no data to keep), but the
+ * record's history (edits) still arrives and points at it, so the commit would fail and the
+ * whole download be lost (24 Nov: a reinstalled phone got nothing). Rows that point at a
+ * record deleted in this same download are dropped here; any other broken link still fails.
+ */
+function dropOrphansOfDeleted(tx: Db, changes: readonly PullChange[]) {
+  const deleted = new Set(changes.filter((c) => c.deletedAt || !c.data).map((c) => c.entityId));
+  const broken = tx.all<{ table: string; rowid: number; fkid: number }>(
+    sql`PRAGMA foreign_key_check`,
+  );
+  for (const { table, rowid, fkid } of broken) {
+    const keys = tx.all<{ id: number; from: string }>(
+      sql`select id, "from" from pragma_foreign_key_list(${table})`,
+    );
+    const column = keys.find((k) => k.id === fkid)?.from;
+    if (!column) continue;
+    const row = tx.get<{ ref: string | null }>(
+      sql`select ${sql.identifier(column)} as ref from ${sql.identifier(table)} where rowid = ${rowid}`,
+    );
+    if (row?.ref && deleted.has(row.ref)) {
+      tx.run(sql`delete from ${sql.identifier(table)} where rowid = ${rowid}`);
+    }
+  }
 }
 
 /** Writes one server change unless this phone has its own edit waiting (sync-api §5). */

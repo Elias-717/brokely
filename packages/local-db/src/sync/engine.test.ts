@@ -1,4 +1,5 @@
 import { sen } from "@brokely/domain";
+import { sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import {
   checkInNoSpending,
@@ -16,6 +17,8 @@ import {
   linkedAccount,
   signInStep,
   syncCounts,
+  syncNow,
+  type SyncTransport,
 } from "./engine";
 
 const ME = "0192f3a5-0000-7000-8000-00000000a11c";
@@ -77,5 +80,55 @@ describe("sync bookkeeping on the phone", () => {
     expect(deviceIdOf(ctx)).toBe(first);
     deleteAllData(ctx.db);
     expect(deviceIdOf(ctx)).not.toBe(first);
+  });
+});
+
+describe("downloading an account on a new phone", () => {
+  it("drops the history of a record deleted on the server instead of losing the whole download (24 Nov)", async () => {
+    const { ctx } = await createTestContext();
+    const deletedId = "0192f3a5-0000-7000-8000-0000000000d1";
+    const transport: SyncTransport = {
+      push: () => Promise.resolve({ results: [] }),
+      pull: () =>
+        Promise.resolve({
+          changes: [
+            {
+              entity: "transaction_edit",
+              entityId: "0192f3a5-0000-7000-8000-0000000000e1",
+              version: 1,
+              serverSeq: 1,
+              deletedAt: null,
+              data: {
+                transactionId: deletedId,
+                changedAt: "2026-11-02T03:00:00.000Z",
+                before: { amountSen: 500 },
+                after: { amountSen: 700 },
+              },
+            },
+            {
+              entity: "day_check_in",
+              entityId: "0192f3a5-0000-7000-8000-0000000000c1",
+              version: 1,
+              serverSeq: 2,
+              deletedAt: null,
+              data: { localDate: "2026-11-02" },
+            },
+            {
+              entity: "transaction",
+              entityId: deletedId,
+              version: 3,
+              serverSeq: 3,
+              deletedAt: "2026-11-03T03:00:00.000Z",
+              data: null,
+            },
+          ],
+          nextSince: 3,
+          hasMore: false,
+        }),
+    };
+    const report = await syncNow(ctx, transport, { userId: ME, deviceId: deviceIdOf(ctx) });
+    expect(report.pulled).toBe(2); // the edit and the check-in were written
+    expect(hasOwnRecords(ctx.db)).toBe(true); // the rest of the account arrived
+    expect(ctx.db.all(sql`select * from transaction_edits`)).toEqual([]);
   });
 });
