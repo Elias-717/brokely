@@ -3,6 +3,7 @@ import {
   guessCategory,
   normalizeNote,
   noteSuggestions,
+  suggestionNotes,
   withoutRecipient,
   type GuessHistory,
 } from "./category-guess";
@@ -147,5 +148,24 @@ describe("notes with who it was sent to (author, 24 Nov)", () => {
       { note: "Zappel drink", categoryId: "snacks" },
     ]);
     expect(noteSuggestions(history, "friend")).toEqual([]);
+  });
+});
+
+describe("removing note suggestions (D-143)", () => {
+  const history: GuessHistory = [
+    { note: "Nasi lemak", categoryId: "meals" },
+    { note: "nasi lemak", categoryId: "meals" },
+    { note: "Zappel drink · to [FRIEND A]", categoryId: "snacks" },
+    { note: "To [FRIEND B]", categoryId: "other" },
+  ];
+
+  it("lists each suggestible note once, as the student wrote it", () => {
+    expect(suggestionNotes(history).map((n) => n.note)).toEqual(["Nasi lemak", "Zappel drink"]);
+  });
+
+  it("never suggests a removed note, whatever its capitals", () => {
+    const hidden = new Set([suggestionNotes(history)[0]!.key]);
+    expect(noteSuggestions(history, "nasi", 3, hidden)).toEqual([]);
+    expect(noteSuggestions(history, "zap", 3, hidden).map((s) => s.note)).toEqual(["Zappel drink"]);
   });
 });

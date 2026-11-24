@@ -438,3 +438,41 @@ export function removePlanLink(ctx: RepoContext, cycleId: string, transactionId:
   delete links[transactionId];
   setPref(ctx, planLinksKey(cycleId), links);
 }
+
+/**
+ * Note suggestions in Add (D-112, D-143): on or off, and the past notes the student removed, by
+ * `suggestionNotes` key. Removing one only hides it: the record keeps its note. Phone-only.
+ */
+const NOTE_SUGGESTIONS_KEY = "note_suggestions";
+
+export interface NoteSuggestionPrefs {
+  readonly enabled: boolean;
+  readonly hidden: readonly string[];
+}
+
+export function getNoteSuggestionPrefs(db: Db): NoteSuggestionPrefs {
+  const v = getPref(db, NOTE_SUGGESTIONS_KEY) as Partial<NoteSuggestionPrefs> | undefined;
+  return {
+    enabled: v?.enabled ?? true,
+    hidden: Array.isArray(v?.hidden)
+      ? v.hidden.filter((x): x is string => typeof x === "string")
+      : [],
+  };
+}
+
+export function setNoteSuggestionsEnabled(ctx: RepoContext, enabled: boolean): void {
+  setPref(ctx, NOTE_SUGGESTIONS_KEY, { ...getNoteSuggestionPrefs(ctx.db), enabled });
+}
+
+/** Removes past notes from the suggestions (one, or all for Clear all). */
+export function hideNoteSuggestions(ctx: RepoContext, keys: readonly string[]): void {
+  const now = getNoteSuggestionPrefs(ctx.db);
+  setPref(ctx, NOTE_SUGGESTIONS_KEY, { ...now, hidden: [...new Set([...now.hidden, ...keys])] });
+}
+
+/** Undo of {@link hideNoteSuggestions}. */
+export function showNoteSuggestions(ctx: RepoContext, keys: readonly string[]): void {
+  const now = getNoteSuggestionPrefs(ctx.db);
+  const back = new Set(keys);
+  setPref(ctx, NOTE_SUGGESTIONS_KEY, { ...now, hidden: now.hidden.filter((k) => !back.has(k)) });
+}

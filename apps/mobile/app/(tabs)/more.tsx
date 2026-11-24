@@ -3,6 +3,7 @@ import {
   exportTransactionsCsv,
   getHapticsEnabled,
   getMoneyTips,
+  getNoteSuggestionPrefs,
   getNotificationPrefs,
   getSettings,
   setHapticsEnabled,
@@ -52,6 +53,7 @@ export default function MoreScreen() {
   const { colors, appearance, setAppearance } = useTheme();
   const settings = useRead(getSettings);
   const tips = useRead(getMoneyTips);
+  const notes = useRead(getNoteSuggestionPrefs);
   const haptics = useRead(getHapticsEnabled);
   const notify = useRead((db) => getNotificationPrefs(db).settings, []);
   const { session } = useSync();
@@ -135,6 +137,12 @@ export default function MoreScreen() {
           title="TNG auto-collect"
           detail="Catch TNG payments for you to confirm"
           onPress={() => router.push("/tng-setup")}
+        />
+        {/* Past notes that drop down in Add: remove some, or turn them off (D-112, D-143). */}
+        <Row
+          title="Note suggestions"
+          detail={notes.enabled ? "Past notes while you type in Add" : "Off"}
+          onPress={() => router.push("/note-suggestions")}
         />
         {/* Money tips after saving an expense (D-39, D-67); on by default. */}
         <Row title="Money tips" detail="After you add spending, up to 10 a day">

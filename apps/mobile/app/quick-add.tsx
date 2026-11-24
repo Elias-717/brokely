@@ -18,6 +18,7 @@ import {
   deleteDebt,
   deleteTransaction,
   getAddDraft,
+  getNoteSuggestionPrefs,
   getTngQueue,
   lendFromPlan,
   recordMoneyInTo,
@@ -259,7 +260,11 @@ export default function QuickAdd() {
   const goes = useGoesTo({ date, day, from, amount, chosenId: goesToId, categories });
   // One-tap notes typed recently for this category, e.g. "nasi lemak".
   // Past notes that match what is being typed (D-112); nothing while empty or unmatched.
-  const noteIdeas = mode === "spent" ? noteSuggestions(history, note) : [];
+  // Unless turned off or removed in More → Note suggestions (D-143).
+  const notePrefs = useRead(getNoteSuggestionPrefs);
+  const hiddenNotes = useMemo(() => new Set(notePrefs.hidden), [notePrefs.hidden]);
+  const noteIdeas =
+    mode === "spent" && notePrefs.enabled ? noteSuggestions(history, note, 3, hiddenNotes) : [];
 
   /** Saves, then closes the sheet and offers Undo (D-38). */
   const finish = <T,>(

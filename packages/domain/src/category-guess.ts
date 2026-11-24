@@ -214,7 +214,30 @@ export function withoutRecipient(note: string): string {
   return (cut === -1 ? trimmed : trimmed.slice(0, cut)).trim();
 }
 
-export function noteSuggestions(history: GuessHistory, typed: string, max = 3): NoteSuggestion[] {
+/**
+ * Every past note Brokely can suggest (D-143): what the student wrote, once each, newest first.
+ * `key` is how a removed one is remembered (normalized, so "Nasi lemak" and "nasi lemak" match).
+ */
+export function suggestionNotes(history: GuessHistory): { note: string; key: string }[] {
+  const seen = new Set<string>();
+  const out: { note: string; key: string }[] = [];
+  for (const h of history) {
+    const note = withoutRecipient(h.note);
+    const key = normalizeNote(note);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push({ note, key });
+  }
+  return out;
+}
+
+export function noteSuggestions(
+  history: GuessHistory,
+  typed: string,
+  max = 3,
+  /** Notes the student removed in More → Note suggestions (D-143), by `suggestionNotes` key. */
+  hidden: ReadonlySet<string> = new Set(),
+): NoteSuggestion[] {
   const query = normalizeNote(typed);
   if (!query) return [];
   const starts: NoteSuggestion[] = [];
@@ -225,7 +248,7 @@ export function noteSuggestions(history: GuessHistory, typed: string, max = 3): 
     const note = withoutRecipient(h.note);
     if (!note) continue;
     const key = normalizeNote(note);
-    if (seen.has(key)) continue;
+    if (seen.has(key) || hidden.has(key)) continue;
     if (key.startsWith(query)) starts.push({ note, categoryId: h.categoryId });
     else if (key.split(" ").some((w) => w.startsWith(query))) {
       words.push({ note, categoryId: h.categoryId });
