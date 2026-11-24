@@ -21,6 +21,8 @@ import {
   type Sen,
 } from "@brokely/domain";
 import {
+  getDebt,
+  getPlanLinks,
   findCycleOn,
   getHiddenHeadsUps,
   getPlan,
@@ -66,6 +68,8 @@ export type InsightsModel =
       readonly stillToComeSen: Sen;
       /** Slices: categories with spending, biggest first. */
       readonly slices: readonly CategoryLine[];
+      /** Loans counted in this plan and not paid back yet (D-148): the Debts slice. */
+      readonly lent: LentInPlan;
       /** Every category with an amount in the plan or spending (FR-INS-02). */
       readonly lines: readonly CategoryLine[];
       /** Optional categories ahead of Meals or past their plan amount, biggest first (D-96),
@@ -162,6 +166,7 @@ export function readInsights(db: Db, today: LocalDate): InsightsModel {
     setAsideSen: plan.totals.setAsideSen,
     stillToComeSen: progress.stillToComeSen,
     slices: lines.filter((l) => l.spentSen > 0).sort((a, b) => b.spentSen - a.spentSen),
+    lent: lentInPlan(db, cycle.id, range),
     lines: [...lines].sort((a, b) => kindOrder(a.kind) - kindOrder(b.kind)),
     headsUps,
     daysLeft,
@@ -240,4 +245,33 @@ export function categoryRecords(db: Db, range: DateRange, categoryId: string) {
       };
     })
     .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+}
+
+export interface LentInPlan {
+  readonly totalSen: Sen;
+  readonly records: readonly { id: string; date: LocalDate; title: string; amountSen: Sen }[];
+}
+
+/**
+ * Money lent in this plan and counted in it (D-141, D-147), minus what was paid back (D-148):
+ * Insights shows it as a "Debts (lent)" slice so the doughnut covers everything that left the
+ * plan. It is not spending: the daily average and forecast never include it.
+ */
+function lentInPlan(db: Db, cycleId: string, range: DateRange): LentInPlan {
+  const links = getPlanLinks(db, cycleId);
+  const records: { id: string; date: LocalDate; title: string; amountSen: Sen }[] = [];
+  for (const t of listTransactions(db, range)) {
+    if (t.type !== "lend" || !links[t.id]) continue;
+    const line = t.lines.find((l) => l.kind === "debt");
+    const debt = line?.kind === "debt" ? getDebt(db, line.debtId) : undefined;
+    const left = debt ? Math.min(t.amountSen, debt.summary.outstandingSen) : t.amountSen;
+    if (left <= 0) continue;
+    records.push({
+      id: t.id,
+      date: t.localDate,
+      title: debt ? `Lent to ${debt.counterparty}` : "Lent",
+      amountSen: sen(left),
+    });
+  }
+  return { totalSen: sen(records.reduce((s, r) => s + r.amountSen, 0)), records };
 }

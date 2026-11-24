@@ -5,7 +5,6 @@ import { Image, Pressable, Text, View } from "react-native";
 import { useRead } from "../../src/db/use-read";
 import { readDebts, type DebtRow } from "../../src/lib/debts-model";
 import { dayMonth, today } from "../../src/lib/today";
-import { Avatar } from "../../src/ui/avatar";
 import { Button, Empty, PageScreen, Sticker } from "../../src/ui/components";
 import { ProgressBar } from "../../src/ui/progress-bar";
 import { fonts, space, type } from "../../src/ui/theme";
@@ -15,7 +14,7 @@ type Side = "to_me" | "by_me";
 
 /**
  * S7 Debts (FR-DEBT-01…06, D-78): the two totals are the two tabs; each person with their
- * initial, how much is left, a paid-back bar and the due date; settled debts fold into one row.
+ * name, how much is left, a paid-back bar and the due date; settled debts fold into one row.
  * Debts are never spending.
  */
 export default function DebtsScreen() {
@@ -200,14 +199,13 @@ function DebtRowView({ debt, day, first }: { debt: DebtRow; day: string; first: 
         alignItems: "flex-start",
         gap: 12,
         paddingVertical: 12,
-        paddingLeft: 12,
-        paddingRight: space.md,
+        // No letter circle: names line up on the left and rows stay short (author, 24 Nov).
+        paddingHorizontal: space.md,
         borderTopWidth: first ? 0 : 2,
         borderTopColor: colors.background,
         opacity: pressed ? 0.7 : 1,
       })}
     >
-      <Avatar size={44} name={debt.name} signedIn={false} />
       <View style={{ flex: 1, gap: 2 }}>
         <View style={{ flexDirection: "row", gap: space.sm }}>
           <Text

@@ -16,6 +16,7 @@ import {
   categoryRecords,
   readInsights,
   type CategoryLine,
+  type LentInPlan,
   type InsightsModel,
 } from "../../src/lib/insights-model";
 import { dayMonth, today } from "../../src/lib/today";
@@ -100,6 +101,7 @@ export default function InsightsScreen() {
         <SpendingChart
           lines={model.slices}
           allLines={model.lines}
+          lent={model.lent}
           spentSen={model.spentSen}
           range={model.range}
           selected={selected}
@@ -450,6 +452,9 @@ function ForecastWaiting({
  * Where it went (FR-INS-03, FR-INS-04): the doughnut, its legend with RM and %, and the
  * records behind a tapped slice. Used for a plan and, without one, for this month (S8 B).
  */
+/** The Debts slice's key: not a category (D-148). */
+const DEBTS = "debts";
+
 function SpendingChart({
   lines,
   allLines,
@@ -457,17 +462,23 @@ function SpendingChart({
   range,
   selected,
   onToggle,
+  lent,
 }: {
   lines: readonly CategoryLine[];
   allLines: readonly CategoryLine[];
   spentSen: Sen;
+  /** Loans counted in the plan and not paid back (D-148); only with a plan. */
+  lent?: LentInPlan;
   range: DateRange;
   selected: string | null;
   onToggle: (key: string) => void;
 }) {
   const { colors } = useTheme();
   const records = useRead(
-    (db) => (selected && selected !== OTHER ? categoryRecords(db, range, selected) : []),
+    (db) =>
+      selected && selected !== OTHER && selected !== DEBTS
+        ? categoryRecords(db, range, selected)
+        : [],
     [selected, range.start, range.endExclusive],
   );
   // Meals is always its own red slice; the biggest others get one colour each (in the
@@ -502,6 +513,22 @@ function SpendingChart({
         ]
       : []),
   ];
+  // Money lent and counted in the plan joins the doughnut as its own slice (D-148). It is not
+  // spending, so with it the centre says "out of plan" and the shares are of that total.
+  const lentSen = lent?.totalSen ?? 0;
+  const totalSen = sen(spentSen + lentSen);
+  const share = (amount: number) => (totalSen > 0 ? Math.round((amount / totalSen) * 100) : 0);
+  if (lentSen > 0) {
+    for (const s of slices) s.percent = share(s.amountSen);
+    slices.push({
+      key: DEBTS,
+      value: lentSen,
+      color: colors.destructive,
+      label: "Debts (lent)",
+      percent: share(lentSen),
+      amountSen: sen(lentSen),
+    });
+  }
   const selectedLine = allLines.find((l) => l.id === selected);
 
   return (
@@ -514,8 +541,8 @@ function SpendingChart({
           <View style={{ alignItems: "center" }}>
             <Doughnut
               slices={slices}
-              centre={formatRM(spentSen)}
-              centreLabel="spent"
+              centre={formatRM(totalSen)}
+              centreLabel={lentSen > 0 ? "out of plan" : "spent"}
               selected={selected}
               onSelect={onToggle}
             />
@@ -569,7 +596,31 @@ function SpendingChart({
         </>
       )}
 
-      {selected === OTHER ? (
+      {selected === DEBTS && lent ? (
+        <View style={{ gap: 2 }}>
+          <Text style={[type.small, { color: colors.muted, textTransform: "uppercase" }]}>
+            Debts · lent, counted in your plan
+          </Text>
+          {lent.records.map((r) => (
+            <Pressable
+              key={r.id}
+              accessibilityRole="button"
+              onPress={() => router.push(`/record/${r.id}`)}
+              style={{ minHeight: 44, flexDirection: "row", alignItems: "center" }}
+            >
+              <Text style={[type.body, { flex: 1, color: colors.text }]}>
+                {dayMonth(r.date)} · {r.title}
+              </Text>
+              <Text style={[type.strong, { color: colors.text, fontVariant: ["tabular-nums"] }]}>
+                {formatRM(r.amountSen)}
+              </Text>
+            </Pressable>
+          ))}
+          <Text style={[type.small, { color: colors.muted }]}>
+            Not spending: it leaves this slice when they pay you back.
+          </Text>
+        </View>
+      ) : selected === OTHER ? (
         <View style={{ gap: 2 }}>
           {rest.map((l) => (
             <Pressable key={l.id} accessibilityRole="button" onPress={() => onToggle(l.id)}>
