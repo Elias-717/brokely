@@ -1,178 +1,55 @@
-import {
-  evaluateAmount,
-  formatRM,
-  refundableSen,
-  sen,
-  type LocalDate,
-  type Sen,
-} from "@brokely/domain";
+import { formatRM } from "@brokely/domain";
 import {
   deleteDebt,
   deleteTransaction,
-  editTransaction,
   getDebt,
-  getTransaction,
-  listCategories,
-  listTransactionEdits,
-  listTransactions,
-  recordTransaction,
   restoreDebt,
   restoreTransaction,
-  type LineInput,
-  type TransactionInput,
-  type TransactionView,
 } from "@brokely/local-db";
 import { Redirect, router, useLocalSearchParams } from "expo-router";
-import { useMemo, useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { useState } from "react";
+import { Pressable, Text, View } from "react-native";
 import { repo } from "../../src/db/client";
-import { takeBackLend, takeBackMoneyIn } from "../../src/lib/money-in-delete";
 import { useRead } from "../../src/db/use-read";
+import { takeBackLend, takeBackMoneyIn } from "../../src/lib/money-in-delete";
 import { refusalText } from "../../src/lib/messages";
-import { dayMonth, occurredAtFor, today } from "../../src/lib/today";
-import { Button } from "../../src/ui/components";
-import { pickDate } from "../../src/ui/date-picker";
-import { CategoryPicker } from "../../src/ui/category-picker";
-import { Keypad, SumLine } from "../../src/ui/keypad";
-import { SheetPanel, SheetScroll } from "../../src/ui/sheet";
-import { Field } from "../../src/ui/sheet-parts";
-import { fonts, MIN_TOUCH, radius, space, type } from "../../src/ui/theme";
-import { KeyboardSafe } from "../../src/ui/keyboard-safe";
+import { readRecord } from "../../src/lib/record-model";
+import { useSync } from "../../src/sync/sync-provider";
+import { Button, PageScreen, Sticker } from "../../src/ui/components";
+import { Icon } from "../../src/ui/icon";
+import { fonts, MIN_TOUCH, space, type } from "../../src/ui/theme";
 import { useTheme } from "../../src/ui/theme-context";
 import { useUndo } from "../../src/ui/undo";
-import { savedBuzz } from "../../src/ui/haptics";
-import { useKeyboardOpen } from "../../src/ui/use-keyboard";
 
-/** Sen as text the keypad can keep editing: 700 → "7.00". */
-const asTyped = (amount: Sen) =>
-  `${Math.floor(amount / 100)}.${String(amount % 100).padStart(2, "0")}`;
-
-/** "19 Oct, 12:40" in the phone's time. */
-function when(instant: string): string {
-  const d = new Date(instant);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getDate()} ${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][d.getMonth()]}, ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
+/** "24 Nov, 2:10 PM". */
+const changedAt = (iso: string) => {
+  const d = new Date(iso);
+  return `${d.toLocaleDateString("en-MY", { day: "numeric", month: "short" })}, ${d.toLocaleTimeString("en-MY", { hour: "numeric", minute: "2-digit" })}`;
+};
 
 /**
- * Edit, delete or refund one record from Records (FR-TXN-01, FR-TXN-06, FR-TXN-07, FR-TXN-10,
- * AC-05, AC-09, D-38). Same sheet as quick add; changes keep an edit history; Delete and every
- * save offer Undo instead of asking first.
+ * One record, bank style (D-144): the category's icon, the note as the title, the amount and a
+ * status pill, then plain rows with only what applies, and the edit history. Edit, Refund and
+ * Delete stay fixed at the bottom. Tapping a record anywhere opens this page first.
  */
-export default function RecordSheet() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const record = useRead((db) => {
-    const t = getTransaction(db, id);
-    if (!t) return null;
-    const refunds = listTransactions(db).filter((r) => r.refundsTransactionId === t.id);
-    return {
-      t,
-      edits: listTransactionEdits(db, t.id),
-      refundable: t.type === "purchase" ? refundableSen(t, refunds) : sen(0),
-      categories: listCategories(db),
-    };
-  });
-  if (!record) return <Redirect href="/records" />;
-  return <Sheet {...record} />;
-}
-
-function Sheet({
-  t,
-  edits,
-  refundable,
-  categories,
-}: {
-  t: TransactionView;
-  edits: ReturnType<typeof listTransactionEdits>;
-  refundable: Sen;
-  categories: ReturnType<typeof listCategories>;
-}) {
+export default function RecordDetailsScreen() {
   const { colors } = useTheme();
   const showUndo = useUndo();
-  const day = useMemo(() => today(), []);
-  const keyboardOpen = useKeyboardOpen();
-  const [noteFocused, setNoteFocused] = useState(false);
-
-  const spending = t.lines.filter((l) => l.kind === "spending");
-  const debtLines = t.lines.filter((l) => l.kind === "debt");
-  const split = t.type === "purchase" && debtLines.length > 0;
-  // A plain purchase or refund (one spending line) may move to another category.
-  const canPickCategory =
-    (t.type === "purchase" || t.type === "refund") && spending.length === 1 && !split;
-  const firstSpending = spending[0]?.kind === "spending" ? spending[0] : undefined;
-
-  const [mode, setMode] = useState<"edit" | "refund">("edit");
-  const [amountText, setAmountText] = useState(asTyped(t.amountSen));
-  const [refundText, setRefundText] = useState("");
-  const [categoryId, setCategoryId] = useState(firstSpending?.categoryId ?? null);
-  const [date, setDate] = useState<LocalDate>(t.localDate);
-  const [note, setNote] = useState(t.note);
+  const { session } = useSync();
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const record = useRead((db) => readRecord(db, id), [id]);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
+  if (!record) return <Redirect href="/records" />;
+  const { t } = record;
 
-  const amount = evaluateAmount(mode === "edit" ? amountText : refundText);
-  const categoryName = categories.find(
-    (c) => c.id === (categoryId ?? firstSpending?.categoryId),
-  )?.name;
-
-  const input = (newAmount: Sen): TransactionInput => {
-    const lines: readonly LineInput[] = split
-      ? t.lines // amounts locked for a split (the friend's share would change)
-      : t.lines.map((l) =>
-          l.kind === "spending"
-            ? {
-                id: l.id,
-                kind: "spending",
-                categoryId: categoryId ?? l.categoryId,
-                amountSen: newAmount,
-              }
-            : { id: l.id, kind: "debt", debtId: l.debtId, amountSen: newAmount },
-        );
-    return {
-      type: t.type,
-      amountSen: split ? t.amountSen : newAmount,
-      occurredAt: date === t.localDate ? t.occurredAt : occurredAtFor(date, day),
-      localDate: date,
-      note: note.trim(),
-      source: t.source,
-      refundsTransactionId: t.refundsTransactionId ?? null,
-      writeOffCategoryId: t.writeOffCategoryId ?? null,
-      isEstimate: t.isEstimate ?? false,
-      lines,
-    };
-  };
-
-  /** The record as it is now, to put back if the student taps Undo after an edit. */
-  const asBefore = (): TransactionInput => ({
-    type: t.type,
-    amountSen: t.amountSen,
-    occurredAt: t.occurredAt,
-    localDate: t.localDate,
-    note: t.note,
-    source: t.source,
-    refundsTransactionId: t.refundsTransactionId ?? null,
-    writeOffCategoryId: t.writeOffCategoryId ?? null,
-    isEstimate: t.isEstimate ?? false,
-    lines: t.lines,
-  });
-
-  const saveChanges = () => {
-    if (amount === null || amount <= 0) return setProblem("Type an amount above zero.");
-    const saved = editTransaction(repo, t.id, input(amount));
-    if (!saved.ok) return setProblem(refusalText(saved.code, saved.message));
-    savedBuzz();
-    router.back();
-    showUndo(`Saved changes · ${formatRM(split ? t.amountSen : amount)}`, () =>
-      editTransaction(repo, t.id, asBefore()),
-    );
-  };
-
+  /** Delete with Undo, taking back a debt it opened and any plan change it made (D-38, D-139, D-141). */
   const remove = () => {
-    // A lend or borrow opened its debt; with it gone, the empty debt goes too (D-38).
+    const debtLine = t.lines.find((l) => l.kind === "debt");
     const openedDebt =
-      (t.type === "lend" || t.type === "borrow") && debtLines[0]?.kind === "debt"
-        ? debtLines[0].debtId
+      (t.type === "lend" || t.type === "borrow") && debtLine?.kind === "debt"
+        ? debtLine.debtId
         : null;
-    // Money in that changed the plan: its plan change and today's boost go with it (D-139).
     const putBack =
       t.type === "income"
         ? takeBackMoneyIn(t.id, t.localDate)
@@ -196,228 +73,173 @@ function Sheet({
     });
   };
 
-  const saveRefund = () => {
-    if (amount === null || amount <= 0 || !firstSpending)
-      return setProblem("Type the refund amount.");
-    if (amount > refundable)
-      return setProblem(`Only ${formatRM(refundable)} can still be refunded.`);
-    const saved = recordTransaction(repo, {
-      type: "refund",
-      amountSen: amount,
-      occurredAt: occurredAtFor(date, day),
-      localDate: date,
-      note: note.trim(),
-      refundsTransactionId: t.id,
-      lines: [{ kind: "spending", categoryId: firstSpending.categoryId, amountSen: amount }],
-    });
-    if (!saved.ok) return setProblem(refusalText(saved.code, saved.message));
-    savedBuzz();
-    router.back();
-    showUndo(`Saved refund ${formatRM(amount)}`, () => deleteTransaction(repo, saved.value.id));
-  };
-
-  const title = mode === "refund" ? "Refund" : "Edit record";
-  const subtitle =
-    mode === "refund"
-      ? `from ${t.note || categoryName || "this purchase"} · ${formatRM(t.amountSen)}`
-      : `${t.type === "income" ? "Money in" : t.type === "purchase" ? "Spent" : "Record"} · ${dayMonth(t.localDate)}`;
+  const amountColor =
+    record.flow === "out" ? colors.expense : record.flow === "in" ? colors.income : colors.text;
+  const backedUp = !session
+    ? "Only on this phone"
+    : record.syncStatus === "synced"
+      ? "Yes"
+      : record.syncStatus === "conflict"
+        ? "Needs a look"
+        : "Waiting to back up";
+  const rows = [
+    ...record.rows,
+    { icon: "shield-check" as const, label: "Backed up", value: backedUp },
+  ];
 
   return (
-    <KeyboardSafe style={{ justifyContent: "flex-end" }}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Close"
-        onPress={() => router.back()}
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: "rgba(5,6,5,0.55)",
-        }}
-      />
-      <SheetPanel
-        top={
-          <>
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <Text style={[type.heading, { color: colors.text }]} accessibilityRole="header">
-                {title}
-              </Text>
-              <Text
-                style={[type.small, { color: colors.muted, flexShrink: 1, textAlign: "right" }]}
-              >
-                {subtitle}
-              </Text>
-            </View>
-
-            {mode === "edit" && split ? null : (
-              <SumLine text={mode === "edit" ? amountText : refundText} />
-            )}
-            <Text
-              style={{
-                textAlign: "center",
-                fontFamily: fonts.heading,
-                fontSize: 48,
-                lineHeight: 54,
-                color: colors.text,
-                fontVariant: ["tabular-nums"],
-              }}
-            >
-              {formatRM(mode === "edit" && split ? t.amountSen : (amount ?? sen(0)))}
-            </Text>
-          </>
-        }
-      >
-        <SheetScroll>
-          {mode === "refund" ? (
-            <View
-              style={{
-                borderRadius: radius.button,
-                borderWidth: 2,
-                borderColor: colors.outline,
-                backgroundColor: colors.cardTint,
-                padding: space.sm,
-                gap: 2,
-              }}
-            >
-              <Text style={[type.strong, { color: colors.text }]}>
-                Up to {formatRM(refundable)} can be refunded
-              </Text>
-              <Text style={[type.small, { color: colors.muted }]}>
-                It goes back to {categoryName ?? "its category"}, so that spending drops by the
-                refund.
-              </Text>
-            </View>
-          ) : canPickCategory ? (
-            <CategoryPicker
-              categories={categories}
-              selectedId={categoryId}
-              onSelect={setCategoryId}
-            />
-          ) : split ? (
-            <Text style={[type.small, { color: colors.muted }]}>
-              This was split with a friend, so its amounts are locked. To change them, delete it and
-              add it again.
+    <PageScreen
+      title="Record"
+      footer={
+        <View style={{ gap: space.xs }}>
+          {problem ? (
+            <Text accessibilityRole="alert" style={[type.small, { color: colors.warning }]}>
+              {problem}
             </Text>
           ) : null}
-
           <View style={{ flexDirection: "row", gap: space.sm }}>
-            {/* While typing the note it gets the whole row. */}
-            {noteFocused ? null : (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`Date: ${dayMonth(date)}. Change`}
-                onPress={async () => {
-                  const chosen = await pickDate(date);
-                  if (chosen) setDate(chosen);
-                }}
-                style={{
-                  flex: 1,
-                  minHeight: MIN_TOUCH,
-                  justifyContent: "center",
-                  paddingHorizontal: space.sm,
-                  borderRadius: radius.button,
-                  borderWidth: 2,
-                  borderColor: colors.outline,
-                  backgroundColor: colors.card,
-                }}
-              >
-                <Text style={[type.strong, { color: colors.text, fontSize: 15 }]}>
-                  {date === day ? `Today, ${dayMonth(day)}` : dayMonth(date)}
-                </Text>
-              </Pressable>
-            )}
             <View style={{ flex: 1 }}>
-              <Field
-                value={note}
-                onChange={setNote}
-                placeholder="Note (optional)"
-                expanded
-                onFocus={() => setNoteFocused(true)}
-                onBlur={() => setNoteFocused(false)}
-              />
+              <Button label="Edit" onPress={() => router.push(`/record/edit/${t.id}`)} />
+            </View>
+            {record.refundableSen > 0 ? (
+              <View style={{ flex: 1 }}>
+                <Button
+                  label="Refund"
+                  variant="secondary"
+                  onPress={() =>
+                    router.push({
+                      pathname: "/record/edit/[id]",
+                      params: { id: t.id, mode: "refund" },
+                    })
+                  }
+                />
+              </View>
+            ) : null}
+            <View style={{ flex: 1 }}>
+              <Button label="Delete" variant="destructive" onPress={remove} />
             </View>
           </View>
+        </View>
+      }
+    >
+      {/* Header: icon, what it was, how much, what kind (D-144). */}
+      <View style={{ alignItems: "center", gap: space.xs, paddingVertical: space.sm }}>
+        <View
+          style={{
+            width: 52,
+            height: 52,
+            borderRadius: 26,
+            borderWidth: 2,
+            borderColor: colors.outline,
+            backgroundColor: colors.cardTint,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Icon name={record.icon} size={26} />
+        </View>
+        <Text
+          accessibilityRole="header"
+          style={{ fontFamily: fonts.heavy, fontSize: 20, color: colors.text, textAlign: "center" }}
+        >
+          {record.title}
+        </Text>
+        <Text
+          style={{
+            fontFamily: fonts.heading,
+            fontSize: 40,
+            lineHeight: 46,
+            color: amountColor,
+            fontVariant: ["tabular-nums"],
+          }}
+        >
+          {record.amount}
+        </Text>
+        <View
+          style={{
+            borderRadius: 20,
+            borderWidth: 2,
+            borderColor: colors.outline,
+            backgroundColor: colors.card,
+            paddingHorizontal: space.sm,
+            paddingVertical: 2,
+          }}
+        >
+          <Text style={{ fontFamily: fonts.heavy, fontSize: 13, color: colors.text }}>
+            {record.pill}
+          </Text>
+        </View>
+      </View>
 
-          {mode === "edit" && edits.length > 0 ? (
-            <View
+      {/* The details, one row each, only what applies. */}
+      <Sticker style={{ paddingHorizontal: space.md, paddingVertical: 2 }}>
+        {rows.map((r, i) => (
+          <View
+            key={r.label}
+            accessible
+            accessibilityLabel={`${r.label}: ${r.value}`}
+            style={{
+              minHeight: MIN_TOUCH,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: space.sm,
+              paddingVertical: space.xs,
+              borderTopWidth: i === 0 ? 0 : 1,
+              borderTopColor: colors.background,
+            }}
+          >
+            <Icon name={r.icon} size={20} />
+            <Text style={[type.small, { color: colors.muted, width: 84 }]}>{r.label}</Text>
+            <Text
               style={{
-                borderRadius: radius.button,
-                borderWidth: 2,
-                borderStyle: "dashed",
-                borderColor: colors.outline,
-                padding: space.sm,
-                gap: 2,
+                flex: 1,
+                textAlign: "right",
+                fontFamily: fonts.heavy,
+                fontSize: 14,
+                color: colors.text,
               }}
             >
-              <Text style={[type.small, { color: colors.muted, textTransform: "uppercase" }]}>
-                Edit history
-              </Text>
-              {edits.map((e) => (
-                <Text key={e.changedAt} style={[type.strong, { color: colors.text, fontSize: 14 }]}>
-                  {when(e.changedAt)} ·{" "}
-                  {e.beforeSen === e.afterSen
-                    ? "details changed"
-                    : `${formatRM(e.beforeSen)} → ${formatRM(e.afterSen)}`}
-                </Text>
-              ))}
-            </View>
-          ) : null}
-        </SheetScroll>
-
-        {/* No keypad for a split, or while typing a note (it stays visible then). */}
-        {(mode === "edit" && split) || keyboardOpen ? null : (
-          <Keypad
-            value={mode === "edit" ? amountText : refundText}
-            onChange={(next) => {
-              if (mode === "edit") setAmountText(next);
-              else setRefundText(next);
-              setProblem(null);
-            }}
-          />
-        )}
-        {problem ? (
-          <Text accessibilityRole="alert" style={[type.strong, { color: colors.warning }]}>
-            {problem}
-          </Text>
+              {r.value}
+            </Text>
+          </View>
+        ))}
+        {record.edits.length > 0 ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ expanded: historyOpen }}
+            onPress={() => setHistoryOpen((o) => !o)}
+            style={({ pressed }) => ({
+              minHeight: MIN_TOUCH,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: space.sm,
+              borderTopWidth: 1,
+              borderTopColor: colors.background,
+              opacity: pressed ? 0.7 : 1,
+            })}
+          >
+            <Icon name="timer" size={20} />
+            <Text style={[type.small, { flex: 1, color: colors.muted }]}>History</Text>
+            <Text style={{ fontFamily: fonts.heavy, fontSize: 14, color: colors.text }}>
+              {record.edits.length} {record.edits.length === 1 ? "change" : "changes"}{" "}
+              {historyOpen ? "⌃" : "›"}
+            </Text>
+          </Pressable>
         ) : null}
-
-        {mode === "edit" ? (
-          <>
-            <View style={{ flexDirection: "row", gap: space.sm }}>
-              {t.type === "purchase" && refundable > 0 ? (
-                <View style={{ flex: 1 }}>
-                  <Button
-                    label="Refund"
-                    variant="secondary"
-                    onPress={() => {
-                      setMode("refund");
-                      setProblem(null);
-                    }}
-                  />
-                </View>
-              ) : null}
-              <View style={{ flex: 1 }}>
-                <Button label="Delete" variant="secondary" onPress={remove} />
-              </View>
-            </View>
-            <Button label="Save changes" onPress={saveChanges} />
-          </>
-        ) : (
-          <Button
-            label={amount ? `Save refund · ${formatRM(amount)}` : "Save refund"}
-            onPress={saveRefund}
-            disabled={!amount}
-          />
-        )}
-      </SheetPanel>
-    </KeyboardSafe>
+        {historyOpen
+          ? record.edits.map((e) => (
+              <Text
+                key={e.changedAt}
+                style={[type.small, { color: colors.text, paddingBottom: space.xs }]}
+              >
+                {changedAt(e.changedAt)} ·{" "}
+                {e.beforeSen === e.afterSen
+                  ? "details changed"
+                  : `${formatRM(e.beforeSen)} → ${formatRM(e.afterSen)}`}
+              </Text>
+            ))
+          : null}
+      </Sticker>
+    </PageScreen>
   );
 }
