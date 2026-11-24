@@ -2,18 +2,21 @@ import {
   exportJson,
   exportTransactionsCsv,
   getHapticsEnabled,
+  getDeveloperMode,
   getMoneyTips,
   getNoteSuggestionPrefs,
   getNotificationPrefs,
   getSettings,
   setHapticsEnabled,
+  setDeveloperMode,
   setMoneyTipsEnabled,
   updateSettings,
   type Appearance,
 } from "@brokely/local-db";
 import Constants from "expo-constants";
 import { router, type Href } from "expo-router";
-import { type ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
+import { useUndo } from "../../src/ui/undo";
 import { Pressable, Switch, Text, View } from "react-native";
 import { db, repo } from "../../src/db/client";
 import { ProfileCard } from "../../src/sync/profile-card";
@@ -54,6 +57,10 @@ export default function MoreScreen() {
   const settings = useRead(getSettings);
   const tips = useRead(getMoneyTips);
   const notes = useRead(getNoteSuggestionPrefs);
+  const devMode = useRead(getDeveloperMode);
+  const showUndo = useUndo();
+  const taps = useRef(0);
+  const lastTap = useRef(0);
   const haptics = useRead(getHapticsEnabled);
   const notify = useRead((db) => getNotificationPrefs(db).settings, []);
   const { session } = useSync();
@@ -212,12 +219,30 @@ export default function MoreScreen() {
           onPress={() => router.push("/delete-data")}
         />
       </Sticker>
-      {/* The version, quietly at the very bottom (author). */}
-      <Text
-        style={[type.small, { color: colors.muted, textAlign: "center", marginBottom: space.lg }]}
+      {/* The version, quietly at the very bottom (author). Tapped 7 times quickly, it turns
+          developer mode on or off (D-146), like Android's own build number. */}
+      <Pressable
+        accessibilityRole="text"
+        onPress={() => {
+          const now = Date.now();
+          taps.current = now - lastTap.current < 1500 ? taps.current + 1 : 1;
+          lastTap.current = now;
+          if (taps.current < 7) return;
+          taps.current = 0;
+          const on = !devMode;
+          setDeveloperMode(repo, on);
+          showUndo(on ? "Developer mode on" : "Developer mode off", () =>
+            setDeveloperMode(repo, !on),
+          );
+        }}
       >
-        Brokely {Constants.expoConfig?.version ?? ""}
-      </Text>
+        <Text
+          style={[type.small, { color: colors.muted, textAlign: "center", marginBottom: space.lg }]}
+        >
+          Brokely {Constants.expoConfig?.version ?? ""}
+          {devMode ? " · developer mode" : ""}
+        </Text>
+      </Pressable>
     </Screen>
   );
 }

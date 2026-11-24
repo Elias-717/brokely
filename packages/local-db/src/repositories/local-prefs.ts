@@ -476,3 +476,16 @@ export function showNoteSuggestions(ctx: RepoContext, keys: readonly string[]): 
   const back = new Set(keys);
   setPref(ctx, NOTE_SUGGESTIONS_KEY, { ...now, hidden: now.hidden.filter((k) => !back.has(k)) });
 }
+
+/**
+ * Developer mode (D-146): unlocked by tapping the version in More 7 times. Shows TNG samples in
+ * release builds and keeps every caught TNG notification as a sample, so the author can share
+ * new formats from a normal build. Phone-only, off by default.
+ */
+export function getDeveloperMode(db: Db): boolean {
+  return getPref(db, "developer_mode") === true;
+}
+
+export function setDeveloperMode(ctx: RepoContext, on: boolean): void {
+  setPref(ctx, "developer_mode", on);
+}

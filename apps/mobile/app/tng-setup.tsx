@@ -1,3 +1,5 @@
+import { getDeveloperMode } from "@brokely/local-db";
+import { useRead } from "../src/db/use-read";
 import { useCallback, useEffect, useState } from "react";
 import { AppState, Share, Text, View } from "react-native";
 import {
@@ -21,6 +23,7 @@ import { useTheme } from "../src/ui/theme-context";
 export default function TngSetupScreen() {
   const { colors } = useTheme();
   const { access, battery, refresh: refreshStatus } = useTngStatus();
+  const devMode = useRead(getDeveloperMode);
   const [captures, setCaptures] = useState<TngCapture[]>([]);
 
   const refresh = useCallback(() => {
@@ -58,14 +61,15 @@ export default function TngSetupScreen() {
 
       <TngSteps access={access} battery={battery} />
 
-      {/* Raw notifications include people's names: development builds only (D-13, D-128). */}
-      {__DEV__ ? (
+      {/* Raw notifications include people's names: development builds or developer mode only
+          (D-13, D-128, D-146). */}
+      {__DEV__ || devMode ? (
         <Sticker style={{ padding: space.md, gap: space.sm }}>
           <Text style={[type.strong, { color: colors.text }]}>
             Samples caught ({captures.length})
           </Text>
           <Text style={[type.small, { color: colors.muted }]}>
-            Development only. These are TNG's raw notifications and can include people's full names.
+            Developer mode. These are TNG's raw notifications and can include people's full names.
             They stay on this phone (50 at most, 30 days at most). Transfers Brokely understands
             move to Home as payments waiting for you, so only other notifications stay here. Hide
             the names before you share any, and never put them in the repo.

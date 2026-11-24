@@ -1,5 +1,5 @@
 import { ingestTngCaptures } from "@brokely/domain";
-import { getTngQueue, setTngQueue } from "@brokely/local-db";
+import { getDeveloperMode, getTngQueue, setTngQueue } from "@brokely/local-db";
 import { deleteCaptures, getCaptures, tngListenerAvailable } from "../../modules/tng-listener";
 import { db, repo } from "../db/client";
 
@@ -18,5 +18,7 @@ export function collectTngImports(): void {
   const before = getTngQueue(db);
   const { queue, consumed } = ingestTngCaptures(getCaptures(), before, Date.now());
   if (queue !== before) setTngQueue(repo, queue);
-  deleteCaptures(consumed);
+  // Developer mode keeps every raw copy as a sample, recognised ones too (D-146); the queue
+  // already remembers them, so nothing is taken in twice.
+  if (!getDeveloperMode(db)) deleteCaptures(consumed);
 }
