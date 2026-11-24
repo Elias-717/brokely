@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { guessCategory, normalizeNote, noteSuggestions, type GuessHistory } from "./category-guess";
+import {
+  guessCategory,
+  normalizeNote,
+  noteSuggestions,
+  withoutRecipient,
+  type GuessHistory,
+} from "./category-guess";
 
 const CATEGORIES = [
   { id: "meals", name: "Meals" },
@@ -114,5 +120,32 @@ describe("note suggestions while typing (D-112)", () => {
 
   it("stops suggesting once the typed text is that note", () => {
     expect(noteSuggestions(history, "dobi")).toEqual([]);
+  });
+});
+
+describe("notes with who it was sent to (author, 24 Nov)", () => {
+  it("takes off the name added on save, once or piled up", () => {
+    expect(withoutRecipient("Zappel drink · to [FRIEND A]")).toBe("Zappel drink");
+    expect(withoutRecipient("Zappel drink · to [FRIEND A] · to [FRIEND A]")).toBe("Zappel drink");
+    expect(withoutRecipient("To [FRIEND A]")).toBe("");
+  });
+
+  it("leaves the student's own words alone", () => {
+    expect(withoutRecipient("to KL by bus")).toBe("to KL by bus");
+    expect(withoutRecipient("nasi lemak")).toBe("nasi lemak");
+  });
+
+  it("suggests what the student wrote, without the name", () => {
+    const history: GuessHistory = [
+      {
+        note: "Zappel drink · to [FRIEND A] · to [FRIEND A]",
+        categoryId: "snacks",
+      },
+      { note: "To [FRIEND B]", categoryId: "other" },
+    ];
+    expect(noteSuggestions(history, "zap")).toEqual([
+      { note: "Zappel drink", categoryId: "snacks" },
+    ]);
+    expect(noteSuggestions(history, "friend")).toEqual([]);
   });
 });

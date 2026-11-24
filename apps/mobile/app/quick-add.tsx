@@ -4,6 +4,7 @@ import {
   guessCategory,
   noteSuggestions,
   plainAmount,
+  withoutRecipient,
   reopenTngImport,
   sen,
   settleTngImport,
@@ -312,11 +313,9 @@ export default function QuickAdd() {
     if (amount === null) return;
     const label = picked.name;
     // "nasi lemak · to Ali", or "To Ali" with no note: the name is kept with the record.
-    const spentNote = sentTo
-      ? cleanNote
-        ? `${cleanNote} · to ${sentTo}`
-        : `To ${sentTo}`
-      : cleanNote;
+    // The name is added once: a note picked from past notes may already end with "· to NAME".
+    const ownNote = withoutRecipient(cleanNote);
+    const spentNote = sentTo ? (ownNote ? `${ownNote} · to ${sentTo}` : `To ${sentTo}`) : cleanNote;
     if (split) {
       if (!friend.trim() || share === null || share <= 0) {
         return setProblem("Add your friend's name and their share.");

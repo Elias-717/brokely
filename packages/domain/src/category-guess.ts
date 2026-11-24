@@ -201,6 +201,19 @@ export interface NoteSuggestion {
  * matches come first, then newest first; each note once; nothing until something is typed and
  * nothing once the typed text already is that note. `history` is newest first.
  */
+/**
+ * A note without the "· to NAME" that money sent on TNG adds when it is saved ("Zappel drink ·
+ * to NAME" → "Zappel drink"), and empty for a note that is only "To NAME". Suggestions show what
+ * the student wrote, and saving adds the name once, so it never piles up (author, 24 Nov).
+ */
+export function withoutRecipient(note: string): string {
+  const trimmed = note.trim();
+  // Only the exact forms Brokely writes: "To NAME" and "… · to NAME".
+  if (/^To\s/.test(trimmed) && !trimmed.includes(" · ")) return "";
+  const cut = trimmed.search(/\s·\sto\s/);
+  return (cut === -1 ? trimmed : trimmed.slice(0, cut)).trim();
+}
+
 export function noteSuggestions(history: GuessHistory, typed: string, max = 3): NoteSuggestion[] {
   const query = normalizeNote(typed);
   if (!query) return [];
@@ -208,11 +221,14 @@ export function noteSuggestions(history: GuessHistory, typed: string, max = 3): 
   const words: NoteSuggestion[] = [];
   const seen = new Set<string>([query]);
   for (const h of history) {
-    const key = normalizeNote(h.note);
+    // Only what the student wrote: a recipient added on save is left out (see withoutRecipient).
+    const note = withoutRecipient(h.note);
+    if (!note) continue;
+    const key = normalizeNote(note);
     if (seen.has(key)) continue;
-    if (key.startsWith(query)) starts.push({ note: h.note, categoryId: h.categoryId });
+    if (key.startsWith(query)) starts.push({ note, categoryId: h.categoryId });
     else if (key.split(" ").some((w) => w.startsWith(query))) {
-      words.push({ note: h.note, categoryId: h.categoryId });
+      words.push({ note, categoryId: h.categoryId });
     } else continue;
     seen.add(key);
   }
