@@ -618,13 +618,20 @@ export default function QuickAdd() {
             </Text>
           ) : null}
           {mode === "spent" && picked?.name === "Other" ? (
-            <Field
-              value={customName}
-              onChange={setCustomName}
-              expanded
-              placeholder="Name it (optional), e.g. Haircut"
-              label="Name your own category, optional"
-            />
+            // Typing here makes a new category; a person's name went in here once, so it says so
+            // and points lending to I lent (author, 24 Nov).
+            <View style={{ gap: space.xs }}>
+              <Field
+                value={customName}
+                onChange={setCustomName}
+                expanded
+                placeholder="New category name (optional), e.g. Haircut"
+                label="New category name, optional"
+              />
+              <Text style={[type.small, { color: colors.muted }]}>
+                This adds a new category to your list. Lent money to someone? Use More → I lent.
+              </Text>
+            </View>
           ) : null}
           {mode === "in" ? (
             <View>
