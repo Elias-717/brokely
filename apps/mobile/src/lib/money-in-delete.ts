@@ -35,7 +35,8 @@ export function takeBackMoneyIn(transactionId: string, localDate: string): (() =
 }
 
 /**
- * Deleting a loan that was counted in the plan (D-141): its plan revision is undone too.
+ * Deleting a loan counted in the plan (D-141) or a transfer added to it (D-145): its plan
+ * revision is undone too.
  * Returns how to put it back, for the delete's Undo; null when the loan never touched the plan.
  */
 export function takeBackLend(transactionId: string, localDate: string): (() => void) | null {

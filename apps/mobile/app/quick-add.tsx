@@ -21,6 +21,7 @@ import {
   getNoteSuggestionPrefs,
   getTngQueue,
   lendFromPlan,
+  transferIntoPlan,
   recordMoneyInTo,
   recordPurchase,
   recordSplitPurchase,
@@ -31,6 +32,7 @@ import {
   setPlanLink,
   setTngQueue,
   undoLendFromPlan,
+  undoTransferIntoPlan,
   undoMoneyInTo,
   type AddDraft,
   type RepoResult,
@@ -173,6 +175,8 @@ export default function QuickAdd() {
   const [payBackBy, setPayBackBy] = useState<LocalDate | null>(start.payBackBy);
   /** I lent: "Count it in this month's plan?", asked every time, no default (D-141). */
   const [lendFromPlanChoice, setLendFromPlanChoice] = useState<"yes" | "no" | null>(null);
+  /** Transfer: "Add it to this month's plan?", asked every time, no default (D-145). */
+  const [transferToPlanChoice, setTransferToPlanChoice] = useState<"yes" | "no" | null>(null);
   /** In More the note is behind "+ Add a note" (D-119); a restored note shows straight away. */
   const [noteOpen, setNoteOpen] = useState(start.note !== "");
 
@@ -403,6 +407,29 @@ export default function QuickAdd() {
       );
     }
     if (moreKind === "transfer") {
+      const askPlan = goes.cycleId !== null;
+      if (askPlan && transferToPlanChoice === null) {
+        return setProblem("Pick whether to add it to this month's plan.");
+      }
+      if (askPlan && transferToPlanChoice === "yes" && goes.cycleId) {
+        // The transfer and the bigger budget together; Undo takes both back (D-145).
+        const cycleId = goes.cycleId;
+        const saved = transferIntoPlan(repo, {
+          amountSen: amount,
+          note: cleanNote,
+          ...when,
+          cycleId,
+          reason: `Transfer ${formatRM(amount)} added to the plan`,
+        });
+        if (saved.ok) setPlanLink(repo, cycleId, saved.value.transactionId, saved.value.revisionId);
+        return finish(
+          saved,
+          `Transfer ${formatRM(amount)} added · plan ${formatRM(
+            sen((saved.ok ? saved.value.before.budgetSen : 0) + amount),
+          )}`,
+          (value) => undoTransferIntoPlan(repo, value),
+        );
+      }
       return finish(
         recordTransaction(repo, {
           type: "transfer",
@@ -766,6 +793,56 @@ export default function QuickAdd() {
                     moreKind === "lent" ? "Who did you lend to?" : "Who did you borrow from?"
                   }
                 />
+              ) : null}
+              {moreKind === "transfer" && goes.cycleId !== null ? (
+                // Asked every time, nothing picked for the student (D-145).
+                <View
+                  style={{
+                    gap: space.xs,
+                    padding: space.sm,
+                    borderRadius: radius.button,
+                    borderWidth: 2,
+                    borderColor: colors.outline,
+                    backgroundColor: colors.cardTint,
+                  }}
+                >
+                  <Text style={[type.strong, { color: colors.text }]}>
+                    Add it to this month's plan?
+                  </Text>
+                  <View style={{ flexDirection: "row", gap: space.sm }}>
+                    <Chip
+                      label="Yes, add to my plan"
+                      selected={transferToPlanChoice === "yes"}
+                      onPress={() => {
+                        setTransferToPlanChoice("yes");
+                        setProblem(null);
+                      }}
+                    />
+                    <Chip
+                      label="No"
+                      selected={transferToPlanChoice === "no"}
+                      onPress={() => {
+                        setTransferToPlanChoice("no");
+                        setProblem(null);
+                      }}
+                    />
+                  </View>
+                  <Text
+                    accessibilityLiveRegion="polite"
+                    style={[
+                      type.small,
+                      { color: transferToPlanChoice === "yes" ? colors.income : colors.muted },
+                    ]}
+                  >
+                    {transferToPlanChoice === "yes"
+                      ? `Budget ${formatRM(goes.budgetSen)} → ${formatRM(
+                          sen(goes.budgetSen + (amount ?? 0)),
+                        )}. Not spending or money in; it just counts for this plan.`
+                      : transferToPlanChoice === "no"
+                        ? `Your plan stays at ${formatRM(goes.budgetSen)}, e.g. money you already planned with.`
+                        : "Pick one to save. A transfer is never spending either way."}
+                  </Text>
+                </View>
               ) : null}
               {moreKind === "lent" && goes.cycleId !== null ? (
                 // Asked every time, nothing picked for the student (D-141).

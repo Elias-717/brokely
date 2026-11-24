@@ -53,7 +53,7 @@ export default function RecordDetailsScreen() {
     const putBack =
       t.type === "income"
         ? takeBackMoneyIn(t.id, t.localDate)
-        : t.type === "lend"
+        : t.type === "lend" || t.type === "transfer"
           ? takeBackLend(t.id, t.localDate)
           : null;
     const deleted = deleteTransaction(repo, t.id);

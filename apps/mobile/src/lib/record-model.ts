@@ -92,7 +92,12 @@ export function readRecord(db: Db, id: string): RecordDetails | null {
 
   // "Zappel drink · to Ali": the note as written, and who it went to on TNG.
   const own = withoutRecipient(t.note);
-  const to = t.note.trim() !== own ? t.note.replace(own, "").replace(/^\s*·?\s*to\s+/i, "") : "";
+  // The name once, even from a note where it was added twice before the fix.
+  const note = t.note.trim();
+  const to =
+    note.startsWith("To ") && !note.includes(" · ")
+      ? note.slice(3)
+      : (note.split(" · to ")[1] ?? "");
   const rows: RecordRow[] = [];
   if (category) rows.push({ icon: categoryIcon(category), label: "Category", value: category });
   rows.push({ icon: "calendar-blank", label: "When", value: whenText(t.occurredAt) });
@@ -133,8 +138,16 @@ export function readRecord(db: Db, id: string): RecordDetails | null {
               ? "Used to pay back a debt"
               : "Recorded only";
     rows.push({ icon: "piggy-bank", label: "Plan", value: where });
-  } else if (t.type === "lend" && cycle && getPlanLinks(db, cycle.id)[t.id]) {
-    rows.push({ icon: "piggy-bank", label: "Plan", value: "Taken out of this month's plan" });
+  } else if (
+    (t.type === "lend" || t.type === "transfer") &&
+    cycle &&
+    getPlanLinks(db, cycle.id)[t.id]
+  ) {
+    rows.push({
+      icon: "piggy-bank",
+      label: "Plan",
+      value: t.type === "lend" ? "Taken out of this month's plan" : "Added to this month's plan",
+    });
   } else if (t.type !== "purchase" && t.type !== "refund" && t.type !== "write_off") {
     rows.push({ icon: "piggy-bank", label: "Counts as", value: "Not spending" });
   }

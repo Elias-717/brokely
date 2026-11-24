@@ -3,7 +3,7 @@ import { RepoError, write, type RepoContext } from "./context";
 import { createDebtIn, deleteDebtIn } from "./debts";
 import type { PlanBefore } from "./money-in";
 import { getPlan, revisePlanIn } from "./plan";
-import { deleteTransactionIn } from "./transactions";
+import { deleteTransactionIn, recordTransactionIn } from "./transactions";
 
 /**
  * "I lent" with "Count it in this month's plan? Yes" (D-141), in one database transaction: the
@@ -52,6 +52,64 @@ export function undoLendFromPlan(
   return write(ctx, (scope) => {
     deleteTransactionIn(scope, saved.transactionId);
     deleteDebtIn(scope, saved.debtId);
+    revisePlanIn(scope, { ...saved.before, reason: `Undid: ${saved.reason}`.slice(0, 120) });
+  });
+}
+
+/**
+ * Transfer (e.g. a top-up from the bank to TNG) with "Add it to this month's plan? Yes" (D-145),
+ * in one database transaction: the transfer record and a revision with the budget raised by the
+ * amount, every category amount kept. A transfer is still never spending or money in (BR-15).
+ */
+export function transferIntoPlan(
+  ctx: RepoContext,
+  input: {
+    amountSen: Sen;
+    occurredAt: string;
+    localDate: string;
+    note?: string;
+    cycleId: string;
+    reason: string;
+  },
+) {
+  return write(ctx, (scope) => {
+    const plan = getPlan(scope.tx, input.cycleId);
+    if (!plan) throw new RepoError("NOT_FOUND", "That plan doesn't exist");
+    const { id: transactionId } = recordTransactionIn(scope, {
+      type: "transfer",
+      amountSen: input.amountSen,
+      occurredAt: input.occurredAt,
+      localDate: input.localDate,
+      note: input.note,
+      lines: [],
+    });
+    const before: PlanBefore = {
+      cycleId: input.cycleId,
+      budgetSen: plan.revision.budgetSen as Sen,
+      allocations: plan.allocations.map((a) => ({
+        categoryId: a.categoryId,
+        amountSen: a.amountSen,
+      })),
+      shortfallAcknowledged: plan.revision.shortfallAcknowledged,
+    };
+    const { revisionId } = revisePlanIn(scope, {
+      cycleId: input.cycleId,
+      budgetSen: (before.budgetSen + input.amountSen) as Sen,
+      allocations: before.allocations,
+      shortfallAcknowledged: before.shortfallAcknowledged,
+      reason: input.reason.slice(0, 120),
+    });
+    return { transactionId, revisionId, before, reason: input.reason };
+  });
+}
+
+/** Undo of {@link transferIntoPlan}: the transfer goes and one more revision restores the budget. */
+export function undoTransferIntoPlan(
+  ctx: RepoContext,
+  saved: { transactionId: string; before: PlanBefore; reason: string },
+) {
+  return write(ctx, (scope) => {
+    deleteTransactionIn(scope, saved.transactionId);
     revisePlanIn(scope, { ...saved.before, reason: `Undid: ${saved.reason}`.slice(0, 120) });
   });
 }

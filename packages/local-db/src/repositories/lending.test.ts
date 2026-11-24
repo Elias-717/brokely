@@ -4,7 +4,7 @@ import { createTestContext } from "../test-db";
 import { seedDefaultCategories } from "./categories";
 import type { RepoContext } from "./context";
 import { listDebts } from "./debts";
-import { lendFromPlan, undoLendFromPlan } from "./lending";
+import { lendFromPlan, transferIntoPlan, undoLendFromPlan, undoTransferIntoPlan } from "./lending";
 import { getPlan, listPlanHistory, quickStart } from "./plan";
 
 describe("lending counted in the plan (D-141)", () => {
@@ -50,5 +50,31 @@ describe("lending counted in the plan (D-141)", () => {
     const saved = lendFromPlan(ctx, { ...loan, amountSen: sen(50_000), cycleId, reason: "x" });
     expect(saved.ok).toBe(false);
     expect(listDebts(ctx.db)).toHaveLength(0);
+  });
+});
+
+describe("a transfer added to the plan (D-145)", () => {
+  it("raises the budget with a top-up and Undo puts it back, never spending", async () => {
+    const { ctx } = await createTestContext();
+    seedDefaultCategories(ctx);
+    const started = quickStart(ctx, {
+      budgetSen: sen(50_000),
+      startDate: "2026-11-01",
+      endDateInclusive: "2026-11-30",
+    });
+    if (!started.ok) throw new Error(started.message);
+    const cycleId = started.value.cycleId;
+    const saved = transferIntoPlan(ctx, {
+      amountSen: sen(4_200),
+      occurredAt: "2026-11-17T03:00:00.000Z",
+      localDate: "2026-11-17",
+      note: "Bank to TNG",
+      cycleId,
+      reason: "Transfer RM42.00 added to the plan",
+    });
+    if (!saved.ok) throw new Error(saved.message);
+    expect(getPlan(ctx.db, cycleId)?.revision.budgetSen).toBe(54_200);
+    expect(undoTransferIntoPlan(ctx, saved.value).ok).toBe(true);
+    expect(getPlan(ctx.db, cycleId)?.revision.budgetSen).toBe(50_000);
   });
 });
