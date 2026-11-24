@@ -305,6 +305,8 @@ export const tngLines = {
   /** Only TNG points showed this payment (D-137): RM1 a point, an estimate. */
   points: (amount: Sen): string =>
     `TNG gave you ${Math.round(amount / 100)} points, so you probably paid about ${formatRM(amount)} somewhere. Add it?`,
+  reload: (amount: Sen): string =>
+    `You topped up ${formatRM(amount)} from your bank or card. Add it to this month's plan?`,
   paid: (amount: Sen, what: string): string =>
     `You paid ${formatRM(amount)} for ${what}. Add it to your spending?`,
   out: (amount: Sen, name: string): string =>

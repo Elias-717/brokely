@@ -93,7 +93,7 @@ describe("ingestTngCaptures (FR-IMP-04, FR-IMP-05, FR-IMP-06, FR-IMP-08)", () =>
     expect(result.consumed).toEqual([]);
   });
 
-  it("takes a reload in without a card: own money moving, it counts for nothing (17 Nov)", () => {
+  it("makes a reload wait as a top-up, never spending or money in (D-149)", () => {
     const reload: TngCaptured = {
       key: "0|my.com.tngdigital.ewallet|1|null|10340",
       postTime: NOW - 40_000,
@@ -102,8 +102,18 @@ describe("ingestTngCaptures (FR-IMP-04, FR-IMP-05, FR-IMP-06, FR-IMP-08)", () =>
       bigText: "",
     };
     const result = ingestTngCaptures([reload], EMPTY_TNG_QUEUE, NOW);
-    expect(result.queue).toBe(EMPTY_TNG_QUEUE);
+    expect(result.queue.pending).toEqual([
+      {
+        id: tngImportId(reload.key, reload.postTime),
+        postTime: reload.postTime,
+        direction: "in",
+        amountSen: sen(4200),
+        counterparty: "Top up",
+        reload: { reference: "2026010100000000000000000000000000001" },
+      },
+    ]);
     expect(result.consumed).toEqual([tngImportId(reload.key, reload.postTime)]);
+    expect(readTngQueue(JSON.parse(JSON.stringify(result.queue)))).toEqual(result.queue);
   });
 
   it("turns a prepaid top up into a pending payment, and drops the points that came with it", () => {

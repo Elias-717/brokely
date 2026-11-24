@@ -51,6 +51,11 @@ export interface PendingTngImport {
    * `fromPoints`: only TNG points showed it (D-137); the amount is points × RM1, an estimate.
    */
   readonly payment?: { readonly categoryHint: string | null; readonly fromPoints?: boolean };
+  /**
+   * Set for a TNG reload (top-up from the student's bank or card, D-149): own money moving in,
+   * never spending or money in; the student chooses whether it counts in this month's plan.
+   */
+  readonly reload?: { readonly reference: string | null };
 }
 
 /** An import already confirmed or declined: only enough is kept to recognise it again. */
@@ -136,28 +141,36 @@ export function ingestTngCaptures(
       continue;
     }
     consumed.add(id);
-    // A reload is the student's own money moving into TNG: understood, so its raw copy goes,
-    // but it never waits on Home (17 Nov, D-128).
-    if (parsed.kind === "reload") continue;
     if (known.has(id)) continue;
     known.add(id);
     pending.push(
-      parsed.kind === "payment"
+      parsed.kind === "reload"
         ? {
+            // A top-up waits like a transfer: add it to the plan, just record it, or leave it
+            // out (D-149). It was dropped before (D-128).
             id,
             postTime: capture.postTime,
-            direction: "out",
+            direction: "in",
             amountSen: parsed.amount,
-            counterparty: parsed.description,
-            payment: { categoryHint: parsed.categoryHint },
+            counterparty: "Top up",
+            reload: { reference: parsed.reference },
           }
-        : {
-            id,
-            postTime: capture.postTime,
-            direction: parsed.direction,
-            amountSen: parsed.amount,
-            counterparty: parsed.counterparty,
-          },
+        : parsed.kind === "payment"
+          ? {
+              id,
+              postTime: capture.postTime,
+              direction: "out",
+              amountSen: parsed.amount,
+              counterparty: parsed.description,
+              payment: { categoryHint: parsed.categoryHint },
+            }
+          : {
+              id,
+              postTime: capture.postTime,
+              direction: parsed.direction,
+              amountSen: parsed.amount,
+              counterparty: parsed.counterparty,
+            },
     );
     changed = true;
   }
@@ -194,7 +207,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 
 function readPending(value: unknown): PendingTngImport[] {
   if (!isRecord(value)) return [];
-  const { id, postTime, direction, amountSen, counterparty, payment } = value;
+  const { id, postTime, direction, amountSen, counterparty, payment, reload } = value;
   if (typeof id !== "string" || id === "") return [];
   if (typeof postTime !== "number" || !Number.isFinite(postTime)) return [];
   if (direction !== "out" && direction !== "in") return [];
@@ -208,6 +221,10 @@ function readPending(value: unknown): PendingTngImport[] {
     amountSen: sen(amountSen),
     counterparty: counterparty.trim(),
   } as const;
+  if (isRecord(reload)) {
+    const reference = typeof reload.reference === "string" ? reload.reference : null;
+    return [{ ...base, reload: { reference } }];
+  }
   if (!isRecord(payment)) return [base];
   const hint = typeof payment.categoryHint === "string" ? payment.categoryHint : null;
   return [

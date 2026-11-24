@@ -8,11 +8,16 @@ import {
 import {
   findCycleOn,
   getTngQueue,
+  deleteTransaction,
   recordMoneyInTo,
+  recordTransaction,
   removeMoneyInRoute,
   setMoneyInRoute,
+  setPlanLink,
   setTngQueue,
+  transferIntoPlan,
   undoMoneyInTo,
+  undoTransferIntoPlan,
 } from "@brokely/local-db";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
@@ -103,7 +108,48 @@ function useTngActions() {
     );
   };
 
-  return { decline, addMoneyIn };
+  /**
+   * A TNG top-up (D-149): saved as a transfer, added to this month's plan or just recorded.
+   * Never spending or money in. Undo takes it back and the item waits again.
+   */
+  const topUp = (item: PendingTngImport, toPlan: boolean) => {
+    const when = new Date(item.postTime);
+    const localDate = toLocalDate(when);
+    const cycleId = findCycleOn(db, localDate)?.id ?? null;
+    const base = {
+      amountSen: item.amountSen,
+      occurredAt: when.toISOString(),
+      localDate,
+      note: "Top up to TNG",
+    };
+    const reopen = () => setTngQueue(repo, reopenTngImport(getTngQueue(db), item));
+    if (toPlan && cycleId) {
+      const saved = transferIntoPlan(repo, {
+        ...base,
+        cycleId,
+        reason: `Top up ${formatRM(item.amountSen)} added to the plan`,
+      });
+      if (!saved.ok) return;
+      setPlanLink(repo, cycleId, saved.value.transactionId, saved.value.revisionId);
+      setTngQueue(repo, settleTngImport(getTngQueue(db), item.id));
+      savedBuzz();
+      showUndo(`Top up ${formatRM(item.amountSen)} added to your plan`, () => {
+        undoTransferIntoPlan(repo, saved.value);
+        reopen();
+      });
+      return;
+    }
+    const saved = recordTransaction(repo, { ...base, type: "transfer", lines: [] });
+    if (!saved.ok) return;
+    setTngQueue(repo, settleTngImport(getTngQueue(db), item.id));
+    savedBuzz();
+    showUndo(`Top up ${formatRM(item.amountSen)} recorded · plan unchanged`, () => {
+      deleteTransaction(repo, saved.value.id);
+      reopen();
+    });
+  };
+
+  return { decline, addMoneyIn, topUp };
 }
 
 /** A small amount received today: Add to today is offered (D-134). */
@@ -125,7 +171,17 @@ function TngCard({
     <BrokelyCard
       label={tngLines.label(toLocalDate(new Date(item.postTime)))}
       actions={
-        item.direction === "in" && !item.payment ? (
+        item.reload ? (
+          <>
+            <Button label="Add to my plan" onPress={() => actions.topUp(item, true)} />
+            <Button
+              label="Just record it"
+              variant="secondary"
+              onPress={() => actions.topUp(item, false)}
+            />
+            <Button label="Decline" variant="link" onPress={() => actions.decline(item)} />
+          </>
+        ) : item.direction === "in" && !item.payment ? (
           <>
             <Button label="Add to my plan" onPress={() => actions.addMoneyIn(item, "plan")} />
             {small(item) ? (
@@ -145,15 +201,17 @@ function TngCard({
         )
       }
     >
-      {item.payment?.fromPoints
-        ? tngLines.points(item.amountSen)
-        : item.payment
-          ? tngLines.paid(item.amountSen, item.counterparty)
-          : item.direction === "out"
-            ? tngLines.out(item.amountSen, item.counterparty)
-            : small(item)
-              ? tngLines.inSmall(item.amountSen, item.counterparty)
-              : tngLines.in(item.amountSen, item.counterparty)}
+      {item.reload
+        ? tngLines.reload(item.amountSen)
+        : item.payment?.fromPoints
+          ? tngLines.points(item.amountSen)
+          : item.payment
+            ? tngLines.paid(item.amountSen, item.counterparty)
+            : item.direction === "out"
+              ? tngLines.out(item.amountSen, item.counterparty)
+              : small(item)
+                ? tngLines.inSmall(item.amountSen, item.counterparty)
+                : tngLines.in(item.amountSen, item.counterparty)}
     </BrokelyCard>
   );
 }
@@ -164,13 +222,15 @@ const timeOf = (postTime: number) =>
 
 /** The small grey line under a row: what it is and when. */
 function rowDetail(item: PendingTngImport): string {
-  const what = item.payment?.fromPoints
-    ? "About, from TNG points"
-    : item.payment
-      ? (item.payment.categoryHint ?? "Payment")
-      : item.direction === "in"
-        ? "Sent you"
-        : "You sent";
+  const what = item.reload
+    ? "From your bank or card"
+    : item.payment?.fromPoints
+      ? "About, from TNG points"
+      : item.payment
+        ? (item.payment.categoryHint ?? "Payment")
+        : item.direction === "in"
+          ? "Sent you"
+          : "You sent";
   return `${what} · ${timeOf(item.postTime)}`;
 }
 
@@ -191,12 +251,14 @@ function TngRow({
 }) {
   const { colors } = useTheme();
   const [open, setOpen] = useState(false);
-  const incoming = item.direction === "in" && !item.payment;
+  const incoming = item.direction === "in" && !item.payment && !item.reload;
   const name = item.payment?.fromPoints ? "Somewhere" : item.counterparty;
   const confirm = () =>
-    incoming
-      ? actions.addMoneyIn(item, "plan")
-      : router.push({ pathname: "/quick-add", params: { tng: item.id } });
+    item.reload
+      ? actions.topUp(item, true)
+      : incoming
+        ? actions.addMoneyIn(item, "plan")
+        : router.push({ pathname: "/quick-add", params: { tng: item.id } });
   const square = (filled: boolean) => ({
     width: MIN_TOUCH,
     height: MIN_TOUCH,
@@ -234,10 +296,10 @@ function TngRow({
             style={{
               fontFamily: fonts.heavy,
               fontSize: 15,
-              color: incoming ? colors.income : colors.text,
+              color: incoming || item.reload ? colors.income : colors.text,
             }}
           >
-            {`${incoming ? "+" : "−"} ${formatRM(item.amountSen)}  ${name}`}
+            {`${incoming || item.reload ? "+" : "−"} ${formatRM(item.amountSen)}  ${name}`}
           </Text>
           <Text numberOfLines={1} style={[type.small, { color: colors.muted }]}>
             {rowDetail(item)}
@@ -246,9 +308,11 @@ function TngRow({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={
-            incoming
-              ? `Add ${formatRM(item.amountSen)} from ${name} to your plan`
-              : `Confirm ${formatRM(item.amountSen)}, ${name}`
+            item.reload
+              ? `Add top up ${formatRM(item.amountSen)} to your plan`
+              : incoming
+                ? `Add ${formatRM(item.amountSen)} from ${name} to your plan`
+                : `Confirm ${formatRM(item.amountSen)}, ${name}`
           }
           onPress={confirm}
           style={({ pressed }) => ({ ...square(true), opacity: pressed ? 0.7 : 1 })}
