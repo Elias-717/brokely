@@ -64,6 +64,15 @@ export interface RecordDetails {
   /** Spending that can still be refunded (FR-TXN-06); 0 for anything else. */
   readonly refundableSen: Sen;
   readonly syncStatus: string | null;
+  /**
+   * A loan or transfer the student can count in this month's plan or not (D-147): the plan it
+   * falls in and whether it is counted now. Null for other records, or with no plan that day.
+   */
+  readonly planChoice: {
+    readonly kind: "lend" | "transfer";
+    readonly cycleId: string;
+    readonly counted: boolean;
+  } | null;
 }
 
 /** "Mon 24 Nov · 1:26 AM" in the phone's time. */
@@ -138,15 +147,17 @@ export function readRecord(db: Db, id: string): RecordDetails | null {
               ? "Used to pay back a debt"
               : "Recorded only";
     rows.push({ icon: "piggy-bank", label: "Plan", value: where });
-  } else if (
-    (t.type === "lend" || t.type === "transfer") &&
-    cycle &&
-    getPlanLinks(db, cycle.id)[t.id]
-  ) {
+  } else if ((t.type === "lend" || t.type === "transfer") && cycle) {
+    // Editable on the page (D-147).
+    const counted = Boolean(getPlanLinks(db, cycle.id)[t.id]);
     rows.push({
       icon: "piggy-bank",
       label: "Plan",
-      value: t.type === "lend" ? "Taken out of this month's plan" : "Added to this month's plan",
+      value: !counted
+        ? "Not in the plan"
+        : t.type === "lend"
+          ? "Taken out of this month's plan"
+          : "Added to this month's plan",
     });
   } else if (t.type !== "purchase" && t.type !== "refund" && t.type !== "write_off") {
     rows.push({ icon: "piggy-bank", label: "Counts as", value: "Not spending" });
@@ -197,5 +208,9 @@ export function readRecord(db: Db, id: string): RecordDetails | null {
     edits: listTransactionEdits(db, t.id),
     refundableSen: refundable,
     syncStatus: sync?.s ?? null,
+    planChoice:
+      (t.type === "lend" || t.type === "transfer") && cycle
+        ? { kind: t.type, cycleId: cycle.id, counted: Boolean(getPlanLinks(db, cycle.id)[t.id]) }
+        : null,
   };
 }

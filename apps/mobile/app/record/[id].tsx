@@ -1,9 +1,12 @@
-import { formatRM } from "@brokely/domain";
+import { budgetAfterLending, formatRM, sen } from "@brokely/domain";
 import {
   deleteDebt,
   deleteTransaction,
   getDebt,
+  getPlan,
   restoreDebt,
+  setPlanBudget,
+  setPlanLink,
   restoreTransaction,
 } from "@brokely/local-db";
 import { Redirect, router, useLocalSearchParams } from "expo-router";
@@ -17,6 +20,7 @@ import { readRecord } from "../../src/lib/record-model";
 import { useSync } from "../../src/sync/sync-provider";
 import { Button, PageScreen, Sticker } from "../../src/ui/components";
 import { Icon } from "../../src/ui/icon";
+import { Chip } from "../../src/ui/sheet-parts";
 import { fonts, MIN_TOUCH, space, type } from "../../src/ui/theme";
 import { useTheme } from "../../src/ui/theme-context";
 import { useUndo } from "../../src/ui/undo";
@@ -39,6 +43,7 @@ export default function RecordDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const record = useRead((db) => readRecord(db, id), [id]);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [planOpen, setPlanOpen] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   if (!record) return <Redirect href="/records" />;
   const { t } = record;
@@ -71,6 +76,40 @@ export default function RecordDetailsScreen() {
       restoreTransaction(repo, t.id);
       putBack?.();
     });
+  };
+
+  /**
+   * Count a loan or transfer in this month's plan, or not (D-147): a loan lowers the budget, a
+   * transfer raises it; taking it out undoes that plan change. Each with Undo.
+   */
+  const choosePlan = (counted: boolean) => {
+    const choice = record.planChoice;
+    setPlanOpen(false);
+    if (!choice || choice.counted === counted) return;
+    if (!counted) {
+      const putBack = takeBackLend(t.id, t.localDate);
+      if (putBack) showUndo("Taken out of the plan's numbers", putBack);
+      return;
+    }
+    const plan = getPlan(repo.db, choice.cycleId);
+    if (!plan) return;
+    const budget = sen(plan.revision.budgetSen);
+    const next =
+      choice.kind === "lend" ? budgetAfterLending(budget, t.amountSen) : sen(budget + t.amountSen);
+    if (next === null) return setProblem("That's more than your whole plan.");
+    const reason =
+      choice.kind === "lend"
+        ? `Lent ${formatRM(t.amountSen)} counted in the plan`
+        : `Transfer ${formatRM(t.amountSen)} added to the plan`;
+    const saved = setPlanBudget(repo, {
+      cycleId: choice.cycleId,
+      budgetSen: next,
+      shortfallAcknowledged: true,
+      reason,
+    });
+    if (!saved.ok) return setProblem(refusalText(saved.code, saved.message));
+    setPlanLink(repo, choice.cycleId, t.id, saved.value.revisionId);
+    showUndo(`Plan is now ${formatRM(next)}`, () => takeBackLend(t.id, t.localDate));
   };
 
   const amountColor =
@@ -173,36 +212,94 @@ export default function RecordDetailsScreen() {
 
       {/* The details, one row each, only what applies. */}
       <Sticker style={{ paddingHorizontal: space.md, paddingVertical: 2 }}>
-        {rows.map((r, i) => (
-          <View
-            key={r.label}
-            accessible
-            accessibilityLabel={`${r.label}: ${r.value}`}
-            style={{
-              minHeight: MIN_TOUCH,
-              flexDirection: "row",
-              alignItems: "center",
-              gap: space.sm,
-              paddingVertical: space.xs,
-              borderTopWidth: i === 0 ? 0 : 1,
-              borderTopColor: colors.background,
-            }}
-          >
-            <Icon name={r.icon} size={20} />
-            <Text style={[type.small, { color: colors.muted, width: 84 }]}>{r.label}</Text>
-            <Text
+        {rows.map((r, i) =>
+          r.label === "Plan" && record.planChoice ? (
+            <View key={r.label}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ expanded: planOpen }}
+                accessibilityLabel={`Plan: ${r.value}. Change`}
+                onPress={() => setPlanOpen((o) => !o)}
+                style={({ pressed }) => ({
+                  minHeight: MIN_TOUCH,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: space.sm,
+                  paddingVertical: space.xs,
+                  borderTopWidth: i === 0 ? 0 : 1,
+                  borderTopColor: colors.background,
+                  opacity: pressed ? 0.7 : 1,
+                })}
+              >
+                <Icon name={r.icon} size={20} />
+                <Text style={[type.small, { color: colors.muted, width: 84 }]}>{r.label}</Text>
+                <Text
+                  style={{
+                    flex: 1,
+                    textAlign: "right",
+                    fontFamily: fonts.heavy,
+                    fontSize: 14,
+                    color: colors.text,
+                  }}
+                >
+                  {r.value} {planOpen ? "⌃" : "›"}
+                </Text>
+              </Pressable>
+              {planOpen ? (
+                <View style={{ gap: space.xs, paddingBottom: space.sm }}>
+                  <Chip
+                    label={
+                      record.planChoice.kind === "lend"
+                        ? "Taken out of this month's plan"
+                        : "Added to this month's plan"
+                    }
+                    selected={record.planChoice.counted}
+                    onPress={() => choosePlan(true)}
+                  />
+                  <Chip
+                    label="Not in the plan"
+                    selected={!record.planChoice.counted}
+                    onPress={() => choosePlan(false)}
+                  />
+                  <Text style={[type.small, { color: colors.muted }]}>
+                    {record.planChoice.kind === "lend"
+                      ? "Counted, the budget goes down by what you lent. It's still not spending; if they never pay you back, Write off in Debts makes it spending."
+                      : "Counted, the budget goes up by the transfer. A transfer is never spending."}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          ) : (
+            <View
+              key={r.label}
+              accessible
+              accessibilityLabel={`${r.label}: ${r.value}`}
               style={{
-                flex: 1,
-                textAlign: "right",
-                fontFamily: fonts.heavy,
-                fontSize: 14,
-                color: colors.text,
+                minHeight: MIN_TOUCH,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: space.sm,
+                paddingVertical: space.xs,
+                borderTopWidth: i === 0 ? 0 : 1,
+                borderTopColor: colors.background,
               }}
             >
-              {r.value}
-            </Text>
-          </View>
-        ))}
+              <Icon name={r.icon} size={20} />
+              <Text style={[type.small, { color: colors.muted, width: 84 }]}>{r.label}</Text>
+              <Text
+                style={{
+                  flex: 1,
+                  textAlign: "right",
+                  fontFamily: fonts.heavy,
+                  fontSize: 14,
+                  color: colors.text,
+                }}
+              >
+                {r.value}
+              </Text>
+            </View>
+          ),
+        )}
         {record.edits.length > 0 ? (
           <Pressable
             accessibilityRole="button"
