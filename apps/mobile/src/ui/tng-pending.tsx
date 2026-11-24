@@ -31,8 +31,6 @@ import { useUndo } from "./undo";
 
 /** How often Home looks for new captures while it is on screen. */
 const POLL_MS = 5000;
-/** Money in put off with "Not now": it leaves Home until the app starts again (still in the list). */
-const snoozed = new Set<string>();
 
 /**
  * Looks for new captures while a screen is in view: on focus, when the app returns, and every few
@@ -57,7 +55,6 @@ export function useCollectTng() {
 /** What a waiting TNG item can do, shared by Home and the From TNG list. */
 function useTngActions() {
   const showUndo = useUndo();
-  const [, setSnoozedCount] = useState(snoozed.size);
 
   const decline = (item: PendingTngImport) => {
     setTngQueue(repo, settleTngImport(getTngQueue(db), item.id));
@@ -106,12 +103,7 @@ function useTngActions() {
     );
   };
 
-  const notNow = (item: PendingTngImport) => {
-    snoozed.add(item.id);
-    setSnoozedCount(snoozed.size);
-  };
-
-  return { decline, addMoneyIn, notNow };
+  return { decline, addMoneyIn };
 }
 
 /** A small amount received today: Add to today is offered (D-134). */
@@ -120,15 +112,13 @@ const small = (item: PendingTngImport) =>
   offersToday(item.amountSen) &&
   toLocalDate(new Date(item.postTime)) === toLocalDate(new Date());
 
-/** One waiting TNG item with its buttons. `onNotNow` only on Home. */
+/** One waiting TNG item with every option, shown under its row when tapped. */
 function TngCard({
   item,
   actions,
-  onNotNow,
 }: {
   item: PendingTngImport;
   actions: ReturnType<typeof useTngActions>;
-  onNotNow?: () => void;
 }) {
   const open = () => router.push({ pathname: "/quick-add", params: { tng: item.id } });
   return (
@@ -146,7 +136,6 @@ function TngCard({
               />
             ) : null}
             <Button label="Something else" variant="secondary" onPress={open} />
-            {onNotNow ? <Button label="Not now" variant="link" onPress={onNotNow} /> : null}
           </>
         ) : (
           <>
@@ -169,10 +158,124 @@ function TngCard({
   );
 }
 
+/** "4:10 PM" from a notification's time. */
+const timeOf = (postTime: number) =>
+  new Date(postTime).toLocaleTimeString("en-MY", { hour: "numeric", minute: "2-digit" });
+
+/** The small grey line under a row: what it is and when. */
+function rowDetail(item: PendingTngImport): string {
+  const what = item.payment?.fromPoints
+    ? "About, from TNG points"
+    : item.payment
+      ? (item.payment.categoryHint ?? "Payment")
+      : item.direction === "in"
+        ? "Sent you"
+        : "You sent";
+  return `${what} · ${timeOf(item.postTime)}`;
+}
+
 /**
- * TNG payments the phone caught, on Home (FR-IMP-04, D-02, D-128): the newest one as a card, and
- * a row to the full list when more are waiting (D-142). One card keeps Home calm; the list keeps
- * every item reachable, which a swipe carousel would hide.
+ * One waiting TNG item as a compact row (D-142): amount and who, then a tick and a cross. The tick
+ * on money in from a friend adds it to the plan in one tap (D-132); on anything going out it opens
+ * Add filled in, because a category is still needed (FR-IMP-08). The cross declines, with Undo.
+ * Tapping the row opens the full card with every option underneath.
+ */
+function TngRow({
+  item,
+  actions,
+  first,
+}: {
+  item: PendingTngImport;
+  actions: ReturnType<typeof useTngActions>;
+  first: boolean;
+}) {
+  const { colors } = useTheme();
+  const [open, setOpen] = useState(false);
+  const incoming = item.direction === "in" && !item.payment;
+  const name = item.payment?.fromPoints ? "Somewhere" : item.counterparty;
+  const confirm = () =>
+    incoming
+      ? actions.addMoneyIn(item, "plan")
+      : router.push({ pathname: "/quick-add", params: { tng: item.id } });
+  const square = (filled: boolean) => ({
+    width: MIN_TOUCH,
+    height: MIN_TOUCH,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: colors.outline,
+    backgroundColor: filled ? colors.primary : colors.card,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+  });
+  return (
+    <View
+      style={{
+        borderTopWidth: first ? 0 : 1,
+        borderTopColor: colors.background,
+        paddingVertical: space.xs,
+        gap: space.xs,
+      }}
+    >
+      <View style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ expanded: open }}
+          accessibilityHint="Shows every option"
+          onPress={() => setOpen((o) => !o)}
+          style={({ pressed }) => ({
+            flex: 1,
+            minHeight: MIN_TOUCH,
+            justifyContent: "center",
+            opacity: pressed ? 0.7 : 1,
+          })}
+        >
+          <Text
+            numberOfLines={1}
+            style={{
+              fontFamily: fonts.heavy,
+              fontSize: 15,
+              color: incoming ? colors.income : colors.text,
+            }}
+          >
+            {`${incoming ? "+" : "−"} ${formatRM(item.amountSen)}  ${name}`}
+          </Text>
+          <Text numberOfLines={1} style={[type.small, { color: colors.muted }]}>
+            {rowDetail(item)}
+          </Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={
+            incoming
+              ? `Add ${formatRM(item.amountSen)} from ${name} to your plan`
+              : `Confirm ${formatRM(item.amountSen)}, ${name}`
+          }
+          onPress={confirm}
+          style={({ pressed }) => ({ ...square(true), opacity: pressed ? 0.7 : 1 })}
+        >
+          <Text style={{ fontFamily: fonts.heavy, fontSize: 18, color: colors.onPrimary }}>✓</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Decline ${formatRM(item.amountSen)}, ${name}`}
+          onPress={() => actions.decline(item)}
+          style={({ pressed }) => ({ ...square(false), opacity: pressed ? 0.7 : 1 })}
+        >
+          <Text style={{ fontFamily: fonts.heavy, fontSize: 18, color: colors.text }}>✕</Text>
+        </Pressable>
+      </View>
+      {open ? <TngCard item={item} actions={actions} /> : null}
+    </View>
+  );
+}
+
+/** Up to this many rows on Home; the rest wait behind View more (author). */
+const ON_HOME = 3;
+
+/**
+ * TNG payments the phone caught, on Home (FR-IMP-04, D-02, D-128): one "From TNG" card with the
+ * newest rows and "View more" to the whole list (D-142). Compact rows keep Home calm and every
+ * item one tap away, which a swipe carousel would hide.
  */
 export function TngPendingCards() {
   const { colors } = useTheme();
@@ -180,46 +283,41 @@ export function TngPendingCards() {
   const actions = useTngActions();
   useCollectTng();
 
-  const waiting = queue.pending.filter((p) => !snoozed.has(p.id));
+  const waiting = queue.pending;
   if (waiting.length === 0) return null;
-  const newest = waiting[0]!;
-  // Everything else waiting, "Not now" ones included: they stay in the list.
-  const more = queue.pending.length - 1;
-
   return (
-    <View style={{ gap: space.sm }}>
-      <TngCard item={newest} actions={actions} onNotNow={() => actions.notNow(newest)} />
-      {more > 0 ? (
+    <Sticker style={{ paddingHorizontal: space.md, paddingVertical: space.sm, gap: space.xs }}>
+      <View style={{ flexDirection: "row", alignItems: "center" }}>
+        <Text style={[type.heading, { flex: 1, color: colors.text }]}>From TNG</Text>
+        <Text style={{ fontFamily: fonts.heavy, fontSize: 13, color: colors.muted }}>
+          {waiting.length} to review
+        </Text>
+      </View>
+      {waiting.slice(0, ON_HOME).map((item, i) => (
+        <TngRow key={item.id} item={item} actions={actions} first={i === 0} />
+      ))}
+      {waiting.length > ON_HOME ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`${more} more from TNG. Review all`}
+          accessibilityLabel={`View more: all ${waiting.length} from TNG`}
           onPress={() => router.push("/tng-review")}
-          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+          style={({ pressed }) => ({
+            minHeight: MIN_TOUCH,
+            alignItems: "center",
+            justifyContent: "center",
+            opacity: pressed ? 0.7 : 1,
+          })}
         >
-          <Sticker
-            rounded={14}
-            offset={2}
-            style={{
-              minHeight: MIN_TOUCH,
-              paddingHorizontal: space.md,
-              flexDirection: "row",
-              alignItems: "center",
-            }}
-          >
-            <Text style={{ flex: 1, fontFamily: fonts.heavy, fontSize: 15, color: colors.text }}>
-              {tngLines.more(more)}
-            </Text>
-            <Text style={{ fontFamily: fonts.heavy, fontSize: 15, color: colors.text }}>
-              Review all ›
-            </Text>
-          </Sticker>
+          <Text style={{ fontFamily: fonts.heavy, fontSize: 15, color: colors.primary }}>
+            View more ›
+          </Text>
         </Pressable>
       ) : null}
-    </View>
+    </Sticker>
   );
 }
 
-/** Every waiting TNG item, newest first, grouped by day (D-142). */
+/** The whole list (D-142): every waiting item as a row, newest first, one card per day. */
 export function TngReviewList() {
   const { colors } = useTheme();
   const queue = useRead(getTngQueue);
@@ -240,14 +338,19 @@ export function TngReviewList() {
   }
   return (
     <>
+      <Text style={[type.small, { color: colors.muted }]}>
+        {queue.pending.length} to review. ✓ adds it, ✕ leaves it out, tap a row for every option.
+      </Text>
       {[...days].map(([day, items]) => (
-        <View key={day} style={{ gap: space.sm }}>
+        <View key={day} style={{ gap: space.xs }}>
           <Text style={{ fontFamily: fonts.heavy, fontSize: 13, color: colors.muted }}>
             {tngLines.label(day as ReturnType<typeof toLocalDate>).toUpperCase()} · {items.length}
           </Text>
-          {items.map((item) => (
-            <TngCard key={item.id} item={item} actions={actions} />
-          ))}
+          <Sticker style={{ paddingHorizontal: space.md, paddingVertical: space.xs }}>
+            {items.map((item, i) => (
+              <TngRow key={item.id} item={item} actions={actions} first={i === 0} />
+            ))}
+          </Sticker>
         </View>
       ))}
     </>
